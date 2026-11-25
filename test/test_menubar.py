@@ -200,8 +200,9 @@ class ServerTest(unittest.TestCase):
         store = UsageStore(os.path.dirname(root), os.path.join(self.dir.name, "c.json"))
         self.settings = os.path.join(self.dir.name, "settings.json")
         rates = rate.RateStore(os.path.join(self.dir.name, "rate.json"), fetch=lambda: ECB)
+        self.opened = []
         self.dash = server.Dashboard(store, self.settings, today=lambda: local_day("2026-11-25T12:00:00Z"),
-                                     rates=rates)
+                                     rates=rates, opener=self.opened.append)
         self.server = server.serve(self.dash, port=0)
         self.port = self.server.server_address[1]
 
@@ -233,6 +234,15 @@ class ServerTest(unittest.TestCase):
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6,07 Wh")
+
+    def test_open_only_known_links(self):
+        api = {"X-EnergIA": "1"}
+        self.assertEqual(self.get("/api/open?link=sponsor", api)[0], 200)
+        self.assertEqual(self.opened, ["https://github.com/sponsors/darkxander"])
+        for bad in ("/api/open", "/api/open?link=autre", "/api/open?link=https://example.com"):
+            self.assertEqual(self.get(bad, api)[0], 404, bad)
+        self.assertEqual(self.get("/api/open?link=source")[0], 403)  # sans en-tête
+        self.assertEqual(len(self.opened), 1)
 
     def test_guards_and_static(self):
         self.assertEqual(self.get("/api/claudecode")[0], 403)                      # sans en-tête

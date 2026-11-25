@@ -9,11 +9,12 @@ attend que la page cesse d'envoyer ses battements (fenêtre refermée).
 
 import json
 import os
+import subprocess
 import threading
 import time
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import estimate
 from claudecode import UsageStore
@@ -26,8 +27,15 @@ BEAT_TIMEOUT = 4.0        # sans battement pendant ce délai : fenêtre refermé
 LABEL = "⚡"
 MAX_BODY = 20_000
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+# Seuls liens que la page peut faire ouvrir dans le navigateur par défaut.
+LINKS = {"sponsor": "https://github.com/sponsors/darkxander",
+         "source": "https://github.com/darkxander/EnergIA"}
 STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
           ".js": "text/javascript; charset=utf-8", ".json": "application/json"}
+
+
+def open_in_browser(url):
+    subprocess.run(["/usr/bin/open", url], check=False, timeout=10)
 
 
 class TitleGate:
@@ -57,9 +65,10 @@ class TitleGate:
 
 class Dashboard:
     def __init__(self, store=None, settings_path=estimate.SETTINGS, today=lambda: date.today().isoformat(),
-                 rates=None):
+                 rates=None, opener=open_in_browser):
         self.store = store or UsageStore()
         self.rates = rates or RateStore()
+        self.opener = opener
         self.settings_path, self.today = settings_path, today
         self.gate = TitleGate()
         self._lock = threading.Lock()
@@ -148,6 +157,12 @@ class Handler(BaseHTTPRequestHandler):
         dash = self.server.dash
         if path == "/api/claudecode":
             return self._json(dash.payload())
+        if path == "/api/open":
+            url = LINKS.get(parse_qs(urlsplit(self.path).query).get("link", [""])[0])
+            if not url:
+                return self.send_error(404)
+            dash.opener(url)
+            return self._json({"ok": True})
         if path == "/api/beat":
             dash.gate.beat()
             return self._json({"ok": True})

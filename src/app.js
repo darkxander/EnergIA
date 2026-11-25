@@ -635,6 +635,14 @@ async function startMenubar() {
     return; // page ouverte hors de la barre de menus
   }
   menubar = true;
+  // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
+  // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
+  for (const link of document.querySelectorAll("a[data-link]")) {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      api(`/api/open?link=${link.dataset.link}`).catch(() => {});
+    });
+  }
   // Tant que la page est visible, le plugin retient ses changements de titre.
   setInterval(() => {
     if (document.visibilityState === "visible") api("/api/beat").catch(() => {});
