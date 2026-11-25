@@ -1,0 +1,93 @@
+"""Estimation d'énergie pour le titre de la barre de menus.
+
+Même calcul que src/model.js (garder les deux en accord), avec les mêmes
+valeurs par défaut (src/defaults.json) et les réglages faits dans la page.
+"""
+
+import copy
+import json
+import os
+import re
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+DEFAULTS = os.path.join(HERE, "..", "src", "defaults.json")
+SETTINGS = os.path.expanduser("~/Library/Application Support/EnergIA/settings.json")
+
+_LEGER = re.compile(r"mini|nano|haiku|flash|instant|lite|luna")
+_GRAND = re.compile(r"opus|fable|mythos|astra")
+_RAISONNEMENT = re.compile(r"^o\d|thinking|reason|research|(^|-)pro($|-)")
+
+
+def classify(model):
+    m = str(model or "").lower()
+    if _LEGER.search(m):
+        return "leger"
+    if _GRAND.search(m):
+        return "grand"
+    if _RAISONNEMENT.search(m):
+        return "raisonnement"
+    return "standard"
+
+
+def _number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value < 1e9
+
+
+def merge(defaults, saved):
+    """Les réglages enregistrés par-dessus les valeurs par défaut ; seuls des
+    nombres plausibles sur des clés connues sont acceptés."""
+    out = copy.deepcopy(defaults)
+    if not isinstance(saved, dict):
+        return out
+    for key, value in out.items():
+        new = saved.get(key)
+        if key in ("tiers", "subs"):
+            if not isinstance(new, dict):
+                continue
+            for name, inner in value.items():
+                if key == "subs":
+                    if _number(new.get(name)):
+                        value[name] = new[name]
+                elif isinstance(new.get(name), dict):
+                    for field in inner:
+                        if _number(new[name].get(field)):
+                            inner[field] = new[name][field]
+        elif _number(new):
+            out[key] = new
+    return out
+
+
+def load_settings(path=SETTINGS):
+    with open(DEFAULTS, encoding="utf-8") as f:
+        defaults = json.load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return merge(defaults, json.load(f))
+    except (OSError, ValueError):
+        return defaults
+
+
+def save_settings(saved, path=SETTINGS):
+    with open(DEFAULTS, encoding="utf-8") as f:
+        clean = merge(json.load(f), saved)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(clean, f)
+
+
+def wh(row, settings):
+    tier = settings["tiers"][classify(row["model"])]
+    read = (row["inTok"] + row.get("cw5Tok", 0) + row.get("cw1Tok", 0)
+            + row.get("cacheTok", 0) * settings["cacheReadRatio"])
+    return (row["outTok"] + read * settings["inputRatio"]) / 1000 * tier["whOut"]
+
+
+def format_energy(value):
+    """12 Wh, 3,4 Wh, 1,25 kWh : trois chiffres significatifs au plus."""
+    unit = "Wh"
+    if value >= 1000:
+        value, unit = value / 1000, "kWh"
+    text = f"{value:.0f}" if value >= 100 else f"{value:.1f}" if value >= 10 else f"{value:.2f}"
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return f"{text.replace('.', ',')} {unit}"

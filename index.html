@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EnergIA – ce que représente votre usage de l'IA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="viz-root">
+  <header class="top">
+    <h1>EnergIA</h1>
+    <p class="tagline">Ce que représente votre usage de l'IA en énergie, CO₂, eau et euros.</p>
+  </header>
+
+  <main>
+    <section class="card" aria-labelledby="import-title">
+      <h2 id="import-title">Importer mes données</h2>
+      <div id="drop" class="drop">
+        <p><strong>Déposez ici votre export ChatGPT ou Claude</strong><br>
+          <span class="muted">Archive .zip ou fichier conversations.json</span></p>
+        <div class="actions">
+          <button id="pick" type="button" class="primary">Choisir un fichier</button>
+          <button id="sample" type="button">Voir un exemple</button>
+        </div>
+        <input id="file" type="file" accept=".zip,.json" multiple hidden>
+      </div>
+      <p class="muted">Vos fichiers sont analysés dans votre navigateur. Rien n'est envoyé sur Internet, et le texte de vos conversations n'est pas conservé.</p>
+      <p id="status" role="status"></p>
+      <div id="sources"></div>
+      <details>
+        <summary>Comment obtenir mon export ?</summary>
+        <ul>
+          <li><strong>ChatGPT</strong> : Paramètres → Gestion des données → Exporter les données. Un lien de téléchargement arrive par e-mail.</li>
+          <li><strong>Claude</strong> : Paramètres → Confidentialité → Exporter les données. Un lien de téléchargement arrive par e-mail.</li>
+        </ul>
+        <p class="muted">Un nouvel import remplace le précédent pour le même service.</p>
+      </details>
+    </section>
+
+    <div id="results" hidden>
+      <div class="filters">
+        <label>Période
+          <select id="period">
+            <option value="all">Tout l'historique</option>
+            <option value="365">12 derniers mois</option>
+            <option value="90">90 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+          </select>
+        </label>
+        <label>Service
+          <select id="source">
+            <option value="all">Tous</option>
+            <option value="chatgpt">ChatGPT</option>
+            <option value="claude">Claude</option>
+            <option value="claudecode">Claude Code</option>
+          </select>
+        </label>
+        <p id="volume" class="muted"></p>
+      </div>
+
+      <section id="tiles" class="tiles" aria-label="Résumé"></section>
+
+      <section class="card" aria-labelledby="chart-title">
+        <div class="card-head">
+          <h2 id="chart-title">Évolution</h2>
+          <div class="card-tools">
+            <label>Mesure
+              <select id="metric">
+                <option value="energy">Énergie</option>
+                <option value="co2">CO₂</option>
+                <option value="water">Eau</option>
+                <option value="cost">Coût</option>
+              </select>
+            </label>
+            <button id="toggle-table" type="button" aria-pressed="false">Voir le tableau</button>
+          </div>
+        </div>
+        <div id="legend" class="legend"></div>
+        <div id="chart" class="chart-wrap"></div>
+        <div id="chart-table" class="table-wrap" hidden></div>
+      </section>
+
+      <section class="card" aria-labelledby="models-title">
+        <h2 id="models-title">Par modèle</h2>
+        <div id="models" class="table-wrap"></div>
+        <p id="price-note" class="muted"></p>
+      </section>
+    </div>
+
+    <section class="card">
+      <details id="hypotheses">
+        <summary><h2>Hypothèses de calcul</h2></summary>
+        <p>Les fournisseurs publient peu de chiffres : tout ce qui est affiché ici est une <strong>estimation d'ordre de grandeur</strong>. Le nombre de tokens est estimé à partir de la longueur du texte (environ 4 caractères par token), puis converti en énergie selon la catégorie du modèle. Pour Claude Code, les nombres de tokens sont mesurés et non estimés ; la conversion en énergie reste une estimation. Le paramètre le plus incertain est le poids des tokens relus du cache : ils représentent l'essentiel du volume de Claude Code, et aucun chiffre public ne dit ce qu'ils consomment.</p>
+        <p class="muted">Repères publics : OpenAI a indiqué environ 0,34 Wh pour une requête ChatGPT moyenne (juin 2025) ; Google, 0,24 Wh pour une requête texte Gemini médiane (août 2025). L'intensité carbone dépend du pays du centre de données : environ 400 g CO₂e/kWh en moyenne mondiale, bien moins en France.</p>
+        <form id="settings" class="settings"></form>
+        <button id="reset-settings" type="button">Rétablir les valeurs par défaut</button>
+      </details>
+    </section>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

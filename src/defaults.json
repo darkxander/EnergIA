@@ -1,0 +1,16 @@
+{
+  "tiers": {
+    "leger": { "whOut": 0.2, "eurIn": 0.3, "eurOut": 1.5 },
+    "standard": { "whOut": 0.6, "eurIn": 2.5, "eurOut": 10 },
+    "grand": { "whOut": 1.2, "eurIn": 5, "eurOut": 25 },
+    "raisonnement": { "whOut": 2.5, "eurIn": 10, "eurOut": 40 }
+  },
+  "inputRatio": 0.1,
+  "cacheReadRatio": 0.02,
+  "lowFactor": 0.5,
+  "highFactor": 2,
+  "gCO2PerKWh": 400,
+  "waterLPerKWh": 1,
+  "eurPerUsd": 0.9122,
+  "subs": { "chatgpt": 0, "claude": 0 }
+}
