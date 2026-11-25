@@ -9,6 +9,10 @@ existe sous deux formes, qui partagent la même page :
 - un **élément de barre de menus macOS** (plugin [SwiftBar](https://github.com/swiftbar/SwiftBar))
   qui affiche l'énergie estimée du jour pour Claude Code, et ouvre le tableau de bord au clic.
 
+![Tableau de bord EnergIA avec les données d'exemple : tuiles énergie, CO₂, eau et coût, puis le graphique d'évolution par mois pour ChatGPT et Claude](docs/capture.jpg)
+
+*Le tableau de bord, ici avec les données d'exemple intégrées.*
+
 Tous les chiffres sont des **estimations d'ordre de grandeur** : les fournisseurs ne
 publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites).
 
