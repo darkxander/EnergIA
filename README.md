@@ -43,7 +43,9 @@ Ouvrez ensuite <http://localhost:8791>, puis déposez votre export (`.zip` ou
 Pour obtenir un export :
 
 - **ChatGPT** : Paramètres → Gestion des données → Exporter les données.
-- **Claude** : Paramètres → Confidentialité → Exporter les données.
+- **Claude** : Paramètres → Confidentialité → Exporter les données, sur le web ou dans
+  l'appli pour ordinateur (pas sur mobile). Le lien reçu par e-mail expire au bout de
+  24 heures.
 
 Les fichiers sont analysés dans le navigateur. Rien n'est envoyé sur Internet, et le
 texte des conversations n'est pas conservé : seuls des compteurs par jour et par modèle
@@ -115,6 +117,10 @@ dans « Hypothèses de calcul ».
 - **Les conversations de claude.ai et de ChatGPT ne sont pas lues automatiquement.** Elles
   ne sont pas enregistrées sur le Mac sous une forme exploitable : il faut importer un
   export, à refaire pour mettre les chiffres à jour.
+- **L'export Claude n'est pas toujours disponible.** Avec un compte d'organisation (Team ou
+  Enterprise), le bouton d'export n'apparaît que si un propriétaire de l'organisation a
+  autorisé les membres à exporter leurs données. Sans cela, les conversations de claude.ai
+  ne peuvent pas être comptées.
 - **Exports.** L'export Claude n'indique pas le modèle utilisé, et la réflexion cachée des
   modèles à raisonnement n'apparaît pas dans les exports. La lecture des exports n'a été
   testée que sur des fichiers de test, pas encore sur de vrais exports.
