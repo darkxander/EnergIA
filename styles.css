@@ -12,6 +12,7 @@
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
+  --series-4: #eda100;
   --critical: #d03b3b;
 }
 @media (prefers-color-scheme: dark) {
@@ -29,6 +30,7 @@
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
+    --series-4: #c98500;
     --critical: #e66767;
   }
 }
@@ -104,6 +106,7 @@ details ul { padding-left: 20px; }
 .swatch.chatgpt, .bar.chatgpt { background: var(--series-1); fill: var(--series-1); }
 .swatch.claude, .bar.claude { background: var(--series-2); fill: var(--series-2); }
 .swatch.claudecode, .bar.claudecode { background: var(--series-3); fill: var(--series-3); }
+.swatch.cowork, .bar.cowork { background: var(--series-4); fill: var(--series-4); }
 
 .chart-wrap { position: relative; }
 .chart-wrap svg { display: block; width: 100%; height: auto; }

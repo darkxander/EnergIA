@@ -90,6 +90,19 @@ class StoreTest(unittest.TestCase):
         old = rows["claude-haiku-4-5"]
         self.assertEqual((old["inTok"], old["cw5Tok"], old["cw1Tok"], old["searches"]), (10, 30, 60, 2))
 
+    def test_cowork_sessions_are_a_separate_source(self):
+        cowork = os.path.join(self.dir.name, "cowork")
+        logs = os.path.join(cowork, "org", "user", "local_1", ".claude", "projects", "session")
+        os.makedirs(logs)
+        self.write(self.log, [user("q1"), assistant("m1")])
+        self.write(os.path.join(logs, "s.jsonl"), [user("q2"), assistant("m2"), assistant("m1")])  # m1 déjà compté
+        self.write(os.path.join(cowork, "org", "user", "local_1", "audit.jsonl"), [assistant("m9")])  # pas un journal
+        store = UsageStore({"claudecode": self.root, "cowork": cowork}, self.cache)
+        store.scan()
+        by_source = {r["source"]: (r["requests"], r["responses"]) for r in store.rows()}
+        self.assertEqual(by_source, {"claudecode": (1, 1), "cowork": (1, 1)})
+        self.assertEqual(UsageStore({"claudecode": self.root, "cowork": cowork}, self.cache).rows(), store.rows())
+
     def test_missing_root(self):
         store = UsageStore(os.path.join(self.dir.name, "absent"), self.cache)
         self.assertFalse(store.scan())

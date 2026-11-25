@@ -18,8 +18,12 @@ import threading
 from datetime import datetime
 
 ROOT = os.path.expanduser("~/.claude/projects")
+# Les sessions Cowork de l'appli Claude tiennent leurs journaux, au même format,
+# dans un dossier .claude/projects propre à chaque session.
+COWORK_ROOT = os.path.expanduser("~/Library/Application Support/Claude/local-agent-mode-sessions")
+ROOTS = {"claudecode": ROOT, "cowork": COWORK_ROOT}
 CACHE = os.path.expanduser("~/Library/Caches/EnergIA/claudecode.json")
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 MAX_PROMPT_LINE = 200_000  # au-delà, une ligne "user" est un résultat d'outil, pas une requête
 # inTok : tokens lus non mis en cache ; cw5Tok / cw1Tok : écrits dans le cache
 # (5 minutes / 1 heure) ; cacheTok : relus du cache ; searches : recherches web.
@@ -37,12 +41,15 @@ def local_day(timestamp):
 
 
 class UsageStore:
-    def __init__(self, root=ROOT, cache=CACHE):
-        self.root, self.cache = root, cache
+    def __init__(self, roots=None, cache=CACHE):
+        """`roots` : {source: dossier}, ou un seul dossier compté comme Claude Code."""
+        self.roots = dict(ROOTS) if roots is None else {"claudecode": roots} if isinstance(roots, str) else dict(roots)
+        self.cache = cache
+        self._source = None  # source du dossier en cours de lecture
         self._lock = threading.Lock()
         self._offsets = {}  # chemin -> octets déjà lus
         self._seen = set()  # identifiants de messages déjà comptés
-        self._rows = {}     # (jour, modèle) -> compteurs
+        self._rows = {}     # (jour, source, modèle) -> compteurs
         self._pending = {}  # chemin -> requêtes lues, en attente de leur réponse
         self._load()
 
@@ -56,13 +63,14 @@ class UsageStore:
             self._offsets = dict(data["offsets"])
             self._pending = dict(data["pending"])
             self._seen = set(data["seen"])
-            self._rows = {(day, model): dict(zip(FIELDS, counts)) for day, model, *counts in data["rows"]}
+            self._rows = {(day, source, model): dict(zip(FIELDS, counts))
+                          for day, source, model, *counts in data["rows"]}
         except (OSError, ValueError, KeyError, TypeError):
             self._offsets, self._seen, self._rows, self._pending = {}, set(), {}, {}
 
     def _save(self):
         data = {"version": CACHE_VERSION, "offsets": self._offsets, "pending": self._pending, "seen": sorted(self._seen),
-                "rows": [[day, model, *(row[k] for k in FIELDS)] for (day, model), row in self._rows.items()]}
+                "rows": [[*key, *(row[k] for k in FIELDS)] for key, row in self._rows.items()]}
         os.makedirs(os.path.dirname(self.cache), exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(self.cache))
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -71,7 +79,7 @@ class UsageStore:
 
     # lecture ----------------------------------------------------------------
     def _row(self, day, model):
-        return self._rows.setdefault((day, model), dict.fromkeys(FIELDS, 0))
+        return self._rows.setdefault((day, self._source, model), dict.fromkeys(FIELDS, 0))
 
     def _line(self, line, pending):
         """Compte une ligne de journal. `pending` retient les requêtes de
@@ -143,9 +151,14 @@ class UsageStore:
         """Lit ce qui est nouveau. Renvoie True si quelque chose a changé."""
         changed = False
         with self._lock:
-            for folder, _, names in os.walk(self.root):
-                for name in names:
-                    if name.endswith(".jsonl"):
+            for source, root in self.roots.items():
+                self._source = source
+                for folder, _, names in os.walk(root):
+                    if source == "cowork" and "/.claude/projects" not in folder:
+                        continue  # les autres fichiers d'une session Cowork ne sont pas des journaux
+                    for name in names:
+                        if not name.endswith(".jsonl"):
+                            continue
                         try:
                             changed |= self._read(os.path.join(folder, name))
                         except OSError:
@@ -157,5 +170,5 @@ class UsageStore:
     # résultats --------------------------------------------------------------
     def rows(self):
         with self._lock:
-            return [dict(row, day=day, model=model, source="claudecode")
-                    for (day, model), row in sorted(self._rows.items())]
+            return [dict(row, day=day, model=model, source=source)
+                    for (day, source, model), row in sorted(self._rows.items())]

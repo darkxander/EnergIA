@@ -2,7 +2,8 @@ import { listZipEntries, readZipEntryText } from "./zip.js";
 import { parseExport } from "./parsers.js";
 import { DEFAULT_SETTINGS, TIERS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 
-const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code" };
+const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
+const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur ce Mac par le plugin, sans import
 const API_HEADERS = { "X-EnergIA": "1" };
 const DATA_KEY = "EnergIA.data.v1";
 const SETTINGS_KEY = "EnergIA.settings.v1";
@@ -277,7 +278,8 @@ function renderSources() {
   for (const [source, entry] of Object.entries(state.data)) {
     if (entry.live) {
       box.append(el("span", {}, el("span", { class: `swatch ${source}` }),
-        entry.ready ? "Claude Code : tokens mesurés en direct sur ce Mac" : "Claude Code : première lecture des journaux en cours…"));
+        entry.ready ? `${SOURCES[source]} : tokens mesurés en direct sur ce Mac`
+          : `${SOURCES[source]} : première lecture des journaux en cours…`));
       continue;
     }
     const when = entry.sample ? "exemple" : `importé le ${new Date(entry.importedAt).toLocaleDateString("fr-FR")}`;
@@ -615,7 +617,12 @@ async function loadClaudeCode() {
   if (document.visibilityState !== "visible") return;
   try {
     const payload = await api("/api/claudecode");
-    state.data.claudecode = { rows: payload.rows, live: true, ready: payload.ready };
+    for (const source of LIVE_SOURCES) {
+      const rows = payload.rows.filter((row) => row.source === source);
+      // Claude Code reste affiché même vide ; Cowork seulement s'il a servi.
+      if (rows.length || source === "claudecode") state.data[source] = { rows, live: true, ready: payload.ready };
+      else delete state.data[source];
+    }
     applyRate(payload.rate);
     render();
   } catch { /* serveur momentanément injoignable : on garde l'affichage */ }

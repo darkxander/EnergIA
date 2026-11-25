@@ -2,7 +2,7 @@
 
 Ce que représente votre usage de l'IA, en énergie, CO₂, eau et euros.
 
-EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude et Claude Code. Elle
+EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude, Claude Code et Claude Cowork. Elle
 existe sous deux formes, qui partagent la même page :
 
 - une **page web** où l'on importe son export ChatGPT ou Claude ;
@@ -62,6 +62,9 @@ Le plugin :
 
 - lit les journaux locaux de Claude Code (`~/.claude/projects`), où chaque réponse est
   enregistrée avec son modèle et ses nombres de tokens réels, et les relit chaque minute ;
+- lit de la même façon les sessions Cowork de l'appli Claude
+  (`~/Library/Application Support/Claude/local-agent-mode-sessions`), affichées comme un
+  service à part ;
 - n'en garde que des compteurs par jour et par modèle, dans `~/Library/Caches/EnergIA` ;
   ces compteurs survivent au nettoyage des anciens journaux par Claude Code ;
 - sert la page sur `127.0.0.1:18791`, accessible uniquement depuis votre Mac ;
@@ -101,6 +104,9 @@ dans « Hypothèses de calcul ».
 - **Prix à maintenir.** Les prix de [src/prices.json](src/prices.json) ont été relevés le
   25 novembre 2026 et ne se mettent pas à jour seuls. Les modèles absents de la liste
   gardent un tarif indicatif par catégorie, signalé par un astérisque.
+- **Les conversations de claude.ai et de ChatGPT ne sont pas lues automatiquement.** Elles
+  ne sont pas enregistrées sur le Mac sous une forme exploitable : il faut importer un
+  export, à refaire pour mettre les chiffres à jour.
 - **Exports.** L'export Claude n'indique pas le modèle utilisé, et la réflexion cachée des
   modèles à raisonnement n'apparaît pas dans les exports. La lecture des exports n'a été
   testée que sur des fichiers de test, pas encore sur de vrais exports.
