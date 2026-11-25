@@ -132,6 +132,11 @@ node --test test/
 python3 test/test_menubar.py
 ```
 
+## Soutenir le projet
+
+EnergIA est gratuite et ouverte. Si elle vous est utile, vous pouvez soutenir son
+développement par un don sur [GitHub Sponsors](https://github.com/sponsors/darkxander).
+
 ## Licence
 
 EnergIA est distribuée sous la licence publique générale GNU, version 3 (GPL-3.0). Voir
