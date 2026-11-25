@@ -216,7 +216,11 @@ function loadSample() {
 function filteredRows() {
   let cutoff = "";
   if (state.period !== "all") {
-    cutoff = new Date(Date.now() - Number(state.period) * 86400000).toISOString().slice(0, 10);
+    // N jours, aujourd'hui compris, en date locale (« 1 » = aujourd'hui seulement).
+    const start = new Date();
+    start.setDate(start.getDate() - (Number(state.period) - 1));
+    const two = (n) => String(n).padStart(2, "0");
+    cutoff = `${start.getFullYear()}-${two(start.getMonth() + 1)}-${two(start.getDate())}`;
   }
   const rows = [];
   for (const [source, entry] of Object.entries(state.data)) {
