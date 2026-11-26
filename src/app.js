@@ -551,7 +551,22 @@ function renderSettings() {
 
 // ---------- Événements ----------
 
-$("pick").addEventListener("click", () => $("file").click());
+$("pick").addEventListener("click", () => (menubar ? pickWithPlugin() : $("file").click()));
+
+// La fenêtre de la barre de menus n'ouvre pas le sélecteur de fichier du
+// navigateur : le plugin ouvre celui de macOS et renvoie le fichier choisi.
+async function pickWithPlugin() {
+  setStatus("Choisissez votre fichier dans la fenêtre de sélection qui s'ouvre…");
+  try {
+    const response = await fetch("/api/pick", { method: "POST", headers: API_HEADERS });
+    if (response.status === 204) return setStatus(""); // annulé
+    if (!response.ok) throw new Error(String(response.status));
+    const name = decodeURIComponent(response.headers.get("X-Filename") || "export.zip");
+    await importFiles([new File([await response.blob()], name)]);
+  } catch {
+    setStatus("Le fichier n'a pas pu être lu. Réessayez, ou ouvrez la page dans un navigateur.", true);
+  }
+}
 $("file").addEventListener("change", (event) => {
   importFiles([...event.target.files]);
   event.target.value = "";

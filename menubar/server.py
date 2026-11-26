@@ -9,12 +9,13 @@ attend que la page cesse d'envoyer ses battements (fenêtre refermée).
 
 import json
 import os
+import shutil
 import subprocess
 import threading
 import time
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 import estimate
 from claudecode import UsageStore
@@ -32,6 +33,22 @@ LINKS = {"sponsor": "https://github.com/sponsors/darkxander",
          "source": "https://github.com/darkxander/EnergIA"}
 STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
           ".js": "text/javascript; charset=utf-8", ".json": "application/json"}
+
+
+PICK_PROMPT = "Choisissez votre export ChatGPT ou Claude (.zip ou conversations.json)"
+PICK_TYPES = '{"public.zip-archive", "public.json", "zip", "json"}'
+PICK_EXTENSIONS = (".zip", ".json")
+
+
+def pick_file():
+    """Ouvre le sélecteur de fichier de macOS et renvoie le chemin choisi, ou
+    None si l'utilisateur annule. La fenêtre de la barre de menus ne sait pas
+    ouvrir ce sélecteur elle-même."""
+    done = subprocess.run(
+        ["/usr/bin/osascript", "-e", "tell me to activate",
+         "-e", f'POSIX path of (choose file with prompt "{PICK_PROMPT}" of type {PICK_TYPES})'],
+        capture_output=True, text=True, timeout=900, check=False)
+    return done.stdout.strip() or None
 
 
 def open_in_browser(url):
@@ -65,10 +82,11 @@ class TitleGate:
 
 class Dashboard:
     def __init__(self, store=None, settings_path=estimate.SETTINGS, today=lambda: date.today().isoformat(),
-                 rates=None, opener=open_in_browser):
+                 rates=None, opener=open_in_browser, picker=pick_file):
         self.store = store or UsageStore()
         self.rates = rates or RateStore()
         self.opener = opener
+        self.picker = picker
         self.settings_path, self.today = settings_path, today
         self.gate = TitleGate()
         self._lock = threading.Lock()
@@ -170,10 +188,35 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_error(404)
         return self._static(path)
 
+    def _pick(self):
+        """Envoie à la page le fichier que l'utilisateur choisit dans le
+        sélecteur de macOS : lui seul décide quel fichier est lu."""
+        try:
+            chosen = self.server.dash.picker()
+        except Exception:
+            return self.send_error(500)
+        if not chosen:  # annulé
+            self.send_response(204)
+            self.end_headers()
+            return None
+        if not chosen.lower().endswith(PICK_EXTENSIONS) or not os.path.isfile(chosen):
+            return self.send_error(400)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(os.path.getsize(chosen)))
+        self.send_header("X-Filename", quote(os.path.basename(chosen)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        with open(chosen, "rb") as f:
+            shutil.copyfileobj(f, self.wfile)
+        return None
+
     def do_POST(self):
         path = urlsplit(self.path).path
         if not self._allowed(path):
             return self.send_error(403)
+        if path == "/api/pick":
+            return self._pick()
         if path != "/api/settings":
             return self.send_error(404)
         try:

@@ -202,7 +202,9 @@ class ServerTest(unittest.TestCase):
         rates = rate.RateStore(os.path.join(self.dir.name, "rate.json"), fetch=lambda: ECB)
         self.opened = []
         self.dash = server.Dashboard(store, self.settings, today=lambda: local_day("2026-11-25T12:00:00Z"),
-                                     rates=rates, opener=self.opened.append)
+                                     rates=rates, opener=self.opened.append,
+                                     picker=lambda: self.picked)
+        self.picked = None
         self.server = server.serve(self.dash, port=0)
         self.port = self.server.server_address[1]
 
@@ -243,6 +245,30 @@ class ServerTest(unittest.TestCase):
             self.assertEqual(self.get(bad, api)[0], 404, bad)
         self.assertEqual(self.get("/api/open?link=source")[0], 403)  # sans en-tête
         self.assertEqual(len(self.opened), 1)
+
+    def post(self, path, headers=None):
+        request = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}", headers=headers or {}, data=b"", method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=5) as r:
+                return r.status, r.headers.get("X-Filename"), r.read()
+        except urllib.error.HTTPError as e:
+            e.close()
+            return e.code, None, b""
+
+    def test_pick_sends_the_chosen_file(self):
+        api = {"X-EnergIA": "1"}
+        self.assertEqual(self.post("/api/pick", api)[0], 204)  # annulé
+        export = os.path.join(self.dir.name, "mon export é.json")
+        with open(export, "w") as f:
+            f.write('[{"chat_messages": []}]')
+        self.picked = export
+        self.assertEqual(self.post("/api/pick", api), (200, "mon%20export%20%C3%A9.json", b'[{"chat_messages": []}]'))
+        self.picked = os.path.join(self.dir.name, "c.json.absent")
+        self.assertEqual(self.post("/api/pick", api)[0], 400)   # mauvaise extension
+        self.picked = os.path.join(self.dir.name, "absent.zip")
+        self.assertEqual(self.post("/api/pick", api)[0], 400)   # fichier introuvable
+        self.picked = export
+        self.assertEqual(self.post("/api/pick")[0], 403)        # sans en-tête
 
     def test_guards_and_static(self):
         self.assertEqual(self.get("/api/claudecode")[0], 403)                      # sans en-tête
