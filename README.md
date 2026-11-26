@@ -119,8 +119,17 @@ dans « Hypothèses de calcul ».
 - **Le coût n'est pas votre facture.** Avec un abonnement, vous payez le forfait, pas les
   tokens. Les prix actuels sont appliqués à tout l'historique.
 - **Prix à maintenir.** Les prix de [src/prices.json](src/prices.json) ont été relevés le
-  25 novembre 2026 et ne se mettent pas à jour seuls. Les modèles absents de la liste
-  gardent un tarif indicatif par catégorie, signalé par un astérisque.
+  25 novembre 2026 et ne se mettent pas à jour seuls. Pour les anciens modèles retirés de
+  l'API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, recherche
+  approfondie), c'est le dernier prix publié par OpenAI, relevé le 26 novembre 2026. Les
+  modèles absents de la liste gardent un tarif indicatif par catégorie, signalé par un
+  astérisque.
+- **Les noms de modèles de ChatGPT ne sont pas ceux de l'API.** L'export ChatGPT désigne
+  les modèles par des noms internes. Quand la correspondance est connue (par exemple
+  `text-davinci-002-render-sha` pour GPT-3.5, ou `o3-mini-high` pour o3-mini), le prix réel
+  est appliqué. OpenAI ne publie pas de correspondance pour les noms récents (`gpt-6`,
+  `gpt-5-6`, `gpt-5-3`, leurs variantes mini, `research`, `auto`) : ils gardent le tarif
+  indicatif.
 - **Les conversations de claude.ai et de ChatGPT ne sont pas lues automatiquement.** Elles
   ne sont pas enregistrées sur le Mac sous une forme exploitable : il faut importer un
   export, à refaire pour mettre les chiffres à jour.
