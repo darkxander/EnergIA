@@ -141,7 +141,14 @@ test("prix réels par modèle", () => {
   assert.equal(priceFor("gpt-5-1-instant"), priceFor("gpt-5-1"));
   assert.equal(priceFor("gpt-5-t-mini"), priceFor("gpt-5-mini"));
   assert.equal(priceFor("gpt-6-2-astra").out, 40);
-  for (const unknown of ["o3-mini-high", "o4-mini", "gpt-4", "text-davinci-002-render-sha", "claude", "inconnu", ""]) {
+  // Anciens modèles retirés de l'API : dernier prix publié.
+  assert.deepEqual(priceFor("text-davinci-002-render-sha"), { in: 0.5, out: 1.5 }); // GPT-3.5 dans ChatGPT
+  assert.deepEqual(priceFor("o3-mini-high"), { in: 1.1, out: 4.4, read: 0.55 });
+  assert.deepEqual(priceFor("o4-mini-high"), { in: 1.1, out: 4.4, read: 0.275 });
+  assert.equal(priceFor("gpt-4-5").out, 150);
+  assert.equal(priceFor("gpt-4").in, 30);
+  // Noms de ChatGPT sans correspondance officielle avec un modèle de l'API.
+  for (const unknown of ["gpt-6", "gpt-6-mini", "gpt-5-6", "gpt-5-3", "research", "auto", "claude", "inconnu", ""]) {
     assert.equal(priceFor(unknown), null, unknown); // repli sur le tarif indicatif de la catégorie
   }
   // Énergie : les écritures de cache comptent comme des tokens lus ordinaires.

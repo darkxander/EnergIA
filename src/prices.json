@@ -54,7 +54,20 @@
     "gpt-4o": { "in": 2.5, "out": 10, "read": 1.25 },
     "gpt-4o-mini": { "in": 0.15, "out": 0.6, "read": 0.075 },
     "o3-pro": { "in": 20, "out": 80 },
-    "o3": { "in": 2, "out": 8, "read": 0.5 }
+    "o3": { "in": 2, "out": 8, "read": 0.5 },
+    "gpt-3-5-turbo": { "in": 0.5, "out": 1.5 },
+    "o3-mini": { "in": 1.1, "out": 4.4, "read": 0.55 },
+    "o4-mini": { "in": 1.1, "out": 4.4, "read": 0.275 },
+    "gpt-4-5-preview": { "in": 75, "out": 150, "read": 37.5 },
+    "gpt-4": { "in": 30, "out": 60 },
+    "gpt-4-turbo": { "in": 10, "out": 30 },
+    "o3-deep-research": { "in": 10, "out": 40, "read": 2.5 },
+    "o4-mini-deep-research": { "in": 2, "out": 8, "read": 0.5 }
   },
-  "openaiSource": "https://developers.openai.com/api/docs/pricing"
+  "openaiSource": "https://developers.openai.com/api/docs/pricing",
+  "aliases": {
+    "text-davinci-002-render-sha": "gpt-3-5-turbo",
+    "gpt-4-5": "gpt-4-5-preview"
+  },
+  "openaiLegacySource": "https://developers.openai.com/api/docs/models (pages des modèles retirés, dernier prix publié, relevé le 2026-11-26)"
 }

@@ -21,9 +21,10 @@ export const PRICE_SOURCE = { url: PRICES.source, checked: PRICES.checked };
 // de réponse au nom (gpt-5-thinking, gpt-5-t-mini) : on le retire pour retrouver le modèle.
 export function priceFor(model) {
   let id = String(model || "").toLowerCase().replace(/\./g, "-").replace(/-\d{8}$/, "");
-  if (PRICES.models[id]) return PRICES.models[id];
-  id = id.replace(/-t-mini$/, "-mini").replace(/-(thinking|instant|high|medium|low|auto)(?=-|$)/g, "");
-  return PRICES.models[id] || null;
+  const lookup = (name) => PRICES.models[PRICES.aliases[name] || name];
+  return lookup(id)
+    || lookup(id.replace(/-t-mini$/, "-mini").replace(/-(thinking|instant|high|medium|low|auto)(?=-|$)/g, ""))
+    || null;
 }
 
 export const DEFAULT_SETTINGS = DEFAULTS;
