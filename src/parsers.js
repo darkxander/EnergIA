@@ -90,6 +90,18 @@ function parseChatGPT(conversations) {
       .map(([id, node]) => ({ id, node, time: node.message.create_time || fallbackTime }))
       .sort((a, b) => a.time - b.time);
 
+    // Une réponse peut être découpée en plusieurs messages qui se suivent
+    // (réflexion, résumé de réflexion, texte). Ils forment un seul tour : le
+    // contexte n'est lu qu'une fois, et le modèle n'est souvent indiqué que
+    // sur le dernier message.
+    const isAssistant = (id) => mapping[id]?.message?.author?.role === "assistant";
+    const turnStart = (id) => {
+      let cursor = id;
+      while (isAssistant(mapping[cursor].parent)) cursor = mapping[cursor].parent;
+      return cursor;
+    };
+
+    const turns = new Map();
     let pendingRequests = 0;
     for (const { id, node, time } of messages) {
       const message = node.message;
@@ -99,11 +111,20 @@ function parseChatGPT(conversations) {
       if (role === "user") {
         if (count > 0 && !meta.is_visually_hidden_from_conversation) pendingRequests += 1;
       } else if (role === "assistant" && count > 0) {
-        const inTok = cumulativeOf(node.parent);
-        const model = meta.model_slug || conv.default_model_slug || "inconnu";
-        agg.add(dayOf(new Date(time * 1000)), model, pendingRequests, inTok, count);
-        pendingRequests = 0;
+        const start = turnStart(id);
+        let turn = turns.get(start);
+        if (!turn) {
+          turn = { time, requests: pendingRequests, inTok: cumulativeOf(mapping[start].parent), outTok: 0, model: null };
+          turns.set(start, turn);
+          pendingRequests = 0;
+        }
+        turn.outTok += count;
+        turn.model ??= meta.resolved_model_slug || meta.model_slug || null;
       }
+    }
+    for (const turn of turns.values()) {
+      const model = turn.model || conv.default_model_slug || "inconnu";
+      agg.add(dayOf(new Date(turn.time * 1000)), model, turn.requests, turn.inTok, turn.outTok);
     }
   }
   return agg.result();

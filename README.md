@@ -128,9 +128,10 @@ dans « Hypothèses de calcul ».
   Enterprise), le bouton d'export n'apparaît que si un propriétaire de l'organisation a
   autorisé les membres à exporter leurs données. Sans cela, les conversations de claude.ai
   ne peuvent pas être comptées.
-- **Exports.** L'export Claude n'indique pas le modèle utilisé, et la réflexion cachée des
-  modèles à raisonnement n'apparaît pas dans les exports. La lecture des exports n'a été
-  testée que sur des fichiers de test, pas encore sur de vrais exports.
+- **Exports.** L'export Claude n'indique pas le modèle utilisé. La réflexion cachée des
+  modèles à raisonnement n'apparaît pas dans les exports, et les images ne sont pas comptées.
+  La lecture a été vérifiée sur un vrai export ChatGPT ; celle de l'export Claude ne l'a
+  été que sur des fichiers de test.
 
 ## Organisation du code
 

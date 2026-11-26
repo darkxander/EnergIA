@@ -54,6 +54,33 @@ test("export ChatGPT", () => {
   assert.equal(gpt4o.day, "2025-06-15");
 });
 
+test("export ChatGPT : une réponse en plusieurs messages compte pour un seul tour", () => {
+  const part = (role, type, text, time, extra = {}) => ({
+    author: { role }, create_time: time, metadata: extra,
+    content: type === "thoughts" ? { content_type: type, thoughts: [{ summary: "s", content: text }] }
+      : type === "reasoning_recap" ? { content_type: type, content: text }
+        : { content_type: type, parts: [text] },
+  });
+  const out = parseExport([{
+    create_time: 1750000000, default_model_slug: "gpt-5",
+    mapping: {
+      root: { message: null, parent: null },
+      u1: { parent: "root", message: part("user", "text", "a".repeat(400), 1750000000) },
+      t1: { parent: "u1", message: part("assistant", "thoughts", "b".repeat(200), 1750000001) },        // sans modèle
+      r1: { parent: "t1", message: part("assistant", "reasoning_recap", "c".repeat(40), 1750000002) },  // sans modèle
+      a1: { parent: "r1", message: part("assistant", "text", "d".repeat(800), 1750000003, { model_slug: "gpt-5-thinking" }) },
+      u2: { parent: "a1", message: part("user", "text", "e".repeat(40), 1750000010) },
+      a2: { parent: "u2", message: part("assistant", "text", "f".repeat(400), 1750000011, { model_slug: "auto", resolved_model_slug: "gpt-5-2" }) },
+    },
+  }]);
+  const byModel = Object.fromEntries(out.rows.map((r) => [r.model, r]));
+  assert.deepEqual(Object.keys(byModel).sort(), ["gpt-5-2", "gpt-5-thinking"]);
+  const thinking = byModel["gpt-5-thinking"];
+  assert.deepEqual([thinking.requests, thinking.responses, thinking.inTok, thinking.outTok], [1, 1, 100, 50 + 10 + 200]);
+  const next = byModel["gpt-5-2"]; // le modèle réellement utilisé, pas « auto »
+  assert.deepEqual([next.requests, next.responses, next.inTok, next.outTok], [1, 1, 100 + 260 + 10, 100]);
+});
+
 test("export Claude", () => {
   const out = parseExport(claudeExport);
   assert.equal(out.source, "claude");
