@@ -573,10 +573,22 @@ $("file").addEventListener("change", (event) => {
 });
 $("sample").addEventListener("click", loadSample);
 
+// Un fichier peut être déposé n'importe où dans la fenêtre, pas seulement sur
+// la zone en pointillés. Sans cela, un dépôt à côté de la zone ferait quitter
+// la page au navigateur, qui ouvrirait le fichier à sa place.
 const drop = $("drop");
-drop.addEventListener("dragover", (event) => { event.preventDefault(); drop.classList.add("over"); });
-drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-drop.addEventListener("drop", (event) => {
+const carriesFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+document.addEventListener("dragover", (event) => {
+  if (!carriesFiles(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+  drop.classList.add("over");
+});
+document.addEventListener("dragleave", (event) => {
+  if (!event.relatedTarget) drop.classList.remove("over"); // le pointeur a quitté la fenêtre
+});
+document.addEventListener("drop", (event) => {
+  if (!carriesFiles(event)) return;
   event.preventDefault();
   drop.classList.remove("over");
   importFiles([...event.dataTransfer.files]);
@@ -650,6 +662,10 @@ async function startMenubar() {
     return; // page ouverte hors de la barre de menus
   }
   menubar = true;
+  // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
+  // ici, l'import passe par le bouton.
+  $("drop-title").textContent = "Importez votre export ChatGPT ou Claude";
+  $("drop-hint").textContent = "Archive .zip ou fichier conversations.json, avec le bouton ci-dessous";
   // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
   // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
   for (const link of document.querySelectorAll("a[data-link]")) {
