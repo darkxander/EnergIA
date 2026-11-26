@@ -37,8 +37,9 @@ Il faut un serveur local, la page chargeant des modules JavaScript :
 python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
-Ouvrez ensuite <http://localhost:8791>, puis déposez votre export (`.zip` ou
-`conversations.json`), ou cliquez sur « Voir un exemple ».
+Ouvrez ensuite <http://localhost:8791>, puis importez votre export (`.zip` ou
+`conversations.json`) : déposez-le n'importe où sur la page, ou cliquez sur « Choisir un
+fichier ». « Voir un exemple » affiche des données fictives.
 
 Pour obtenir un export :
 
@@ -80,6 +81,12 @@ Le plugin :
 - sert la page sur `127.0.0.1:18791`, accessible uniquement depuis votre Mac ;
 - relève une fois par jour le taux de change euro/dollar de référence de la BCE. C'est sa
   seule connexion à Internet ; elle n'envoie aucune donnée.
+
+Pour importer un export depuis la fenêtre de la barre de menus, utilisez le bouton
+« Choisir un fichier » : le plugin ouvre le sélecteur de fichier de macOS et transmet à la
+page le fichier choisi. Le glisser-déposer n'y est pas possible, car SwiftBar referme sa
+fenêtre dès qu'on commence à faire glisser un fichier. Les liens du pied de page (don,
+code source) s'ouvrent dans votre navigateur par défaut.
 
 Pour désinstaller, supprimez le lien `~/.config/swiftbar/EnergIA.py`, puis quittez et
 relancez SwiftBar.
