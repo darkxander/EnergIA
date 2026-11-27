@@ -91,9 +91,9 @@ threshold, the text turns red. This is often enough to make it fit, with no guar
 plugin uses the language shown in the page, and the language of macOS until the page has
 been opened.
 
-![Screenshot of the right-hand side of the menu bar: the EnergIA item, a lightning bolt followed by 137 Wh, among the other icons](docs/barre-de-menus.png)
+![Screenshot of the right-hand side of the menu bar: the EnergIA item with the compact title, “654Wh” without the bolt, among the other icons](docs/barre-de-menus.png)
 
-*The item in the menu bar, here with an estimated 137 Wh for the current day.*
+*The item in the menu bar, here with the compact title and an estimated 654 Wh for the current day.*
 
 The plugin:
 

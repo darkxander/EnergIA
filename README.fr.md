@@ -94,9 +94,9 @@ calcul de la fenêtre du plugin, raccourcit alors le titre : sans éclair ni esp
 tenir, sans garantie. Le plugin reprend la langue affichée dans la page, et celle de macOS tant
 que la page n'a pas été ouverte.
 
-![Capture de la partie droite de la barre de menus : l'élément EnergIA, un éclair suivi de 137 Wh, parmi les autres icônes](docs/barre-de-menus.png)
+![Capture de la partie droite de la barre de menus : l'élément EnergIA en titre compact, « 654Wh » sans éclair, parmi les autres icônes](docs/barre-de-menus.png)
 
-*L'élément dans la barre de menus, ici avec 137 Wh estimés pour la journée en cours.*
+*L'élément dans la barre de menus, ici en titre compact, avec 654 Wh estimés pour la journée en cours.*
 
 Le plugin :
 
