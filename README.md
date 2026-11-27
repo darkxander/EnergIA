@@ -15,7 +15,7 @@ Claude Cowork. It comes in two forms that share the same page:
 The app is in English and French. It follows your browser's language (French for a French
 browser, English otherwise), and the link at the top right of the page switches language.
 
-![EnergIA dashboard with the sample data: energy, CO₂, water and cost tiles, then the monthly chart for ChatGPT and Claude](docs/capture.jpg)
+![EnergIA dashboard with the sample data: energy, CO₂, water and cost tiles, then the monthly chart for ChatGPT and Claude](docs/capture-en.jpg)
 
 *The dashboard, here with the built-in sample data.*
 
