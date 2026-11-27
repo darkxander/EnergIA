@@ -628,8 +628,23 @@ function settingAt(path) {
   return { target, last };
 }
 
+// Case à cocher pour un réglage enregistré en 0 ou 1.
+function settingCheckbox(label, key) {
+  const input = el("input", { type: "checkbox" });
+  input.checked = Boolean(state.settings[key]);
+  input.addEventListener("change", () => {
+    state.settings[key] = input.checked ? 1 : 0;
+    saveSettings();
+  });
+  return el("label", {}, label, input);
+}
+
 function renderSettings() {
-  $("settings").replaceChildren(...SETTING_GROUPS.map(([title, fields]) =>
+  // Réglages du titre de la barre de menus : seulement dans la fenêtre du plugin.
+  const menubarGroup = pluginWindow
+    ? [el("fieldset", {}, el("legend", {}, t("settings.menubar")), settingCheckbox(t("settings.compactTitle"), "compactTitle"))]
+    : [];
+  $("settings").replaceChildren(...menubarGroup, ...SETTING_GROUPS.map(([title, fields]) =>
     el("fieldset", {}, el("legend", {}, title), ...fields.map(([label, path]) => {
       const { target, last } = settingAt(path);
       const input = el("input", { type: "number", min: "0", step: "any", value: String(target[last]) });
@@ -777,6 +792,8 @@ async function startMenubar() {
   }
   menubar = true;
   pluginWindow = beat.window !== false; // le mode « serveur seul » répond window: false
+  // Le titre compact appartient au plugin : on reprend sa valeur plutôt que de l'écraser.
+  if (typeof beat.compactTitle === "number") state.settings.compactTitle = beat.compactTitle;
   if (pluginWindow) {
     // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
     // ici, l'import passe par le bouton.
@@ -790,6 +807,7 @@ async function startMenubar() {
         api(`/api/open?link=${link.dataset.link}`).catch(() => {});
       });
     }
+    renderSettings(); // ajoute les réglages propres à la barre de menus
   }
   // Tant que la page est visible, le plugin retient ses changements de titre.
   setInterval(() => {

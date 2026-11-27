@@ -85,7 +85,12 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 Remplacez `~/.config/swiftbar` par votre dossier de plugins SwiftBar s'il est différent.
 Le titre affiche par exemple `⚡ 1,02 kWh` (`⚡ 1.02 kWh` en anglais) ; un clic ouvre le
 tableau de bord. Si vous avez fixé un seuil d'énergie par jour dans les hypothèses de
-calcul, l'éclair devient un point rouge (`🔴 1,02 kWh`) quand il est dépassé. Le plugin reprend la langue affichée dans la page, et celle de macOS tant
+calcul, l'éclair devient un point rouge (`🔴 1,02 kWh`) quand il est dépassé.
+
+Si la barre de menus est chargée, macOS masque sans prévenir les éléments qui ne tiennent
+plus, surtout sur un écran à encoche. La case « Titre compact », dans les hypothèses de
+calcul de la fenêtre du plugin, raccourcit alors le titre : sans espaces, avec moins de chiffres et dans un texte un peu
+plus petit (`⚡523Wh`, `⚡1,3kWh`). Cela suffit souvent à le faire tenir, sans garantie. Le plugin reprend la langue affichée dans la page, et celle de macOS tant
 que la page n'a pas été ouverte.
 
 ![Capture de la partie droite de la barre de menus : l'élément EnergIA, un éclair suivi de 137 Wh, parmi les autres icônes](docs/barre-de-menus.png)

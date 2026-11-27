@@ -154,6 +154,13 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual(estimate.format_energy(1250, "en"), "1.25 kWh")
         self.assertEqual(estimate.format_energy(3.456, "en"), "3.46 Wh")
         self.assertEqual(estimate.format_energy(250.4, "en"), "250 Wh")
+        # Titre compact : sans espace, moins de chiffres, mais toujours l'unité.
+        self.assertEqual(estimate.format_energy(523.4, compact=True), "523Wh")
+        self.assertEqual(estimate.format_energy(12.34, compact=True), "12Wh")
+        self.assertEqual(estimate.format_energy(3.456, compact=True), "3,5Wh")
+        self.assertEqual(estimate.format_energy(1250, compact=True), "1,2kWh")
+        self.assertEqual(estimate.format_energy(1350, "en", compact=True), "1.4kWh")
+        self.assertEqual(estimate.format_energy(12000, compact=True), "12kWh")
 
     def test_language(self):
         # macOS : français si c'est la première langue préférée, anglais sinon.
@@ -301,14 +308,28 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
         self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0 : pas de seuil
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
+        # Titre compact : le même sans les espaces ; la page le relit ensuite auprès du plugin.
+        self.assertEqual(post({"compactTitle": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
+        self.assertEqual(self.dash.title(), "⚡607Wh")
+        self.assertEqual(json.loads(self.get("/api/beat", api)[2])["compactTitle"], 1)
+        self.assertEqual(post({"compactTitle": 1, "dailyBudgetWh": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
+        self.assertEqual(self.dash.title(), "🔴607Wh")
+        # Le titre compact est envoyé à SwiftBar avec un texte un peu plus petit.
+        import io
+        out = io.StringIO()
+        server.emit("⚡607Wh", compact=self.dash.compact(), out=out)
+        self.assertIn(" size=11", out.getvalue())
+        out = io.StringIO()
+        server.emit("⚡ 607 Wh", out=out)
+        self.assertNotIn("size=", out.getvalue())
 
     def test_server_only_mode(self):
         api = {"X-EnergIA": "1"}
         # Fenêtre de SwiftBar par défaut ; le mode « serveur seul » dit à la page qu'elle
         # est dans un vrai navigateur (sélecteur de fichier et liens ordinaires).
-        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": True})
+        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": True, "compactTitle": 0})
         self.dash.window = False
-        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": False})
+        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": False, "compactTitle": 0})
 
         args = server.parse_args(["--serve", "--port", "1234", "--no-browser"])
         self.assertEqual((args.serve, args.port, args.no_browser), (True, 1234, True))

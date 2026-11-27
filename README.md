@@ -82,7 +82,12 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 Replace `~/.config/swiftbar` with your SwiftBar plugin folder if it is different. The title
 shows, for example, `⚡ 1.02 kWh` (`⚡ 1,02 kWh` in French); a click opens the dashboard. If
 you have set an energy threshold per day in the calculation assumptions, the lightning bolt
-becomes a red dot (`🔴 1.02 kWh`) when it is exceeded. The
+becomes a red dot (`🔴 1.02 kWh`) when it is exceeded.
+
+When the menu bar is crowded, macOS silently hides the items that no longer fit, especially
+on a screen with a notch. The "Compact title" checkbox, in the calculation assumptions of
+the plugin window, then shortens the title: no spaces, fewer digits and slightly smaller text (`⚡523Wh`,
+`⚡1.3kWh`). This is often enough to make it fit, with no guarantee. The
 plugin uses the language shown in the page, and the language of macOS until the page has
 been opened.
 

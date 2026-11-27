@@ -13,5 +13,6 @@
   "waterLPerKWh": 1,
   "eurPerUsd": 0.9122,
   "dailyBudgetWh": 0,
+  "compactTitle": 0,
   "subs": { "chatgpt": 0, "claude": 0 }
 }

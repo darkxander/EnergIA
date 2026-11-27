@@ -126,13 +126,17 @@ def wh(row, settings):
     return (row["outTok"] + read * settings["inputRatio"]) / 1000 * tier["whOut"]
 
 
-def format_energy(value, lang="fr"):
+def format_energy(value, lang="fr", compact=False):
     """12 Wh, 3,4 Wh, 1,25 kWh : trois chiffres significatifs au plus.
-    Virgule décimale en français, point en anglais."""
+    Virgule décimale en français, point en anglais.
+    Compact : sans espace et avec moins de chiffres (523Wh, 12Wh, 1,3kWh)."""
     unit = "Wh"
     if value >= 1000:
         value, unit = value / 1000, "kWh"
-    text = f"{value:.0f}" if value >= 100 else f"{value:.1f}" if value >= 10 else f"{value:.2f}"
+    if compact:
+        text = f"{value:.0f}" if value >= 10 else f"{value:.1f}"
+    else:
+        text = f"{value:.0f}" if value >= 100 else f"{value:.1f}" if value >= 10 else f"{value:.2f}"
     if "." in text:
         text = text.rstrip("0").rstrip(".")
-    return f"{text.replace('.', ',') if lang == 'fr' else text} {unit}"
+    return f"{text.replace('.', ',') if lang == 'fr' else text}{'' if compact else ' '}{unit}"

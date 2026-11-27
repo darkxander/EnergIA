@@ -32,6 +32,7 @@ POLL = 60                 # secondes entre deux lectures des journaux
 WIDTH, HEIGHT = 860, 680  # taille de la fenêtre, en pixels
 BEAT_TIMEOUT = 4.0        # sans battement pendant ce délai : fenêtre refermée
 LABEL = "⚡"
+COMPACT_SIZE = 11  # taille du texte du titre compact, en points (13 d'ordinaire)
 OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
 MAX_BODY = 20_000
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
@@ -136,7 +137,13 @@ class Dashboard:
         total = sum(estimate.wh(row, settings) for row in self.store.rows() if row["day"] == today)
         budget = settings.get("dailyBudgetWh", 0)
         label = OVER_LABEL if budget > 0 and total > budget else LABEL
-        return f"{label} {estimate.format_energy(total, estimate.lang_of(settings))}"
+        lang = estimate.lang_of(settings)
+        if settings.get("compactTitle"):  # choisi dans la page : sans espaces, moins de chiffres
+            return f"{label}{estimate.format_energy(total, lang, compact=True)}"
+        return f"{label} {estimate.format_energy(total, lang)}"
+
+    def compact(self):
+        return bool(estimate.load_settings(self.settings_path).get("compactTitle"))
 
     def pick(self):
         """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
@@ -205,7 +212,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": True})
         if path == "/api/beat":
             dash.gate.beat()
-            return self._json({"ok": True, "window": dash.window})
+            # Le titre compact est un réglage du plugin : la page le reprend d'ici, pour
+            # qu'un autre navigateur ne l'efface pas avec ses propres réglages.
+            compact = 1 if estimate.load_settings(dash.settings_path).get("compactTitle") else 0
+            return self._json({"ok": True, "window": dash.window, "compactTitle": compact})
         if path.startswith("/api/"):
             return self.send_error(404)
         return self._static(path)
@@ -260,10 +270,11 @@ def serve(dash, port=PORT):
     return server
 
 
-def emit(title, port=PORT):
-    print("~~~", flush=True)
+def emit(title, port=PORT, compact=False, out=None):
+    size = f" size={COMPACT_SIZE}" if compact else ""  # titre compact : texte un peu plus petit
+    print("~~~", file=out, flush=True)
     print(f"{title} | href=http://127.0.0.1:{port}/ webview=true "
-          f"webvieww={WIDTH} webviewh={HEIGHT}", flush=True)
+          f"webvieww={WIDTH} webviewh={HEIGHT}{size}", file=out, flush=True)
 
 
 def serve_only(port=PORT, browser=True, out=None, wait=None):
@@ -322,7 +333,7 @@ def main(argv=None):
     while True:
         title = dash.gate.take()
         if title:
-            emit(title)
+            emit(title, compact=dash.compact())
         time.sleep(0.5)
 
 
