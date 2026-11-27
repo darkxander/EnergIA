@@ -16,6 +16,10 @@
   </header>
 
   <main>
+    <p id="unsupported" class="card" role="alert" hidden>
+      EnergIA n'a pas pu démarrer. Votre navigateur est probablement trop ancien : mettez-le à jour, ou ouvrez cette page dans un navigateur récent.<br>
+      <span lang="en">EnergIA could not start. Your browser is probably too old: update it, or open this page in a recent browser.</span>
+    </p>
     <section class="card" aria-labelledby="import-title">
       <h2 id="import-title" data-i18n="import.title">Importer mes données</h2>
       <div id="drop" class="drop">
@@ -110,6 +114,19 @@
     </footer>
   </main>
 
+  <script>
+    // Script classique, compris de tous les navigateurs : si la page (un module) ne
+    // démarre pas, par exemple sur un navigateur trop ancien, on le dit au lieu de
+    // laisser une page vide.
+    (function () {
+      function warn() {
+        if (!window.EnergIAReady) document.getElementById("unsupported").hidden = false;
+      }
+      window.addEventListener("error", warn);
+      window.addEventListener("unhandledrejection", warn);
+      window.addEventListener("load", function () { setTimeout(warn, 4000); });
+    })();
+  </script>
   <script type="module" src="src/app.js"></script>
 </body>
 </html>

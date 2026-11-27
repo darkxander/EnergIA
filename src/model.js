@@ -11,8 +11,21 @@
 //   (1 € = 1,0963 $), https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
 // "raisonnement" couvre les modèles dont la réflexion cachée n'apparaît pas dans les exports.
 
-import DEFAULTS from "./defaults.json" with { type: "json" };
-import PRICES from "./prices.json" with { type: "json" };
+// Les deux fichiers JSON sont lus à côté de ce module. Un « import … with { type: "json" } »
+// serait plus court, mais les navigateurs d'avant 2024-2025 ne le comprennent pas et
+// n'afficheraient rien du tout.
+async function loadJSON(name) {
+  const url = new URL(name, import.meta.url);
+  if (url.protocol === "file:") { // tests, hors navigateur
+    const { readFile } = await import("node:fs/promises");
+    return JSON.parse(await readFile(url, "utf8"));
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${name} : ${response.status}`);
+  return response.json();
+}
+
+const [DEFAULTS, PRICES] = await Promise.all([loadJSON("./defaults.json"), loadJSON("./prices.json")]);
 
 export const PRICE_SOURCE = { url: PRICES.source, checked: PRICES.checked };
 

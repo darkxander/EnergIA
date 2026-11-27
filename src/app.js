@@ -60,7 +60,7 @@ function loadJSON(key, fallback) {
 }
 
 function mergeSettings(saved) {
-  const s = structuredClone(DEFAULT_SETTINGS);
+  const s = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   if (!saved) return s;
   // 0,9 était une valeur provisoire d'une version précédente, jamais un choix de l'utilisateur.
   if (saved.eurPerUsd === 0.9) delete saved.eurPerUsd;
@@ -184,7 +184,7 @@ async function importFiles(files) {
       }
     }
   } catch (error) {
-    setStatus(error.message, true);
+    setStatus(error.code ? t(error.code, error.vars) : error.message, true);
     return;
   }
 
@@ -631,7 +631,7 @@ $("toggle-table").addEventListener("click", (event) => {
   render();
 });
 $("reset-settings").addEventListener("click", () => {
-  state.settings = structuredClone(DEFAULT_SETTINGS);
+  state.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(MANUAL_RATE_KEY);
   state.rateDate = DEFAULT_RATE_DATE;
@@ -717,4 +717,8 @@ async function startMenubar() {
 
 renderSettings();
 render();
+// La page a démarré : le message de secours d'index.html n'a plus lieu d'être
+// (il a pu s'afficher si le chargement a été très lent).
+window.EnergIAReady = true;
+if ($("unsupported")) $("unsupported").hidden = true;
 startMenubar();

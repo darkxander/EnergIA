@@ -10,6 +10,11 @@ async function view(blob, start, end) {
   return new DataView(await blob.slice(start, end).arrayBuffer());
 }
 
+// Erreur dont le message est choisi par l'interface, dans la langue affichée.
+function zipError(code, vars = {}) {
+  return Object.assign(new Error(code), { code, vars });
+}
+
 const u64 = (dv, offset) => Number(dv.getBigUint64(offset, true));
 
 export async function listZipEntries(blob) {
@@ -19,7 +24,7 @@ export async function listZipEntries(blob) {
   for (let i = tailLen - 22; i >= 0; i--) {
     if (tail.getUint32(i, true) === EOCD) { p = i; break; }
   }
-  if (p < 0) throw new Error("Ce fichier n'est pas une archive zip valide.");
+  if (p < 0) throw zipError("zip.invalid");
 
   let cdSize = tail.getUint32(p + 12, true);
   let cdOffset = tail.getUint32(p + 16, true);
@@ -75,8 +80,9 @@ export async function readZipEntryText(blob, entry) {
   const data = blob.slice(start, start + entry.compSize);
   if (entry.method === 0) return data.text();
   if (entry.method === 8) {
+    if (typeof DecompressionStream === "undefined") throw zipError("zip.noDecompression");
     const stream = data.stream().pipeThrough(new DecompressionStream("deflate-raw"));
     return new Response(stream).text();
   }
-  throw new Error(`Méthode de compression non prise en charge (${entry.method}).`);
+  throw zipError("zip.method", { method: entry.method });
 }

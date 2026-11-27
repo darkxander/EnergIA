@@ -40,7 +40,9 @@ de langue.
 
 Le plus simple est la version en ligne : <https://darkxander.github.io/EnergIA/>. C'est la même page, hébergée par
 GitHub Pages ; vos fichiers restent analysés dans votre navigateur et ne sont envoyés nulle
-part. Il faut un navigateur récent.
+part. Il faut un navigateur de 2021 environ ou plus récent, et de 2023 ou plus récent pour
+ouvrir directement les archives `.zip` ; sur un navigateur plus ancien, la page le signale
+au lieu de rester vide.
 
 Pour la faire tourner vous-même, il faut un serveur local, la page chargeant des modules
 JavaScript :

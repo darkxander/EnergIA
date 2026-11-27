@@ -199,3 +199,18 @@ test("i18n : chaque texte marqué dans index.html a sa version anglaise", async 
   assert.ok(keys.length > 30);
   for (const key of keys) assert.ok(PAGE_EN[key], key);
 });
+
+test("zip : les erreurs portent un code que l'interface traduit", async () => {
+  const { TEXTS } = await import("../src/i18n.js");
+  await assert.rejects(listZipEntries(new Blob(["pas un zip, mais assez long pour être lu"])), { code: "zip.invalid" });
+  await assert.rejects(readZipEntryText(new Blob([new Uint8Array(64)]), { offset: 0, compSize: 1, method: 99 }),
+    { code: "zip.method", vars: { method: 99 } });
+  for (const code of ["zip.invalid", "zip.method", "zip.noDecompression"]) assert.ok(TEXTS.fr[code] && TEXTS.en[code], code);
+});
+
+test("la page se passe de la syntaxe d'import JSON, absente des navigateurs anciens", () => {
+  for (const file of ["app.js", "model.js", "parsers.js", "zip.js", "i18n.js"]) {
+    const source = readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /^import .* with \{/m, file);
+  }
+});

@@ -38,8 +38,9 @@ consumption of their models. See [Limitations](#limitations).
 ## Using the web page
 
 The simplest way is the online version: <https://darkxander.github.io/EnergIA/>. It is the same page, hosted by
-GitHub Pages; your files are still analysed in your browser and are not sent anywhere. A
-recent browser is required.
+GitHub Pages; your files are still analysed in your browser and are not sent anywhere. It
+needs a browser from about 2021 or later, and from 2023 or later to open `.zip` archives
+directly; on an older one, the page says so instead of staying blank.
 
 To run it yourself, the page loads JavaScript modules, so it needs a local server:
 
