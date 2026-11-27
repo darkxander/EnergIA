@@ -158,6 +158,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json` | Default assumptions and model prices |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin: Claude Code logs, local server, exchange rate |
+| `tools/stamp.mjs` | Stamps the page's files with a version number |
 | `test/` | Tests |
 
 No dependencies: JavaScript with no build step, Python with the standard library only.
@@ -168,6 +169,10 @@ No dependencies: JavaScript with no build step, Python with the standard library
 node --test test/
 python3 test/test_menubar.py
 ```
+
+After changing `styles.css` or a file in `src/`, run `node tools/stamp.mjs`. It writes into
+`index.html` a version number computed from these files, so that browsers never mix a new
+page with an old script kept in their cache. The tests fail if the number is out of date.
 
 ## Roadmap
 

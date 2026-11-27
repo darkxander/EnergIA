@@ -16,6 +16,7 @@
 // n'afficheraient rien du tout.
 async function loadJSON(name) {
   const url = new URL(name, import.meta.url);
+  url.search = new URL(import.meta.url).search; // même numéro de version que ce module
   if (url.protocol === "file:") { // tests, hors navigateur
     const { readFile } = await import("node:fs/promises");
     return JSON.parse(await readFile(url, "utf8"));

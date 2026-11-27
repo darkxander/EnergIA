@@ -214,3 +214,10 @@ test("la page se passe de la syntaxe d'import JSON, absente des navigateurs anci
     assert.doesNotMatch(source, /^import .* with \{/m, file);
   }
 });
+
+test("index.html porte le numéro de version des fichiers actuels (sinon : node tools/stamp.mjs)", async () => {
+  const { assetVersion, stamped } = await import("../tools/stamp.mjs");
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.equal(stamped(html, assetVersion()), html);
+  assert.match(html, /src="src\/app\.js\?v=[0-9a-f]{8}"/);
+});

@@ -168,6 +168,7 @@ dans « Hypothèses de calcul ».
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json` | Hypothèses par défaut et prix des modèles |
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar : journaux Claude Code, serveur local, taux de change |
+| `tools/stamp.mjs` | Numérote les fichiers de la page à chaque version |
 | `test/` | Tests |
 
 Aucune dépendance : JavaScript sans étape de construction, Python avec la bibliothèque
@@ -179,6 +180,11 @@ standard seule.
 node --test test/
 python3 test/test_menubar.py
 ```
+
+Après une modification de `styles.css` ou d'un fichier de `src/`, lancez
+`node tools/stamp.mjs`. Il inscrit dans `index.html` un numéro de version calculé d'après
+ces fichiers, pour que les navigateurs ne mélangent jamais une nouvelle page avec un ancien
+script gardé en mémoire. Les tests échouent si le numéro n'est plus à jour.
 
 ## Feuille de route
 
