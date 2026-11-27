@@ -7,7 +7,8 @@ Ce que représente votre usage de l'IA, en énergie, CO₂, eau et euros.
 EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude, Claude Code et Claude Cowork. Elle
 existe sous deux formes, qui partagent la même page :
 
-- une **page web** où l'on importe son export ChatGPT ou Claude ;
+- une **page web** où l'on importe son export ChatGPT ou Claude, à
+  [essayer en ligne](https://darkxander.github.io/EnergIA/) sans rien installer ;
 - un **élément de barre de menus macOS** (plugin [SwiftBar](https://github.com/swiftbar/SwiftBar))
   qui affiche l'énergie estimée du jour pour Claude Code, et ouvre le tableau de bord au clic.
 
@@ -33,7 +34,12 @@ publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites)
 
 ## Utiliser la page web
 
-Il faut un serveur local, la page chargeant des modules JavaScript :
+Le plus simple est la version en ligne : <https://darkxander.github.io/EnergIA/>. C'est la même page, hébergée par
+GitHub Pages ; vos fichiers restent analysés dans votre navigateur et ne sont envoyés nulle
+part. Il faut un navigateur récent.
+
+Pour la faire tourner vous-même, il faut un serveur local, la page chargeant des modules
+JavaScript :
 
 ```sh
 python3 -m http.server 8791 --bind 127.0.0.1
@@ -169,19 +175,17 @@ python3 test/test_menubar.py
 
 Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
-1. **Version en ligne**, pour essayer la page sans rien installer. Les fichiers resteront
-   analysés dans le navigateur.
-2. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
+1. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
    avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
    zone de notification.
-3. **Appli en anglais et en français**, selon la langue du navigateur. Pour l'instant,
+2. **Appli en anglais et en français**, selon la langue du navigateur. Pour l'instant,
    seul le README est traduit.
-4. **Dépôt GitHub en anglais aussi.** Le README est fait ; la description du dépôt, les
-   commentaires du code et les messages de commit sont encore en français.
-5. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
+3. **Dépôt GitHub en anglais aussi.** Le README et la description du dépôt sont faits ;
+   les commentaires du code et les messages de commit sont encore en français.
+4. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
    l'IA ; les dons de celles et ceux qui trouvent l'appli utile financent son
    développement. Cela passe par des présentations de l'appli là où l'on parle d'IA et
-   d'environnement, une fois la version en ligne disponible.
+   d'environnement.
 
 Puis, sans ordre arrêté :
 

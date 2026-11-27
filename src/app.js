@@ -656,6 +656,9 @@ async function loadClaudeCode() {
 }
 
 async function startMenubar() {
+  // Le plugin ne sert la page que sur 127.0.0.1 : ailleurs (version en ligne,
+  // serveur local), inutile d'interroger une API qui n'existe pas.
+  if (location.hostname !== "127.0.0.1") return;
   try {
     await api("/api/beat");
   } catch {

@@ -7,7 +7,8 @@ What your AI usage amounts to, in energy, CO₂, water and euros.
 EnergIA estimates the footprint of your conversations with ChatGPT, Claude, Claude Code and
 Claude Cowork. It comes in two forms that share the same page:
 
-- a **web page** where you import your ChatGPT or Claude export;
+- a **web page** where you import your ChatGPT or Claude export, which you can
+  [try online](https://darkxander.github.io/EnergIA/) without installing anything;
 - a **macOS menu bar item** ([SwiftBar](https://github.com/swiftbar/SwiftBar) plugin) that
   shows today's estimated energy for Claude Code and opens the dashboard on click.
 
@@ -36,7 +37,11 @@ consumption of their models. See [Limitations](#limitations).
 
 ## Using the web page
 
-The page loads JavaScript modules, so it needs a local server:
+The simplest way is the online version: <https://darkxander.github.io/EnergIA/>. It is the same page, hosted by
+GitHub Pages; your files are still analysed in your browser and are not sent anywhere. A
+recent browser is required.
+
+To run it yourself, the page loads JavaScript modules, so it needs a local server:
 
 ```sh
 python3 -m http.server 8791 --bind 127.0.0.1
@@ -164,18 +169,15 @@ python3 test/test_menubar.py
 
 These are intentions, with no dates and no commitment. In the planned order:
 
-1. **Online version**, to try the page without installing anything. Files will still be
-   analysed in the browser.
-2. **Other operating systems.** First a "server only" mode, to open the dashboard with live
+1. **Other operating systems.** First a "server only" mode, to open the dashboard with live
    Claude Code data on Windows and Linux; then an icon in the notification area.
-3. **App in English and French**, following the browser's language. For now, only the
+2. **App in English and French**, following the browser's language. For now, only the
    README is translated.
-4. **GitHub repository in English too.** The README is done; the repository description,
-   the code comments and the commit messages are still in French.
-5. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
+3. **GitHub repository in English too.** The README and the repository description are
+   done; the code comments and the commit messages are still in French.
+4. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
    donations from people who find the app useful fund its development. This means
-   presenting the app where AI and the environment are discussed, once the online version
-   is available.
+   presenting the app where AI and the environment are discussed.
 
 Then, in no set order:
 
