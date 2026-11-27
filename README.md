@@ -85,7 +85,30 @@ is not counted twice: it is updated if it has grown. So you can import a more re
 of the same account, or the exports of several accounts. "Remove" starts again from
 scratch.
 
-## Installing in the menu bar (macOS)
+## One-command install (macOS, Linux)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/darkxander/EnergIA/main/install.sh | sh
+```
+
+The script ([install.sh](install.sh)) does not ask for administrator rights. It needs
+Python 3.9 or later. It:
+
+- copies EnergIA into `~/.local/share/EnergIA`; run again, it updates that copy;
+- creates the `energia` command in `~/.local/bin`, which opens the dashboard in your
+  browser (the [server-only mode](#server-only-mode-windows-linux-macos));
+- on macOS, links the plugin to SwiftBar. If SwiftBar is missing and Homebrew is present,
+  it installs it with Homebrew; otherwise it tells you what to do. An EnergIA plugin
+  already linked elsewhere is left as it is.
+
+If you prefer to read a script before running it, download it first, then run
+`sh install.sh`. To uninstall: `sh install.sh --uninstall` (counters and settings are
+kept).
+
+Checked on macOS and on Linux (Debian, in a container). There is no script for Windows:
+use the server-only mode.
+
+## Installing in the menu bar by hand (macOS)
 
 Requirements: macOS, Python 3.9 or later, and SwiftBar.
 
@@ -230,6 +253,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/card.js` | Drawing the summary image |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
+| `install.sh` | One-command install |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate |
 | `tools/stamp.mjs` | Stamps the page's files with a version number |
 | `test/` | Tests |

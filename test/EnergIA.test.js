@@ -367,3 +367,10 @@ test("export Gemini : les trois formes décrites, et rien d'autre de « Mon acti
   assert.equal(classifyModel("gemini"), "standard"); // « gemini » contient « mini » sans être un modèle léger
   assert.equal(classifyModel("o3-mini"), "leger");
 });
+
+test("install.sh : syntaxe valide, et aucune variable collée à un caractère accentué", () => {
+  const path = new URL("../install.sh", import.meta.url);
+  execFileSync("sh", ["-n", path.pathname]);
+  // « $DOSSIER… » : certains shells prennent le caractère non ASCII pour la suite du nom.
+  assert.deepEqual(readFileSync(path, "utf8").match(/\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]/g), null);
+});

@@ -90,7 +90,30 @@ n'est pas comptée deux fois : elle est mise à jour si elle a grandi. Vous pouv
 importer un export plus récent du même compte, ou les exports de plusieurs comptes.
 « Supprimer » repart de zéro.
 
-## Installer dans la barre de menus (macOS)
+## Installer en une commande (macOS, Linux)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/darkxander/EnergIA/main/install.sh | sh
+```
+
+Le script ([install.sh](install.sh)) ne demande pas de droits d'administrateur. Il lui faut
+Python 3.9 ou plus récent. Il :
+
+- copie EnergIA dans `~/.local/share/EnergIA` ; relancé, il met cette copie à jour ;
+- crée la commande `energia` dans `~/.local/bin`, qui ouvre le tableau de bord dans votre
+  navigateur (le [mode « serveur seul »](#mode--serveur-seul--windows-linux-macos)) ;
+- sous macOS, relie le plugin à SwiftBar. Si SwiftBar manque et que Homebrew est présent,
+  il l'installe avec Homebrew ; sinon il vous dit comment faire. Un plugin EnergIA déjà
+  relié ailleurs est laissé tel quel.
+
+Si vous préférez lire un script avant de le lancer, téléchargez-le d'abord, puis lancez
+`sh install.sh`. Pour désinstaller : `sh install.sh --uninstall` (les compteurs et les
+réglages sont conservés).
+
+Vérifié sur macOS et sous Linux (Debian, dans un conteneur). Il n'y a pas de script pour
+Windows : utilisez le mode « serveur seul ».
+
+## Installer dans la barre de menus à la main (macOS)
 
 Prérequis : macOS, Python 3.9 ou plus récent, et SwiftBar.
 
@@ -243,6 +266,7 @@ dans « Hypothèses de calcul ».
 | `src/card.js` | Dessin de l'image de résumé |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
+| `install.sh` | Installation en une commande |
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change |
 | `tools/stamp.mjs` | Numérote les fichiers de la page à chaque version |
 | `test/` | Tests |
@@ -280,7 +304,6 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
   puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
-- **Installation en une commande.**
 - **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une
   organisation, avec un rapport. Si cela vous intéresse, dites-le dans une
   [issue](https://github.com/darkxander/EnergIA/issues).
