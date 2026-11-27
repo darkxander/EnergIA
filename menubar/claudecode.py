@@ -1,13 +1,13 @@
-"""Usage de Claude Code, lu dans ses journaux locaux (~/.claude/projects).
+"""Claude Code usage, read from its local logs (~/.claude/projects).
 
-Chaque réponse y est enregistrée avec son modèle et ses vrais nombres de
-tokens. On n'en garde que des compteurs par jour et par modèle : aucun texte
-de conversation n'est lu au-delà du nécessaire ni conservé.
+Each response is recorded there with its model and its real token counts.
+Only counters per day and per model are kept from them: no conversation
+text is read beyond what is necessary, nor kept.
 
-La lecture est incrémentale : pour chaque fichier on mémorise jusqu'où il a
-été lu, et l'identifiant de chaque message déjà compté (une même réponse est
-écrite plusieurs fois, et les sessions reprises recopient l'historique).
-Les compteurs survivent à la suppression des journaux par Claude Code.
+Reading is incremental: for each file we remember how far it has been
+read, and the identifier of each message already counted (the same response
+is written several times, and resumed sessions copy the history again).
+The counters survive the deletion of the logs by Claude Code.
 """
 
 import json
@@ -20,22 +20,22 @@ from datetime import datetime
 from paths import PATHS
 
 ROOT = PATHS["claudecode"]
-# Les sessions Cowork de l'appli Claude tiennent leurs journaux, au même format,
-# dans un dossier .claude/projects propre à chaque session.
+# The Cowork sessions of the Claude app keep their logs, in the same format,
+# in a .claude/projects folder specific to each session.
 COWORK_ROOT = PATHS["cowork"]
 ROOTS = {"claudecode": ROOT, "cowork": COWORK_ROOT}
 CACHE = os.path.join(PATHS["cache"], "claudecode.json")
 CACHE_VERSION = 3
-MAX_PROMPT_LINE = 200_000  # au-delà, une ligne "user" est un résultat d'outil, pas une requête
-# inTok : tokens lus non mis en cache ; cw5Tok / cw1Tok : écrits dans le cache
-# (5 minutes / 1 heure) ; cacheTok : relus du cache ; searches : recherches web.
+MAX_PROMPT_LINE = 200_000  # beyond that, a "user" line is a tool result, not a request
+# inTok: tokens read and not cached; cw5Tok / cw1Tok: written to the cache
+# (5 minutes / 1 hour); cacheTok: read back from the cache; searches: web searches.
 FIELDS = ("requests", "responses", "inTok", "cw5Tok", "cw1Tok", "cacheTok", "outTok", "searches")
 DATE_SUFFIX = re.compile(r"-\d{8}$")
-HAIKU_LONG_PROMPT = 100_000  # au-delà, Claude Haiku 5.5 est facturé à un tarif supérieur
+HAIKU_LONG_PROMPT = 100_000  # beyond that, Claude Haiku 5.5 is billed at a higher rate
 
 
 def local_day(timestamp):
-    """Jour local (AAAA-MM-JJ) d'un horodatage ISO, ou None."""
+    """Local day (YYYY-MM-DD) of an ISO timestamp, or None."""
     try:
         return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).astimezone().date().isoformat()
     except (AttributeError, ValueError):
@@ -44,15 +44,15 @@ def local_day(timestamp):
 
 class UsageStore:
     def __init__(self, roots=None, cache=CACHE):
-        """`roots` : {source: dossier}, ou un seul dossier compté comme Claude Code."""
+        """`roots`: {source: folder}, or a single folder counted as Claude Code."""
         self.roots = dict(ROOTS) if roots is None else {"claudecode": roots} if isinstance(roots, str) else dict(roots)
         self.cache = cache
-        self._source = None  # source du dossier en cours de lecture
+        self._source = None  # source of the folder being read
         self._lock = threading.Lock()
-        self._offsets = {}  # chemin -> octets déjà lus
-        self._seen = set()  # identifiants de messages déjà comptés
-        self._rows = {}     # (jour, source, modèle) -> compteurs
-        self._pending = {}  # chemin -> requêtes lues, en attente de leur réponse
+        self._offsets = {}  # path -> bytes already read
+        self._seen = set()  # identifiers of messages already counted
+        self._rows = {}     # (day, source, model) -> counters
+        self._pending = {}  # path -> requests read, awaiting their response
         self._load()
 
     # cache ------------------------------------------------------------------
@@ -79,14 +79,13 @@ class UsageStore:
             json.dump(data, f)
         os.replace(tmp, self.cache)
 
-    # lecture ----------------------------------------------------------------
+    # reading ----------------------------------------------------------------
     def _row(self, day, model):
         return self._rows.setdefault((day, self._source, model), dict.fromkeys(FIELDS, 0))
 
     def _line(self, line, pending):
-        """Compte une ligne de journal. `pending` retient les requêtes de
-        l'utilisateur en attente de la prochaine réponse, pour les rattacher
-        à son modèle."""
+        """Counts one log line. `pending` holds the user's requests awaiting
+        the next response, so as to attach them to its model."""
         if b'"type":"assistant"' in line and b'"usage"' in line:
             record = json.loads(line)
             message = record.get("message") or {}
@@ -112,7 +111,7 @@ class UsageStore:
             pending[0] = 0
             row["inTok"] += uncached
             row["cw1Tok"] += write1h
-            row["cw5Tok"] += written - write1h  # sans détail, une écriture est comptée à 5 minutes
+            row["cw5Tok"] += written - write1h  # without a breakdown, a write is counted as 5 minutes
             row["cacheTok"] += cached
             row["outTok"] += usage.get("output_tokens") or 0
             row["searches"] += (usage.get("server_tool_use") or {}).get("web_search_requests") or 0
@@ -130,7 +129,7 @@ class UsageStore:
         size = os.path.getsize(path)
         offset = self._offsets.get(path, 0)
         if size < offset:
-            offset = 0  # fichier réécrit : les identifiants déjà vus évitent tout double compte
+            offset = 0  # file rewritten: the identifiers already seen prevent any double counting
         if size == offset:
             return False
         start = offset
@@ -139,37 +138,37 @@ class UsageStore:
             f.seek(offset)
             for line in f:
                 if not line.endswith(b"\n"):
-                    break  # ligne en cours d'écriture : relue au prochain passage
+                    break  # line still being written: read again on the next pass
                 offset += len(line)
                 try:
                     self._line(line, pending)
                 except (ValueError, AttributeError, TypeError):
-                    pass  # ligne illisible : ignorée
+                    pass  # unreadable line: ignored
         self._offsets[path] = offset
         self._pending[path] = pending[0]
-        return offset != start  # une ligne inachevée seule ne change rien
+        return offset != start  # an unfinished line alone changes nothing
 
     def scan(self):
-        """Lit ce qui est nouveau. Renvoie True si quelque chose a changé."""
+        """Reads what is new. Returns True if something has changed."""
         changed = False
         with self._lock:
             for source, root in self.roots.items():
                 self._source = source
                 for folder, _, names in os.walk(root):
                     if source == "cowork" and "/.claude/projects" not in folder:
-                        continue  # les autres fichiers d'une session Cowork ne sont pas des journaux
+                        continue  # the other files of a Cowork session are not logs
                     for name in names:
                         if not name.endswith(".jsonl"):
                             continue
                         try:
                             changed |= self._read(os.path.join(folder, name))
                         except OSError:
-                            pass  # fichier disparu entre-temps
+                            pass  # file gone in the meantime
             if changed:
                 self._save()
         return changed
 
-    # résultats --------------------------------------------------------------
+    # results ----------------------------------------------------------------
     def rows(self):
         with self._lock:
             return [dict(row, day=day, model=model, source=source)

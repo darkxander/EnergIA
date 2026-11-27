@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EnergIA – ce que représente votre usage de l'IA</title>
-  <link rel="stylesheet" href="styles.css?v=edd37ef8">
+  <link rel="stylesheet" href="styles.css?v=93d5656f">
 </head>
 <body class="viz-root">
   <header class="top">
@@ -127,9 +127,9 @@
   </main>
 
   <script>
-    // Script classique, compris de tous les navigateurs : si la page (un module) ne
-    // démarre pas, par exemple sur un navigateur trop ancien, on le dit au lieu de
-    // laisser une page vide.
+    // Classic script, understood by every browser: if the page (a module) does not
+    // start, for instance on a browser that is too old, we say so instead of
+    // leaving a blank page.
     (function () {
       function warn() {
         if (!window.EnergIAReady) document.getElementById("unsupported").hidden = false;
@@ -137,8 +137,8 @@
       window.addEventListener("error", warn);
       window.addEventListener("unhandledrejection", warn);
       window.addEventListener("load", function () { setTimeout(warn, 4000); });
-      // Tant que la page n'a pas démarré, un fichier déposé ferait quitter la page
-      // au navigateur, qui l'ouvrirait à sa place : on l'en empêche.
+      // Until the page has started, a dropped file would make the browser leave the
+      // page and open the file instead: we prevent that.
       function hold(event) {
         if (!window.EnergIAReady) event.preventDefault();
       }
@@ -146,19 +146,19 @@
       window.addEventListener("drop", hold);
     })();
   </script>
-  <!-- Les numéros « ?v= » sont écrits par tools/stamp.mjs : ne pas les modifier à la main. -->
+  <!-- The "?v=" numbers are written by tools/stamp.mjs: do not edit them by hand. -->
   <script type="importmap">
   {
     "imports": {
-      "./src/card.js": "./src/card.js?v=edd37ef8",
-      "./src/csv.js": "./src/csv.js?v=edd37ef8",
-      "./src/i18n.js": "./src/i18n.js?v=edd37ef8",
-      "./src/model.js": "./src/model.js?v=edd37ef8",
-      "./src/parsers.js": "./src/parsers.js?v=edd37ef8",
-      "./src/zip.js": "./src/zip.js?v=edd37ef8"
+      "./src/card.js": "./src/card.js?v=93d5656f",
+      "./src/csv.js": "./src/csv.js?v=93d5656f",
+      "./src/i18n.js": "./src/i18n.js?v=93d5656f",
+      "./src/model.js": "./src/model.js?v=93d5656f",
+      "./src/parsers.js": "./src/parsers.js?v=93d5656f",
+      "./src/zip.js": "./src/zip.js?v=93d5656f"
     }
   }
   </script>
-  <script type="module" src="src/app.js?v=edd37ef8"></script>
+  <script type="module" src="src/app.js?v=93d5656f"></script>
 </body>
 </html>

@@ -1,13 +1,13 @@
-"""Plugin SwiftBar « streamable » : un seul processus qui sert la page EnergIA
-sur 127.0.0.1, relit l'usage de Claude Code chaque minute et envoie le titre
-de la barre de menus (l'énergie estimée du jour).
+"""SwiftBar "streamable" plugin: a single process that serves the EnergIA page
+on 127.0.0.1, rereads the Claude Code usage every minute and sends the menu
+bar title (the day's estimated energy).
 
-Chaque `~~~` fait reconstruire l'élément par SwiftBar, ce qui vide une page
-ouverte. Un titre inchangé n'est donc jamais renvoyé, et un titre modifié
-attend que la page cesse d'envoyer ses battements (fenêtre refermée).
+Each `~~~` makes SwiftBar rebuild the item, which empties an open page. An
+unchanged title is therefore never sent again, and a changed title waits
+until the page stops sending its heartbeats (window closed).
 
-Avec --serve, le même serveur tourne sans SwiftBar, sur n'importe quel
-système : il ouvre le tableau de bord dans le navigateur par défaut.
+With --serve, the same server runs without SwiftBar, on any system: it
+opens the dashboard in the default browser.
 """
 
 import argparse
@@ -28,18 +28,18 @@ from claudecode import UsageStore
 from rate import RateStore
 
 PORT = 18791
-POLL = 60                 # secondes entre deux lectures des journaux
-WIDTH, HEIGHT = 860, 680  # taille de la fenêtre, en pixels
-BEAT_TIMEOUT = 4.0        # sans battement pendant ce délai : fenêtre refermée
+POLL = 60                 # seconds between two readings of the logs
+WIDTH, HEIGHT = 860, 680  # size of the window, in pixels
+BEAT_TIMEOUT = 4.0        # no heartbeat for this long: window closed
 LABEL = "⚡"
-OVER_COLOR = "#ff453a"  # titre compact au-dessus du seuil : texte rouge, faute de place pour un pictogramme
-OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
+OVER_COLOR = "#ff453a"  # compact title above the threshold: red text, for lack of room for an icon
+OVER_LABEL = "🔴"  # replaces the lightning bolt when a threshold chosen in the page is exceeded
 MAX_BODY = 20_000
-MAX_EXPORT = 50_000_000  # un export CSV de plusieurs années reste très en dessous
+MAX_EXPORT = 50_000_000  # a CSV export of several years stays well below
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-# Seuls liens que la page peut faire ouvrir dans le navigateur par défaut.
+# The only links the page can have opened in the default browser.
 LINKS = {"sponsor": "https://github.com/sponsors/darkxander",
          "source": "https://github.com/darkxander/EnergIA"}
 STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -58,9 +58,8 @@ PICK_EXTENSIONS = (".zip", ".json", ".csv")
 
 
 def pick_file(lang="fr"):
-    """Ouvre le sélecteur de fichier de macOS et renvoie le chemin choisi, ou
-    None si l'utilisateur annule. La fenêtre de la barre de menus ne sait pas
-    ouvrir ce sélecteur elle-même."""
+    """Opens the macOS file picker and returns the chosen path, or None if
+    the user cancels. The menu bar window cannot open this picker itself."""
     done = subprocess.run(
         ["/usr/bin/osascript", "-e", "tell me to activate",
          "-e", f'POSIX path of (choose file with prompt "{PICK_PROMPT[lang]}" of type {PICK_TYPES})'],
@@ -69,7 +68,7 @@ def pick_file(lang="fr"):
 
 
 def reveal(path):
-    """Montre le fichier dans le Finder."""
+    """Shows the file in the Finder."""
     subprocess.run(["/usr/bin/open", "-R", path], check=False, timeout=10)
 
 
@@ -93,7 +92,7 @@ class TitleGate:
             self._wanted = title
 
     def take(self):
-        """Le titre à envoyer maintenant, ou None."""
+        """The title to send now, or None."""
         with self._lock:
             is_open = self._last_beat is not None and self._clock() - self._last_beat < self._timeout
             if self._wanted is None or self._wanted == self._shown or is_open:
@@ -107,8 +106,8 @@ class Dashboard:
                  rates=None, opener=open_in_browser, picker=pick_file, window=True,
                  downloads=DOWNLOADS, revealer=reveal):
         self.store = store or UsageStore()
-        # True : page affichée dans la fenêtre de SwiftBar, qui ne sait ni ouvrir un
-        # sélecteur de fichier ni suivre un lien externe. False : vrai navigateur.
+        # True: page displayed in the SwiftBar window, which can neither open a
+        # file picker nor follow an external link. False: real browser.
         self.window = window
         self.rates = rates or RateStore()
         self.opener = opener
@@ -125,11 +124,11 @@ class Dashboard:
             self.store.scan()
             with self._lock:
                 self._updated_at, self._error = time.time(), None
-        except Exception as e:  # le plugin doit survivre à une lecture ratée
+        except Exception as e:  # the plugin must survive a failed read
             with self._lock:
                 self._error = str(e) or type(e).__name__
         self.gate.offer(self.title())
-        self.rates.refresh()  # ne lève jamais ; ne relève le taux que s'il date
+        self.rates.refresh()  # never raises; only fetches the rate if it is out of date
 
     def poller(self):
         while True:
@@ -149,19 +148,19 @@ class Dashboard:
         label = OVER_LABEL if estimate.over_budget(rows, settings, today) else LABEL
         lang = estimate.lang_of(settings)
         if settings.get("compactTitle"):
-            # Choisi dans la page : ni pictogramme ni espaces, moins de chiffres. Au-dessus
-            # du seuil, le texte passe en rouge (paramètre SwiftBar placé après la tabulation).
+            # Chosen in the page: neither icon nor spaces, fewer digits. Above the
+            # threshold, the text turns red (SwiftBar parameter placed after the tab).
             text = estimate.format_energy(total, lang, compact=True)
             return f"{text}\tcolor={OVER_COLOR}" if label == OVER_LABEL else text
         return f"{label} {estimate.format_energy(total, lang)}"
 
     def pick(self):
-        """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
+        """The file chosen in the macOS picker, displayed in the page's language."""
         return self.picker(estimate.lang_of(estimate.load_settings(self.settings_path)))
 
     def export(self, data, extension="csv"):
-        """Écrit un export de la page (CSV ou image) dans le dossier Téléchargements, sans
-        jamais remplacer un fichier existant, et le montre. Le nom est choisi ici, pas par la page."""
+        """Writes an export of the page (CSV or image) to the Downloads folder, without
+        ever replacing an existing file, and shows it. The name is chosen here, not by the page."""
         os.makedirs(self.downloads, exist_ok=True)
         for n in range(1, 1000):
             name = f"EnergIA-{self.today()}{'' if n == 1 else f'-{n}'}.{extension}"
@@ -187,14 +186,14 @@ class Dashboard:
 
 
 class Handler(BaseHTTPRequestHandler):
-    """La page et ses fichiers à la racine, du JSON sous /api/. Protection
-    contre les autres pages locales : l'en-tête Host doit être notre adresse
-    (pas de DNS rebinding) et les appels à l'API doivent porter X-EnergIA,
-    qu'une page d'une autre origine ne peut pas ajouter sans une pré-requête
-    CORS à laquelle ce serveur ne répond jamais."""
+    """The page and its files at the root, JSON under /api/. Protection
+    against other local pages: the Host header must be our address (no DNS
+    rebinding) and calls to the API must carry X-EnergIA, which a page from
+    another origin cannot add without a CORS preflight request that this
+    server never answers."""
 
     def log_message(self, *args):
-        pass  # la sortie standard appartient à SwiftBar
+        pass  # standard output belongs to SwiftBar
 
     def _send(self, code, body, ctype):
         self.send_response(code)
@@ -220,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
         ctype = STATIC.get(os.path.splitext(full)[1])
         if not full.startswith(SITE + os.sep) or not ctype or not os.path.isfile(full):
             return self.send_error(404)
-        with open(full, "rb") as f:  # relu à chaque requête : on modifie la page, on rouvre
+        with open(full, "rb") as f:  # read again on each request: edit the page, reopen
             return self._send(200, f.read(), ctype)
 
     def do_GET(self):
@@ -238,8 +237,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": True})
         if path == "/api/beat":
             dash.gate.beat()
-            # Le titre compact est un réglage du plugin : la page le reprend d'ici, pour
-            # qu'un autre navigateur ne l'efface pas avec ses propres réglages.
+            # The compact title is a setting of the plugin: the page takes it from here, so
+            # that another browser does not erase it with its own settings.
             compact = 1 if estimate.load_settings(dash.settings_path).get("compactTitle") else 0
             return self._json({"ok": True, "window": dash.window, "compactTitle": compact})
         if path.startswith("/api/"):
@@ -247,13 +246,13 @@ class Handler(BaseHTTPRequestHandler):
         return self._static(path)
 
     def _pick(self):
-        """Envoie à la page le fichier que l'utilisateur choisit dans le
-        sélecteur de macOS : lui seul décide quel fichier est lu."""
+        """Sends the page the file that the user chooses in the macOS
+        picker: the user alone decides which file is read."""
         try:
             chosen = self.server.dash.pick()
         except Exception:
             return self.send_error(500)
-        if not chosen:  # annulé
+        if not chosen:  # cancelled
             self.send_response(204)
             self.end_headers()
             return None
@@ -270,8 +269,8 @@ class Handler(BaseHTTPRequestHandler):
         return None
 
     def _export(self):
-        """Enregistre le CSV ou l'image PNG envoyés par la page. Seulement dans la fenêtre
-        de SwiftBar, qui ne sait pas télécharger ; un vrai navigateur télécharge lui-même."""
+        """Saves the CSV or the PNG image sent by the page. Only in the SwiftBar
+        window, which cannot download; a real browser downloads by itself."""
         dash = self.server.dash
         if not dash.window:
             return self.send_error(404)
@@ -286,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError
             else:
                 extension = "csv"
-                data.decode("utf-8")  # du texte, rien d'autre
+                data.decode("utf-8")  # text, nothing else
         except ValueError:
             return self.send_error(400)
         try:
@@ -325,8 +324,8 @@ def serve(dash, port=PORT):
 
 
 def emit(title, port=PORT, out=None):
-    """Envoie le titre à SwiftBar. Un titre peut porter, après une tabulation, des
-    paramètres SwiftBar supplémentaires (la couleur du texte)."""
+    """Sends the title to SwiftBar. A title can carry, after a tab, additional
+    SwiftBar parameters (the colour of the text)."""
     text, _, extra = title.partition("\t")
     print("~~~", file=out, flush=True)
     print(f"{text} | href=http://127.0.0.1:{port}/ webview=true "
@@ -334,11 +333,11 @@ def emit(title, port=PORT, out=None):
 
 
 def serve_only(port=PORT, browser=True, out=None, wait=None):
-    """Mode « serveur seul » : pas de barre de menus, le tableau de bord s'ouvre
-    dans le navigateur par défaut. Renvoie le code de sortie du programme."""
+    """The "server only" mode: no menu bar, the dashboard opens in the default
+    browser. Returns the program's exit code."""
     out = out or sys.stdout
     if hasattr(out, "reconfigure"):
-        out.reconfigure(errors="replace")  # consoles Windows sans UTF-8
+        out.reconfigure(errors="replace")  # Windows consoles without UTF-8
     lang = estimate.lang_of(estimate.load_settings())
     dash = Dashboard(window=False)
     try:
@@ -367,7 +366,7 @@ def parse_args(argv=None):
     parser.add_argument("--port", type=int, default=PORT, help=f"port local / local port ({PORT})")
     parser.add_argument("--no-browser", action="store_true",
                         help="ne pas ouvrir le navigateur / do not open the browser")
-    return parser.parse_known_args(argv)[0]  # SwiftBar peut ajouter ses propres arguments
+    return parser.parse_known_args(argv)[0]  # SwiftBar can add its own arguments
 
 
 def main(argv=None):

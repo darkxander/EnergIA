@@ -1,10 +1,10 @@
-"""Taux de change euro/dollar : taux de référence de la BCE, relevé une fois
-par jour. C'est la seule connexion à Internet du plugin ; elle télécharge un
-fichier public et n'envoie aucune donnée.
+"""Euro/dollar exchange rate: the ECB reference rate, fetched once a day.
+It is the plugin's only connection to the Internet; it downloads a public
+file and sends no data.
 
-Sous macOS, le téléchargement passe par /usr/bin/curl, qui utilise les
-certificats du système (le Python lancé par SwiftBar n'a pas toujours les
-siens). Ailleurs, Python le fait lui-même.
+On macOS, the download goes through /usr/bin/curl, which uses the system's
+certificates (the Python launched by SwiftBar does not always have its
+own). Elsewhere, Python does it itself.
 """
 
 import json
@@ -20,15 +20,15 @@ from paths import PATHS
 URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
 CACHE = os.path.join(PATHS["cache"], "rate.json")
 CURL = "/usr/bin/curl"
-MAX_AGE = 12 * 3600  # un relevé plus récent n'est pas refait
-RETRY = 3600         # délai avant de retenter après un échec
+MAX_AGE = 12 * 3600  # a more recent fetch is not repeated
+RETRY = 3600         # delay before retrying after a failure
 
 _DATE = re.compile(r"time=['\"](\d{4}-\d{2}-\d{2})['\"]")
 _USD = re.compile(r"currency=['\"]USD['\"]\s+rate=['\"](\d+(?:\.\d+)?)['\"]")
 
 
 def parse(xml):
-    """{"date", "eurPerUsd"} à partir du fichier de la BCE (dollars pour 1 euro)."""
+    """{"date", "eurPerUsd"} from the ECB file (dollars for 1 euro)."""
     date, usd = _DATE.search(xml), _USD.search(xml)
     if not date or not usd:
         raise ValueError("taux introuvable dans la réponse de la BCE")
@@ -65,12 +65,12 @@ class RateStore:
             pass
 
     def current(self):
-        """Le dernier taux relevé ({"date", "eurPerUsd"}), ou None."""
+        """The last rate fetched ({"date", "eurPerUsd"}), or None."""
         with self._lock:
             return {"date": self._rate["date"], "eurPerUsd": self._rate["eurPerUsd"]} if self._rate else None
 
     def refresh(self):
-        """Relève le taux s'il date. Un échec garde le dernier taux connu."""
+        """Fetches the rate if it is out of date. A failure keeps the last known rate."""
         with self._lock:
             now = self.clock()
             if self._rate and now - self._rate["fetched_at"] < MAX_AGE:
@@ -78,7 +78,7 @@ class RateStore:
             if self._tried_at is not None and now - self._tried_at < RETRY:
                 return
             self._tried_at = now
-        try:  # hors verrou : le téléchargement ne doit pas bloquer la page
+        try:  # outside the lock: the download must not block the page
             rate = dict(parse(self.fetch()), fetched_at=now)
         except Exception:
             return
@@ -89,4 +89,4 @@ class RateStore:
             with open(self.cache, "w", encoding="utf-8") as f:
                 json.dump(rate, f)
         except OSError:
-            pass  # le taux reste en mémoire
+            pass  # the rate stays in memory

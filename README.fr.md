@@ -292,9 +292,9 @@ Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
 1. **Autres systèmes.** Le mode « serveur seul » existe et fonctionne sous Linux ; il
    reste à le vérifier sous Windows, puis à ajouter une icône dans la zone de notification.
-2. **L'anglais partout.** La page, le plugin de la barre de menus, le README et la
-   description du dépôt sont traduits. Restent en français : les commentaires du code et
-   les messages de commit.
+2. **L'anglais partout.** La page, le plugin de la barre de menus, le README, la
+   description du dépôt et les commentaires du code sont en anglais. Restent en français :
+   les messages de commit, et quelques noms internes du code.
 3. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
    l'IA ; les dons de celles et ceux qui trouvent l'appli utile financent son
    développement. Cela passe par des présentations de l'appli là où l'on parle d'IA et

@@ -1,12 +1,12 @@
-// Numérote les fichiers de la page d'après leur contenu.
+// Numbers the page's files according to their content.
 //
-// Le navigateur garde les fichiers en mémoire quelques minutes. Sans numéro, une
-// mise à jour peut lui faire mélanger une nouvelle page avec un ancien script.
-// index.html demande donc chaque fichier avec « ?v=<empreinte> » : l'empreinte
-// change dès qu'un fichier change, et le navigateur recharge alors l'ensemble.
+// The browser keeps files in memory for a few minutes. Without a number, an
+// update can make it mix a new page with an old script.
+// index.html therefore requests each file with "?v=<fingerprint>": the fingerprint
+// changes as soon as a file changes, and the browser then reloads the whole set.
 //
-// Après toute modification de styles.css ou de src/ :   node tools/stamp.mjs
-// Les tests échouent si l'empreinte inscrite dans index.html n'est plus à jour.
+// After any change to styles.css or src/:   node tools/stamp.mjs
+// The tests fail if the fingerprint written in index.html is no longer up to date.
 
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -26,7 +26,7 @@ export function assetVersion() {
   return hash.digest("hex").slice(0, 8);
 }
 
-// index.html tel qu'il doit être pour la version donnée.
+// index.html as it must be for the given version.
 export function stamped(html, version) {
   const modules = assetFiles().filter((path) => path.endsWith(".js") && path !== "src/app.js");
   const imports = modules.map((path) => `      "./${path}": "./${path}?v=${version}"`).join(",\n");

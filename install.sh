@@ -1,24 +1,24 @@
 #!/bin/sh
-# Installe EnergIA en une commande (macOS et Linux) :
+# Installs EnergIA with a single command (macOS and Linux):
 #
 #   curl -fsSL https://raw.githubusercontent.com/darkxander/EnergIA/main/install.sh | sh
 #
-# Ce que fait ce script, sans droits d'administrateur :
-#   1. copie EnergIA dans ~/.local/share/EnergIA (avec git s'il est là, sinon en
-#      téléchargeant l'archive du dépôt) ; relancé, il met cette copie à jour ;
-#   2. crée la commande « energia » dans ~/.local/bin, qui ouvre le tableau de bord
-#      dans le navigateur (mode serveur seul) ;
-#   3. sous macOS, relie le plugin au dossier de plugins de SwiftBar. Si SwiftBar
-#      manque et que Homebrew est présent, il l'installe avec Homebrew.
+# What this script does, without administrator rights:
+#   1. copies EnergIA into ~/.local/share/EnergIA (with git if it is there, otherwise
+#      by downloading the repository archive); run again, it updates this copy;
+#   2. creates the "energia" command in ~/.local/bin, which opens the dashboard
+#      in the browser (server-only mode);
+#   3. on macOS, links the plugin to SwiftBar's plugin folder. If SwiftBar is
+#      missing and Homebrew is present, it installs it with Homebrew.
 #
-# Pour désinstaller :   sh install.sh --uninstall
-# (ou la même commande curl, suivie de « -s -- --uninstall »). Les compteurs et les
-# réglages ne sont pas effacés.
+# To uninstall:   sh install.sh --uninstall
+# (or the same curl command, followed by "-s -- --uninstall"). The counters and the
+# settings are not erased.
 #
-# Variables facultatives : ENERGIA_HOME (dossier d'installation), ENERGIA_BIN_DIR
-# (dossier de la commande), ENERGIA_PLUGIN_DIR (dossier de plugins SwiftBar),
-# ENERGIA_REPO (dépôt git), ENERGIA_ARCHIVE (archive .tar.gz), ENERGIA_FORCE=1
-# (remplacer un plugin EnergIA déjà relié ailleurs), ENERGIA_NO_SWIFTBAR=1.
+# Optional variables: ENERGIA_HOME (installation folder), ENERGIA_BIN_DIR
+# (folder of the command), ENERGIA_PLUGIN_DIR (SwiftBar plugin folder),
+# ENERGIA_REPO (git repository), ENERGIA_ARCHIVE (.tar.gz archive), ENERGIA_FORCE=1
+# (replace an EnergIA plugin already linked elsewhere), ENERGIA_NO_SWIFTBAR=1.
 
 set -eu
 
@@ -33,7 +33,7 @@ case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
   *) FR=0 ;;
 esac
 
-# say "texte français" "English text"
+# say "French text" "English text"
 say() {
   if [ "$FR" = 1 ]; then printf '%s\n' "$1"; else printf '%s\n' "$2"; fi
 }
@@ -43,7 +43,7 @@ fail() {
   exit 1
 }
 
-# Ne supprime qu'un dossier qui est bien une copie d'EnergIA.
+# Only deletes a folder that really is a copy of EnergIA.
 is_ours() {
   [ -f "$1/EnergIA.py" ] && [ -d "$1/menubar" ] && [ -f "$1/index.html" ]
 }
@@ -93,7 +93,7 @@ python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' 2>/dev
   || fail "Python 3.9 ou plus récent est nécessaire (python3 est plus ancien, ou n'est pas encore installé)." \
     "Python 3.9 or later is required (python3 is older, or not installed yet)."
 
-# ---------- Les fichiers ----------
+# ---------- The files ----------
 
 if [ -d "$HOME_DIR/.git" ]; then
   say "Mise à jour d'EnergIA dans ${HOME_DIR}…" "Updating EnergIA in ${HOME_DIR}…"
@@ -109,7 +109,7 @@ else
   if command -v git >/dev/null 2>&1; then
     git clone --depth 1 --quiet "$REPO" "$HOME_DIR"
   else
-    # Sans git : Python télécharge l'archive du dépôt et l'extrait.
+    # Without git: Python downloads the repository archive and extracts it.
     python3 - "$ARCHIVE" "$HOME_DIR" <<'PYTHON'
 import io, os, sys, tarfile, urllib.request
 
@@ -119,13 +119,13 @@ with urllib.request.urlopen(url, timeout=60) as response:
 os.makedirs(target)
 with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
     for member in archive.getmembers():
-        # L'archive range tout dans un dossier « EnergIA-main » : on l'enlève.
+        # The archive puts everything in an "EnergIA-main" folder: we strip it.
         parts = member.name.split("/", 1)
         if len(parts) < 2 or not parts[1] or not (member.isfile() or member.isdir()):
             continue
         path = os.path.normpath(os.path.join(target, parts[1]))
         if not path.startswith(os.path.join(target, "")):
-            continue  # jamais en dehors du dossier d'installation
+            continue  # never outside the installation folder
         if member.isdir():
             os.makedirs(path, exist_ok=True)
             continue
@@ -138,12 +138,12 @@ fi
 is_ours "$HOME_DIR" || fail "l'installation dans $HOME_DIR est incomplète." "the installation in $HOME_DIR is incomplete."
 chmod +x "$HOME_DIR/EnergIA.py"
 
-# ---------- La commande « energia » ----------
+# ---------- The "energia" command ----------
 
 mkdir -p "$BIN_DIR"
 cat > "$BIN_DIR/energia" <<LAUNCHER
 #!/bin/sh
-# Ouvre le tableau de bord d'EnergIA dans le navigateur (créé par install.sh).
+# Opens the EnergIA dashboard in the browser (created by install.sh).
 exec python3 "$HOME_DIR/EnergIA.py" --serve "\$@"
 LAUNCHER
 chmod +x "$BIN_DIR/energia"
@@ -154,7 +154,7 @@ case ":$PATH:" in
        "  $BIN_DIR is not in your PATH: run the command by its full path, or add this folder to your PATH." ;;
 esac
 
-# ---------- La barre de menus (macOS) ----------
+# ---------- The menu bar (macOS) ----------
 
 swiftbar() {
   [ "${ENERGIA_NO_SWIFTBAR:-}" = 1 ] && return 0
@@ -171,7 +171,7 @@ swiftbar() {
   fi
   plugins="$(plugin_dir)"
   if [ -z "$plugins" ]; then
-    # SwiftBar n'a pas encore de dossier de plugins : on lui en donne un.
+    # SwiftBar does not have a plugin folder yet: we give it one.
     plugins="$HOME/.config/swiftbar"
     /usr/bin/defaults write "$SWIFTBAR_ID" PluginDirectory "$plugins"
     say "Dossier de plugins de SwiftBar réglé sur $plugins" "SwiftBar plugin folder set to $plugins"

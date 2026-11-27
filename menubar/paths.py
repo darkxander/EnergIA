@@ -1,8 +1,8 @@
-"""Dossiers utilisés par EnergIA, selon le système.
+"""Folders used by EnergIA, depending on the system.
 
-macOS : ~/Library ; Windows : %APPDATA% et %LOCALAPPDATA% ; Linux et autres :
-dossiers XDG (~/.config, ~/.cache). Les journaux de Claude Code sont au même
-endroit partout : ~/.claude/projects, ou $CLAUDE_CONFIG_DIR/projects.
+macOS: ~/Library; Windows: %APPDATA% and %LOCALAPPDATA%; Linux and others:
+XDG folders (~/.config, ~/.cache). The Claude Code logs are in the same
+place everywhere: ~/.claude/projects, or $CLAUDE_CONFIG_DIR/projects.
 """
 
 import os
@@ -10,7 +10,7 @@ import sys
 
 
 def locate(platform=None, env=None, home=None):
-    """{"claudecode", "cowork", "cache", "config"} : chemins absolus pour ce système."""
+    """{"claudecode", "cowork", "cache", "config"}: absolute paths for this system."""
     platform = sys.platform if platform is None else platform
     env = os.environ if env is None else env
     home = os.path.expanduser("~") if home is None else home
@@ -29,7 +29,7 @@ def locate(platform=None, env=None, home=None):
     claude_code = env.get("CLAUDE_CONFIG_DIR") or join(home, ".claude")
     return {
         "claudecode": join(claude_code, "projects"),
-        # Sessions Cowork de l'appli Claude pour ordinateur.
+        # Cowork sessions of the Claude desktop app.
         "cowork": join(claude_app, "local-agent-mode-sessions"),
         "cache": cache,
         "config": config,

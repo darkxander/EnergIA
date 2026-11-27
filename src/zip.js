@@ -1,5 +1,5 @@
-// Lecteur zip minimal, sans dépendance : lit le répertoire central puis
-// décompresse une entrée à la demande (le fichier n'est jamais chargé en entier).
+// Minimal zip reader, with no dependencies: reads the central directory then
+// decompresses an entry on demand (the file is never loaded in full).
 
 const EOCD = 0x06054b50;
 const CEN = 0x02014b50;
@@ -10,7 +10,7 @@ async function view(blob, start, end) {
   return new DataView(await blob.slice(start, end).arrayBuffer());
 }
 
-// Erreur dont le message est choisi par l'interface, dans la langue affichée.
+// Error whose message is chosen by the interface, in the displayed language.
 function zipError(code, vars = {}) {
   return Object.assign(new Error(code), { code, vars });
 }
@@ -53,7 +53,7 @@ export async function listZipEntries(blob) {
     let offset = cd.getUint32(o + 42, true);
     const name = decoder.decode(new Uint8Array(cd.buffer, cd.byteOffset + o + 46, nameLen));
 
-    // Champ supplémentaire zip64 : valeurs 64 bits pour les champs saturés.
+    // zip64 extra field: 64-bit values for the saturated fields.
     let e = o + 46 + nameLen;
     const extraEnd = e + extraLen;
     while (e + 4 <= extraEnd) {

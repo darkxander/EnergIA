@@ -1,6 +1,6 @@
-// Image de résumé à partager : les quatre chiffres de la période affichée, dessinés
-// dans un canevas de 1200 × 630 points (format habituel des aperçus de liens).
-// Couleurs fixes, celles du thème sombre de la page, pour que l'image soit la même partout.
+// Summary image to share: the four figures of the displayed period, drawn
+// on a canvas of 1200 × 630 points (the usual format for link previews).
+// Fixed colours, those of the page's dark theme, so that the image is the same everywhere.
 
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
@@ -9,11 +9,11 @@ const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 const COLORS = {
   page: "#0d0d0d", surface: "#1a1a19", border: "#2c2c2a",
   primary: "#f0efec", secondary: "#c3c2b7", muted: "#898781",
-  accents: ["#eda100", "#d95926", "#3987e5", "#199e70"], // énergie, CO₂, eau, coût
+  accents: ["#eda100", "#d95926", "#3987e5", "#199e70"], // energy, CO₂, water, cost
 };
 
-// Coupe un texte en lignes qui tiennent dans `width`. `measure(texte)` donne une largeur.
-// Au-delà de `maxLines`, la dernière ligne se termine par « … ».
+// Splits a text into lines that fit within `width`. `measure(text)` gives a width.
+// Beyond `maxLines`, the last line ends with "…".
 export function wrapLines(measure, text, width, maxLines = 2) {
   const lines = [];
   let line = "";
@@ -29,14 +29,14 @@ export function wrapLines(measure, text, width, maxLines = 2) {
   return [...lines.slice(0, maxLines - 1), `${last}…`];
 }
 
-// `card` : { title, subtitle, tiles: [{ name, value, equiv }] (quatre), note, credit }.
+// `card`: { title, subtitle, tiles: [{ name, value, equiv }] (four), note, credit }.
 export function drawCard(canvas, card) {
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext("2d");
   const font = (size, weight = 400) => { ctx.font = `${weight} ${size}px ${FONT}`; };
   const measure = (text) => ctx.measureText(text).width;
-  // Écrit un texte en réduisant la taille jusqu'à ce qu'il tienne dans la largeur.
+  // Writes a text, reducing the size until it fits within the width.
   const fit = (text, x, y, width, size, weight, least = 16) => {
     do font(size, weight); while (measure(text) > width && --size >= least);
     ctx.fillText(text, x, y);

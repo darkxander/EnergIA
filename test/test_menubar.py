@@ -44,13 +44,13 @@ class StoreTest(unittest.TestCase):
 
     def test_counts_dedup_and_increments(self):
         self.write(self.log, [
-            user("q1"), assistant("m1"), assistant("m1"),  # même réponse écrite deux fois
+            user("q1"), assistant("m1"), assistant("m1"),  # same response written twice
             user("meta", isMeta=True), user("side", isSidechain=True),
             json.dumps({"type": "user", "uuid": "t1", "message": {"content": [{"type": "tool_result"}]}}),
             assistant("syn", model="<synthetic>"), "ligne illisible {",
         ])
         self.write(os.path.join(self.root, "-p", "s", "subagents", "agent.jsonl"),
-                   [assistant("m1"), assistant("m2", model="claude-haiku-5-5")])  # m1 recopié
+                   [assistant("m1"), assistant("m2", model="claude-haiku-5-5")])  # m1 copied again
         store = UsageStore(self.root, self.cache)
         self.assertTrue(store.scan())
         rows = {r["model"]: r for r in store.rows()}
@@ -61,9 +61,9 @@ class StoreTest(unittest.TestCase):
             "day": day, "model": "claude-sonnet-5-5", "source": "claudecode"})
         self.assertEqual(rows["claude-haiku-5-5"]["responses"], 1)
         self.assertEqual(len(rows), 2)
-        self.assertFalse(store.scan())  # rien de nouveau
+        self.assertFalse(store.scan())  # nothing new
 
-        # Une requête lue seule, puis sa réponse au passage suivant ; ligne en cours d'écriture ignorée.
+        # A request read on its own, then its response on the next pass; a line still being written is ignored.
         self.write(self.log, [user("q2")])
         store.scan()
         self.write(self.log, [assistant("m3"), assistant("m4")[:40]], end="")
@@ -71,7 +71,7 @@ class StoreTest(unittest.TestCase):
         row = {r["model"]: r for r in store.rows()}["claude-sonnet-5-5"]
         self.assertEqual((row["requests"], row["responses"]), (2, 2))
 
-        # Le cache redonne les mêmes compteurs sans rien recompter.
+        # The cache gives back the same counters without recounting anything.
         again = UsageStore(self.root, self.cache)
         self.assertEqual(again.rows(), store.rows())
         self.assertFalse(again.scan())
@@ -81,8 +81,8 @@ class StoreTest(unittest.TestCase):
         self.write(self.log, [
             assistant("a", model="claude-haiku-4-5-20251001", cache_creation={"ephemeral_1h_input_tokens": 60},
                       server_tool_use={"web_search_requests": 2}),
-            assistant("b", model="claude-haiku-5-5", cache_read_input_tokens=99_900),   # 100 000 tout juste
-            assistant("c", model="claude-haiku-5-5", cache_read_input_tokens=99_901),   # au-delà
+            assistant("b", model="claude-haiku-5-5", cache_read_input_tokens=99_900),   # exactly 100,000
+            assistant("c", model="claude-haiku-5-5", cache_read_input_tokens=99_901),   # beyond
         ])
         store = UsageStore(self.root, self.cache)
         store.scan()
@@ -96,8 +96,8 @@ class StoreTest(unittest.TestCase):
         logs = os.path.join(cowork, "org", "user", "local_1", ".claude", "projects", "session")
         os.makedirs(logs)
         self.write(self.log, [user("q1"), assistant("m1")])
-        self.write(os.path.join(logs, "s.jsonl"), [user("q2"), assistant("m2"), assistant("m1")])  # m1 déjà compté
-        self.write(os.path.join(cowork, "org", "user", "local_1", "audit.jsonl"), [assistant("m9")])  # pas un journal
+        self.write(os.path.join(logs, "s.jsonl"), [user("q2"), assistant("m2"), assistant("m1")])  # m1 already counted
+        self.write(os.path.join(cowork, "org", "user", "local_1", "audit.jsonl"), [assistant("m9")])  # not a log
         store = UsageStore({"claudecode": self.root, "cowork": cowork}, self.cache)
         store.scan()
         by_source = {r["source"]: (r["requests"], r["responses"]) for r in store.rows()}
@@ -129,7 +129,7 @@ class PathsTest(unittest.TestCase):
         self.assertEqual(linux["config"], j("/home/a", ".config", "EnergIA"))
         xdg = paths.locate("linux", {"XDG_CACHE_HOME": "/c", "XDG_CONFIG_HOME": "/k"}, "/home/a")
         self.assertEqual((xdg["cache"], xdg["config"]), (j("/c", "EnergIA"), j("/k", "EnergIA")))
-        # Claude Code déplacé par sa variable d'environnement.
+        # Claude Code moved by its environment variable.
         self.assertEqual(paths.locate("linux", {"CLAUDE_CONFIG_DIR": "/x"}, "/home/a")["claudecode"], j("/x", "projects"))
 
 
@@ -139,15 +139,15 @@ class EstimateTest(unittest.TestCase):
         row = {"model": "gpt-4o", "inTok": 2000, "outTok": 300}
         self.assertAlmostEqual(estimate.wh(row, settings), 0.3)
         cached = {"model": "claude-sonnet-5-5", "inTok": 0, "cacheTok": 100000, "outTok": 0}
-        self.assertAlmostEqual(estimate.wh(cached, settings), 0.12)  # 100 000 × 0,02 × 0,1 / 1000 × 0,6
-        # Coût : mêmes lignes et mêmes résultats que le test « coût » de test/EnergIA.test.js.
+        self.assertAlmostEqual(estimate.wh(cached, settings), 0.12)  # 100,000 × 0.02 × 0.1 / 1000 × 0.6
+        # Cost: same rows and same results as the "cost" test in test/EnergIA.test.js.
         priced = {"model": "claude-sonnet-5-5", "inTok": 1000, "cw5Tok": 200, "cw1Tok": 300, "cacheTok": 50000,
                   "outTok": 400, "searches": 2}
         self.assertAlmostEqual(estimate.eur(priced, settings), 0.02982894)
         self.assertAlmostEqual(estimate.eur({"model": "gpt-5-thinking", "inTok": 2000, "outTok": 300}, settings), 0.0050171)
         unknown = {"model": "modele-inconnu", "inTok": 2000, "cacheTok": 1000, "outTok": 300}
         self.assertAlmostEqual(estimate.eur(unknown, settings), 0.00805)
-        # Seuils : le jour et le mois se comptent séparément, hier n'entre pas dans le jour.
+        # Thresholds: the day and the month are counted separately, yesterday does not count towards the day.
         rows = [dict(row, day="2026-11-24"), dict(row, day="2026-11-25"), dict(row, day="2026-10-31")]
         over = lambda **budgets: estimate.over_budget(rows, {**settings, **budgets}, "2026-11-25")
         self.assertFalse(over())
@@ -171,7 +171,7 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual(estimate.format_energy(1250, "en"), "1.25 kWh")
         self.assertEqual(estimate.format_energy(3.456, "en"), "3.46 Wh")
         self.assertEqual(estimate.format_energy(250.4, "en"), "250 Wh")
-        # Titre compact : sans espace, moins de chiffres, mais toujours l'unité.
+        # Compact title: no space, fewer digits, but still the unit.
         self.assertEqual(estimate.format_energy(523.4, compact=True), "523Wh")
         self.assertEqual(estimate.format_energy(12.34, compact=True), "12Wh")
         self.assertEqual(estimate.format_energy(3.456, compact=True), "3,5Wh")
@@ -180,16 +180,16 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual(estimate.format_energy(12000, compact=True), "12kWh")
 
     def test_language(self):
-        # macOS : français si c'est la première langue préférée, anglais sinon.
+        # macOS: French if it is the first preferred language, English otherwise.
         self.assertEqual(estimate.system_lang(lambda: '(\n    "fr-FR",\n    "en-FR"\n)'), "fr")
         self.assertEqual(estimate.system_lang(lambda: '(\n    "en-GB",\n    "fr-FR"\n)'), "en")
         self.assertEqual(estimate.system_lang(lambda: ""), "en")
-        # Linux (variable LANG) et Windows (nom de locale).
+        # Linux (LANG variable) and Windows (locale name).
         self.assertEqual(estimate.system_lang(lambda: "fr_FR.UTF-8"), "fr")
         self.assertEqual(estimate.system_lang(lambda: "en_US.UTF-8"), "en")
         self.assertEqual(estimate.system_lang(lambda: "French_France"), "fr")
         self.assertEqual(estimate.system_lang(lambda: "C"), "en")
-        # La langue choisie dans la page l'emporte sur celle du système.
+        # The language chosen in the page takes precedence over the system's.
         self.assertEqual(estimate.lang_of({"lang": "en"}), "en")
         self.assertEqual(estimate.lang_of({"lang": "fr"}), "fr")
 
@@ -204,7 +204,7 @@ class EstimateTest(unittest.TestCase):
             self.assertEqual(s["tiers"]["standard"], {"whOut": 1, "eurIn": 2.5, "eurOut": 10})
             self.assertNotIn("evil", s)
             self.assertNotIn("new", s["tiers"])
-            self.assertNotIn("lang", s)  # seules « fr » et « en » sont acceptées
+            self.assertNotIn("lang", s)  # only "fr" and "en" are accepted
             estimate.save_settings({"lang": "en"}, path)
             self.assertEqual(estimate.load_settings(path)["lang"], "en")
 
@@ -232,13 +232,13 @@ class RateTest(unittest.TestCase):
             store = rate.RateStore(cache, fetch, clock=lambda: now[0])
             self.assertIsNone(store.current())
             store.refresh()
-            store.refresh()  # relevé récent : pas de nouvel appel
+            store.refresh()  # recent fetch: no new call
             self.assertEqual((len(calls), store.current()), (1, {"date": "2026-11-24", "eurPerUsd": 0.9122}))
             now[0] += rate.MAX_AGE + 1
-            store.refresh()  # échec : l'ancien taux reste
-            store.refresh()  # pas de nouvelle tentative avant RETRY
+            store.refresh()  # failure: the old rate stays
+            store.refresh()  # no new attempt before RETRY
             self.assertEqual((len(calls), store.current()["eurPerUsd"]), (2, 0.9122))
-            self.assertEqual(rate.RateStore(cache, fetch).current()["eurPerUsd"], 0.9122)  # relu du cache
+            self.assertEqual(rate.RateStore(cache, fetch).current()["eurPerUsd"], 0.9122)  # read back from the cache
             now[0] += rate.RETRY + 1
             store.refresh()
             self.assertEqual(store.current(), {"date": "2026-11-26", "eurPerUsd": 0.8})
@@ -250,10 +250,10 @@ class GateTest(unittest.TestCase):
         gate = server.TitleGate(beat_timeout=4, clock=lambda: now[0])
         gate.offer("a")
         self.assertEqual(gate.take(), "a")
-        self.assertIsNone(gate.take())  # inchangé : pas renvoyé
+        self.assertIsNone(gate.take())  # unchanged: not sent again
         gate.beat()
         gate.offer("b")
-        self.assertIsNone(gate.take())  # fenêtre ouverte
+        self.assertIsNone(gate.take())  # window open
         now[0] = 5
         self.assertEqual(gate.take(), "b")
 
@@ -276,7 +276,7 @@ class ServerTest(unittest.TestCase):
         self.revealed = []
         self.picked = None
         self.pick_langs = []
-        estimate._system_lang = "fr"  # indépendant de la langue de la machine de test
+        estimate._system_lang = "fr"  # independent of the test machine's language
         self.server = server.serve(self.dash, port=0)
         self.port = self.server.server_address[1]
 
@@ -302,7 +302,7 @@ class ServerTest(unittest.TestCase):
     def test_title_and_payload(self):
         self.assertEqual(self.dash.title(), "⚡ …")
         self.dash.poll()
-        # (1000 + (100 + 1000 × 0,02) × 0,1) / 1000 × 0,6 = 0,607 Wh
+        # (1000 + (100 + 1000 × 0.02) × 0.1) / 1000 × 0.6 = 0.607 Wh
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
         api = {"X-EnergIA": "1"}
         status, ctype, body = self.get("/api/claudecode", api)
@@ -313,34 +313,34 @@ class ServerTest(unittest.TestCase):
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6,07 Wh")
-        # La page envoie sa langue avec les réglages : le titre passe au point décimal.
+        # The page sends its language with the settings: the title switches to the decimal point.
         status, _, _ = self.get("/api/settings", {**api, "Content-Type": "application/json"},
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}, "lang": "en"}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6.07 Wh")
-        # Seuil d'énergie par jour : le point rouge remplace l'éclair quand il est dépassé.
+        # Energy threshold per day: the red dot replaces the lightning bolt when it is exceeded.
         post = lambda saved: self.get("/api/settings", {**api, "Content-Type": "application/json"},
                                       json.dumps(saved).encode())[0]
         self.assertEqual(post({"dailyBudgetWh": 0.5}), 200)
         self.assertEqual(self.dash.title(), "🔴 0,61 Wh")
         self.assertEqual(post({"dailyBudgetWh": 5}), 200)
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
-        self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0 : pas de seuil
+        self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0: no threshold
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
-        # Les autres seuils : énergie par mois (en kWh), coût par jour et par mois (en euros).
+        # The other thresholds: energy per month (in kWh), cost per day and per month (in euros).
         for key, low, high in [("monthlyBudgetKWh", 0.0005, 0.005), ("dailyBudgetEur", 0.0001, 100),
                                ("monthlyBudgetEur", 0.0001, 100)]:
             self.assertEqual(post({key: low}), 200)
             self.assertEqual(self.dash.title(), "🔴 0,61 Wh", key)
             self.assertEqual(post({key: high}), 200)
             self.assertEqual(self.dash.title(), "⚡ 0,61 Wh", key)
-        # Titre compact : ni pictogramme ni espaces ; la page le relit ensuite auprès du plugin.
+        # Compact title: neither icon nor spaces; the page then reads it back from the plugin.
         self.assertEqual(post({"compactTitle": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
         self.assertEqual(self.dash.title(), "607Wh")
         self.assertEqual(json.loads(self.get("/api/beat", api)[2])["compactTitle"], 1)
         self.assertEqual(post({"compactTitle": 1, "dailyBudgetWh": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
-        # Au-dessus du seuil, le titre compact passe en rouge : la couleur suit le titre
-        # après une tabulation, et devient un paramètre de la ligne envoyée à SwiftBar.
+        # Above the threshold, the compact title turns red: the colour follows the title
+        # after a tab, and becomes a parameter of the line sent to SwiftBar.
         self.assertEqual(self.dash.title(), "607Wh\tcolor=#ff453a")
         import io
         out = io.StringIO()
@@ -354,18 +354,18 @@ class ServerTest(unittest.TestCase):
 
     def test_server_only_mode(self):
         api = {"X-EnergIA": "1"}
-        # Fenêtre de SwiftBar par défaut ; le mode « serveur seul » dit à la page qu'elle
-        # est dans un vrai navigateur (sélecteur de fichier et liens ordinaires).
+        # SwiftBar window by default; "server only" mode tells the page that it
+        # is in a real browser (file picker and ordinary links).
         self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": True, "compactTitle": 0})
         self.dash.window = False
         self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": False, "compactTitle": 0})
 
         args = server.parse_args(["--serve", "--port", "1234", "--no-browser"])
         self.assertEqual((args.serve, args.port, args.no_browser), (True, 1234, True))
-        self.assertFalse(server.parse_args([]).serve)                 # SwiftBar : aucun argument
+        self.assertFalse(server.parse_args([]).serve)                 # SwiftBar: no argument
         self.assertFalse(server.parse_args(["argument-inconnu"]).serve)
 
-        # Port déjà pris : message clair et code de sortie 1, sans lever d'exception.
+        # Port already taken: clear message and exit code 1, without raising an exception.
         import io
         out = io.StringIO()
         self.assertEqual(server.serve_only(self.port, browser=False, out=out), 1)
@@ -377,7 +377,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.opened, ["https://github.com/sponsors/darkxander"])
         for bad in ("/api/open", "/api/open?link=autre", "/api/open?link=https://example.com"):
             self.assertEqual(self.get(bad, api)[0], 404, bad)
-        self.assertEqual(self.get("/api/open?link=source")[0], 403)  # sans en-tête
+        self.assertEqual(self.get("/api/open?link=source")[0], 403)  # without the header
         self.assertEqual(len(self.opened), 1)
 
     def post(self, path, headers=None):
@@ -391,19 +391,19 @@ class ServerTest(unittest.TestCase):
 
     def test_pick_sends_the_chosen_file(self):
         api = {"X-EnergIA": "1"}
-        self.assertEqual(self.post("/api/pick", api)[0], 204)  # annulé
-        self.assertEqual(self.pick_langs, ["fr"])  # l'invite suit la langue de la page
+        self.assertEqual(self.post("/api/pick", api)[0], 204)  # cancelled
+        self.assertEqual(self.pick_langs, ["fr"])  # the prompt follows the page's language
         export = os.path.join(self.dir.name, "mon export é.json")
         with open(export, "w") as f:
             f.write('[{"chat_messages": []}]')
         self.picked = export
         self.assertEqual(self.post("/api/pick", api), (200, "mon%20export%20%C3%A9.json", b'[{"chat_messages": []}]'))
         self.picked = os.path.join(self.dir.name, "c.json.absent")
-        self.assertEqual(self.post("/api/pick", api)[0], 400)   # mauvaise extension
+        self.assertEqual(self.post("/api/pick", api)[0], 400)   # wrong extension
         self.picked = os.path.join(self.dir.name, "absent.zip")
-        self.assertEqual(self.post("/api/pick", api)[0], 400)   # fichier introuvable
+        self.assertEqual(self.post("/api/pick", api)[0], 400)   # file not found
         self.picked = export
-        self.assertEqual(self.post("/api/pick")[0], 403)        # sans en-tête
+        self.assertEqual(self.post("/api/pick")[0], 403)        # without the header
 
     def test_export_saves_the_csv(self):
         api = {"X-EnergIA": "1", "Content-Type": "text/csv"}
@@ -414,16 +414,16 @@ class ServerTest(unittest.TestCase):
         self.assertEqual((status, json.loads(body)["path"]), (200, first))
         with open(first, "rb") as f:
             self.assertEqual(f.read(), text)
-        # Un deuxième export le même jour ne remplace pas le premier.
+        # A second export on the same day does not replace the first.
         second = os.path.join(folder, "EnergIA-2026-11-25-2.csv")
         self.assertEqual(json.loads(self.get("/api/export", api, b"a;b\r\n")[2])["path"], second)
         with open(first, "rb") as f:
             self.assertEqual(f.read(), text)
-        self.assertEqual(self.revealed, [first, second])     # montrés dans le Finder
-        self.assertEqual(self.get("/api/export", {"Content-Type": "text/csv"}, text)[0], 403)  # sans en-tête
-        self.assertEqual(self.get("/api/export", api, b"\xff\xfe\x00")[0], 400)                 # pas du texte
+        self.assertEqual(self.revealed, [first, second])     # shown in the Finder
+        self.assertEqual(self.get("/api/export", {"Content-Type": "text/csv"}, text)[0], 403)  # without the header
+        self.assertEqual(self.get("/api/export", api, b"\xff\xfe\x00")[0], 400)                 # not text
         self.assertEqual(sorted(os.listdir(folder)), ["EnergIA-2026-11-25-2.csv", "EnergIA-2026-11-25.csv"])
-        # L'image de résumé : un PNG, reconnu à sa signature.
+        # The summary image: a PNG, recognised by its signature.
         png = {"X-EnergIA": "1", "Content-Type": "image/png"}
         image = os.path.join(folder, "EnergIA-2026-11-25.png")
         self.assertEqual(json.loads(self.get("/api/export", png, b"\x89PNG\r\n\x1a\nabc")[2])["path"], image)
@@ -431,12 +431,12 @@ class ServerTest(unittest.TestCase):
             self.assertEqual(f.read(), b"\x89PNG\r\n\x1a\nabc")
         self.assertEqual(self.get("/api/export", png, b"pas une image")[0], 400)
         self.assertEqual(len(os.listdir(folder)), 3)
-        self.dash.window = False  # mode serveur seul : le navigateur télécharge lui-même
+        self.dash.window = False  # server-only mode: the browser downloads by itself
         self.assertEqual(self.get("/api/export", api, text)[0], 404)
 
     def test_guards_and_static(self):
-        self.assertEqual(self.get("/api/claudecode")[0], 403)                      # sans en-tête
-        self.assertEqual(self.get("/", {"Host": "evil.example"})[0], 403)          # mauvais Host
+        self.assertEqual(self.get("/api/claudecode")[0], 403)                      # without the header
+        self.assertEqual(self.get("/", {"Host": "evil.example"})[0], 403)          # wrong Host
         self.assertEqual(self.get("/api/nope", {"X-EnergIA": "1"})[0], 404)
         self.assertEqual(self.get("/api/settings", {"X-EnergIA": "1"}, b"pas du json")[0], 400)
         status, ctype, body = self.get("/")

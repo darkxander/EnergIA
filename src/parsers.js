@@ -1,15 +1,15 @@
-// Lecture des exports de données ChatGPT, Claude, Gemini et Copilot.
-// Aucun texte de conversation n'est conservé : seuls des compteurs par jour et par
-// modèle sortent d'ici, rangés par conversation sous une clé anonyme. Cette clé sert
-// à ne pas compter deux fois une conversation présente dans deux imports.
+// Reads the data exports from ChatGPT, Claude, Gemini and Copilot.
+// No conversation text is kept: only counters per day and per
+// model come out of here, stored per conversation under an anonymous key. That key is used
+// to avoid counting twice a conversation present in two imports.
 
-// Estimation grossière : environ 4 caractères par token.
+// Rough estimate: about 4 characters per token.
 export const estimateTokens = (text) => (text ? Math.ceil(text.length / 4) : 0);
 
 const dayOf = (date) => (Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10));
 
-// Deux empreintes de 32 bits construites différemment (multiplicateur, mélange), pour
-// que deux identifiants distincts ne donnent pratiquement jamais la même clé.
+// Two 32-bit fingerprints built differently (multiplier, mixing), so
+// that two distinct identifiers practically never give the same key.
 function hash32(text, seed, prime) {
   let h = seed >>> 0;
   for (let i = 0; i < text.length; i++) {
@@ -19,12 +19,12 @@ function hash32(text, seed, prime) {
   return (h >>> 0).toString(16).padStart(8, "0");
 }
 
-// Clé courte d'une conversation : une empreinte de son identifiant, pas l'identifiant.
+// Short key of a conversation: a fingerprint of its identifier, not the identifier.
 export const shortKey = (text) => hash32(text, 0x811c9dc5, 0x01000193) + hash32(text, 0x9747b28c, 0x5bd1e995);
 
-// Range une conversation ({ u: date de mise à jour en secondes ou 0, rows }) dans `items`.
-// Déjà présente : la version la plus récente l'emporte, la nouvelle en cas de doute.
-// Renvoie "added", "updated", "same" (identique) ou "kept" (l'ancienne était plus récente).
+// Stores a conversation ({ u: update date in seconds or 0, rows }) in `items`.
+// Already present: the most recent version wins, the new one in case of doubt.
+// Returns "added", "updated", "same" (identical) or "kept" (the old one was more recent).
 export function putConversation(items, key, item) {
   const existing = items[key];
   if (!existing) {
@@ -40,7 +40,7 @@ export function putConversation(items, key, item) {
   return "updated";
 }
 
-// Ajoute les conversations `incoming` à `previous` (non modifié) et compte ce qui change.
+// Adds the `incoming` conversations to `previous` (not modified) and counts what changes.
 export function combine(previous, incoming) {
   const items = { ...previous };
   const counts = { added: 0, updated: 0, same: 0, kept: 0 };
@@ -48,7 +48,7 @@ export function combine(previous, incoming) {
   return { items, ...counts };
 }
 
-// Les lignes par jour et par modèle d'un ensemble de conversations.
+// The rows per day and per model of a set of conversations.
 export function rowsOf(source, items) {
   const rows = new Map();
   for (const item of Object.values(items)) {
@@ -68,14 +68,14 @@ export function rowsOf(source, items) {
   return [...rows.values()];
 }
 
-// Les conversations d'un export, chacune avec ses compteurs.
+// The conversations of an export, each with its counters.
 class Collector {
   constructor(source) {
     this.source = source;
     this.items = {};
   }
 
-  // `id` : identifiant de la conversation dans l'export ; `created` et `updated` : dates.
+  // `id`: identifier of the conversation in the export; `created` and `updated`: dates.
   add(one, index, id, created, updated) {
     const rows = [...one.rows.values()].map(({ source, ...row }) => row);
     const name = id ? `id:${id}` : created ? `t:${created}` : `x:${index}:${JSON.stringify(rows)}`;
@@ -144,7 +144,7 @@ function parseChatGPT(conversations) {
       tokens.set(id, node.message ? estimateTokens(chatgptText(node.message.content)) : 0);
     }
 
-    // Tokens cumulés de la racine jusqu'à chaque nœud (le contexte relu à chaque réponse).
+    // Cumulative tokens from the root down to each node (the context re-read at each response).
     const cumulative = new Map();
     const cumulativeOf = (id) => {
       const chain = [];
@@ -167,10 +167,10 @@ function parseChatGPT(conversations) {
       .map(([id, node]) => ({ id, node, time: node.message.create_time || fallbackTime }))
       .sort((a, b) => a.time - b.time);
 
-    // Une réponse peut être découpée en plusieurs messages qui se suivent
-    // (réflexion, résumé de réflexion, texte). Ils forment un seul tour : le
-    // contexte n'est lu qu'une fois, et le modèle n'est souvent indiqué que
-    // sur le dernier message.
+    // A response can be split into several consecutive messages
+    // (thinking, thinking summary, text). They form a single turn: the
+    // context is read only once, and the model is often given only
+    // on the last message.
     const isAssistant = (id) => mapping[id]?.message?.author?.role === "assistant";
     const turnStart = (id) => {
       let cursor = id;
@@ -245,7 +245,7 @@ function parseClaude(conversations) {
         if (count > 0) pendingRequests += 1;
       } else if (message.sender === "assistant" && count > 0) {
         const day = dayOf(new Date(message.created_at || conv.created_at));
-        // L'export Claude n'indique pas le modèle utilisé.
+        // The Claude export does not say which model was used.
         agg.add(day, "claude", pendingRequests, context, count);
         pendingRequests = 0;
       }
@@ -257,18 +257,18 @@ function parseClaude(conversations) {
 }
 
 // ---------- Gemini ----------
-// Google Takeout, « Mon activité » pour les applis Gemini, au format JSON : un tableau
-// d'événements, un par échange. Google ne documente pas ce format, et les descriptions
-// publiques ne s'accordent pas ; les trois formes décrites sont acceptées :
-//   - details : [{ name: "Request" | "Response", value }] ;
-//   - userInteractions : [{ userInteraction: { request, response } }] (textes JSON) ;
-//   - title (« Prompted … ») pour la demande et safeHtmlItem : [{ html }] pour la réponse.
-// L'export ne dit pas quel modèle a répondu. Non vérifié sur un export réel.
+// Google Takeout, "My Activity" for the Gemini apps, in JSON format: an array
+// of events, one per exchange. Google does not document this format, and the public
+// descriptions do not agree; the three forms described are accepted:
+//   - details: [{ name: "Request" | "Response", value }];
+//   - userInteractions: [{ userInteraction: { request, response } }] (JSON texts);
+//   - title ("Prompted …") for the request and safeHtmlItem: [{ html }] for the response.
+// The export does not say which model replied. Not verified on a real export.
 
 const isGeminiEvent = (e) => e && typeof e.time === "string"
   && /gemini|bard/i.test(`${e.header || ""} ${(Array.isArray(e.products) ? e.products : []).join(" ")} ${e.titleUrl || ""}`);
 
-// Tous les textes d'une valeur JSON, bout à bout.
+// All the texts of a JSON value, end to end.
 function deepText(value) {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(deepText).join("");
@@ -276,7 +276,7 @@ function deepText(value) {
   return "";
 }
 
-// Un texte qui contient du JSON : ses textes seulement ; sinon le texte tel quel.
+// A text that contains JSON: its texts only; otherwise the text as is.
 function unwrap(text) {
   if (typeof text !== "string") return deepText(text);
   if (!/^\s*[[{"]/.test(text)) return text;
@@ -306,13 +306,13 @@ function geminiExchange(event) {
   }
   if (Array.isArray(event.safeHtmlItem)) {
     reply += event.safeHtmlItem.map((item) => stripHtml(item && item.html)).join(" ");
-    if (!prompt && typeof event.title === "string") prompt = event.title; // « Prompted … », libellé compris
+    if (!prompt && typeof event.title === "string") prompt = event.title; // "Prompted …", label included
   }
   return { prompt, reply };
 }
 
 function parseGemini(events) {
-  // Les échanges d'une même conversation portent le même lien ; sans lien, chacun est seul.
+  // The exchanges of one conversation carry the same link; without a link, each stands alone.
   const groups = new Map();
   for (const event of events) {
     if (!isGeminiEvent(event)) continue;
@@ -341,15 +341,15 @@ function parseGemini(events) {
 }
 
 // ---------- Copilot ----------
-// Export CSV du tableau de bord de confidentialité de Microsoft. Deux dispositions,
-// reconnues à leur ligne d'en-tête :
-//   - Conversation, Time, Author, Message (historique des applis Copilot) ;
+// CSV export from Microsoft's privacy dashboard. Two layouts,
+// recognised by their header row:
+//   - Conversation, Time, Author, Message (history of the Copilot apps);
 //   - CreatedAt, MessageContent, Author, ChatName (Copilot Chat, Microsoft 365).
-// Un troisième fichier (Timestamp, ClientApp, Prompt) ne contient que des demandes, sans
-// réponses : il est reconnu mais rien n'en est compté. L'export ne donne ni modèle ni
-// identifiant de conversation. Non vérifié sur un export réel.
+// A third file (Timestamp, ClientApp, Prompt) contains only requests, without
+// responses: it is recognised but nothing from it is counted. The export gives neither model nor
+// conversation identifier. Not verified on a real export.
 
-// Texte CSV -> tableau de lignes ; guillemets doublés et retours à la ligne dans les cellules.
+// CSV text -> array of rows; doubled quotes and line breaks inside cells.
 export function parseCsv(text) {
   const source = String(text).replace(/^\uFEFF/, "");
   const firstLine = source.slice(0, source.search(/\r|\n|$/));
@@ -379,7 +379,7 @@ export function parseCsv(text) {
   return lines;
 }
 
-// « 2026-02-17T14:36:11 » ou « 2/17/2026 2:36:11 PM +01:00 » -> millisecondes, ou NaN.
+// "2026-02-17T14:36:11" or "2/17/2026 2:36:11 PM +01:00" -> milliseconds, or NaN.
 function copilotTime(text) {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?\s*(?:([+-])(\d{2}):?(\d{2}))?$/i.exec(String(text).trim());
   if (!m) return Date.parse(String(text).trim());
@@ -389,7 +389,7 @@ function copilotTime(text) {
   return m[8] ? utc - (m[8] === "-" ? -1 : 1) * (Number(m[9]) * 60 + Number(m[10])) * 60000 : utc;
 }
 
-const COPILOT_GAP = 24 * 3600 * 1000; // au-delà, un même titre est compté comme une autre conversation
+const COPILOT_GAP = 24 * 3600 * 1000; // beyond this, the same title is counted as another conversation
 
 export function parseCopilotCsv(text) {
   const [header, ...lines] = parseCsv(text);
@@ -402,7 +402,7 @@ export function parseCopilotCsv(text) {
   const title = column("conversation", "chatname");
   const all = new Collector("copilot");
   if (author < 0 || message < 0 || time < 0 || title < 0) {
-    // Le fichier des applis Windows : des demandes seules, rien à compter.
+    // The Windows apps file: requests only, nothing to count.
     return column("prompt") >= 0 && column("timestamp") >= 0 ? { ...all.result(), promptsOnly: true } : null;
   }
   const byTitle = new Map();
@@ -439,7 +439,7 @@ export function parseCopilotCsv(text) {
   return all.result();
 }
 
-// ---------- Détection ----------
+// ---------- Detection ----------
 
 export function parseExport(json) {
   const list = Array.isArray(json) ? json : json && Array.isArray(json.conversations) ? json.conversations : null;
@@ -450,8 +450,8 @@ export function parseExport(json) {
   return null;
 }
 
-// Le texte d'un fichier : JSON (ChatGPT, Claude, Gemini) ou CSV (Copilot).
-// Renvoie null si le format n'est pas reconnu ; lève une erreur si le JSON est invalide.
+// The text of a file: JSON (ChatGPT, Claude, Gemini) or CSV (Copilot).
+// Returns null if the format is not recognised; throws an error if the JSON is invalid.
 export function parseFileText(text) {
   const clean = String(text).replace(/^\uFEFF/, "");
   return /^\s*[[{]/.test(clean) ? parseExport(JSON.parse(clean)) : parseCopilotCsv(clean);

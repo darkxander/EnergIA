@@ -1,23 +1,23 @@
-// Modèle d'estimation : tokens -> énergie -> CO2, eau, coût.
-// Tous les facteurs sont des ordres de grandeur, modifiables par l'utilisateur.
-// Les valeurs par défaut sont dans defaults.json, partagé avec le plugin de barre de menus.
+// Estimation model: tokens -> energy -> CO2, water, cost.
+// All the factors are orders of magnitude, which the user can change.
+// The default values are in defaults.json, shared with the menu bar plugin.
 //
-// tiers.*.whOut : Wh pour 1 000 tokens générés (centre de données compris).
-// tiers.*.eurIn / eurOut : euros par million de tokens lus / générés, tarif indicatif
-//   utilisé seulement pour les modèles absents de prices.json (prix publics, en dollars).
-// inputRatio : énergie d'un token lu, en fraction d'un token généré.
-// cacheReadRatio : poids d'un token relu depuis le cache, en fraction d'un token lu.
-// eurPerUsd : euros pour 1 dollar. Taux de référence de la BCE du 24/11/2026
-//   (1 € = 1,0963 $), https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
-// "raisonnement" couvre les modèles dont la réflexion cachée n'apparaît pas dans les exports.
+// tiers.*.whOut: Wh per 1,000 tokens generated (data centre included).
+// tiers.*.eurIn / eurOut: euros per million tokens read / generated, indicative rate
+//   used only for models absent from prices.json (public prices, in dollars).
+// inputRatio: energy of a token read, as a fraction of a token generated.
+// cacheReadRatio: weight of a token re-read from the cache, as a fraction of a token read.
+// eurPerUsd: euros per 1 dollar. ECB reference rate of 24/11/2026
+//   (€1 = $1.0963), https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
+// "raisonnement" covers the models whose hidden thinking does not appear in the exports.
 
-// Les deux fichiers JSON sont lus à côté de ce module. Un « import … with { type: "json" } »
-// serait plus court, mais les navigateurs d'avant 2024-2025 ne le comprennent pas et
-// n'afficheraient rien du tout.
+// The JSON files are read next to this module. An `import … with { type: "json" }`
+// would be shorter, but browsers from before 2024-2025 do not understand it and
+// would display nothing at all.
 async function loadJSON(name) {
   const url = new URL(name, import.meta.url);
-  url.search = new URL(import.meta.url).search; // même numéro de version que ce module
-  if (url.protocol === "file:") { // tests, hors navigateur
+  url.search = new URL(import.meta.url).search; // same version number as this module
+  if (url.protocol === "file:") { // tests, outside the browser
     const { readFile } = await import("node:fs/promises");
     return JSON.parse(await readFile(url, "utf8"));
   }
@@ -31,9 +31,9 @@ const [DEFAULTS, PRICES, CARBON_DATA] = await Promise.all(
 
 export const PRICE_SOURCE = { url: PRICES.source, checked: PRICES.checked };
 
-// Prix publics du modèle (dollars par million de tokens), ou null s'il est inconnu.
-// L'export ChatGPT écrit les versions avec des tirets (gpt-4-1) et ajoute le mode
-// de réponse au nom (gpt-5-thinking, gpt-5-t-mini) : on le retire pour retrouver le modèle.
+// Public prices of the model (dollars per million tokens), or null if it is unknown.
+// The ChatGPT export writes versions with hyphens (gpt-4-1) and appends the response
+// mode to the name (gpt-5-thinking, gpt-5-t-mini): it is removed to find the model.
 export function priceFor(model) {
   let id = String(model || "").toLowerCase().replace(/\./g, "-").replace(/-\d{8}$/, "");
   const lookup = (name) => PRICES.models[PRICES.aliases[name] || name];
@@ -44,13 +44,13 @@ export function priceFor(model) {
 
 export const DEFAULT_SETTINGS = DEFAULTS;
 
-// Intensité carbone de l'électricité par pays (g CO₂e/kWh), source dans carbon.json.
+// Carbon intensity of electricity by country (g CO₂e/kWh), source in carbon.json.
 export const CARBON = CARBON_DATA;
 
-// Même règle que menubar/estimate.py : garder les deux en accord.
+// Same rule as menubar/estimate.py: keep the two in agreement.
 export function classifyModel(model) {
   const m = String(model || "").toLowerCase();
-  if (/(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna/.test(m)) return "leger"; // « gemini » n'est pas « mini »
+  if (/(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna/.test(m)) return "leger"; // "gemini" is not "mini"
   if (/opus|fable|mythos|astra/.test(m)) return "grand";
   if (/^o\d|thinking|reason|research|(^|-)pro($|-)/.test(m)) return "raisonnement";
   return "standard";
@@ -61,7 +61,7 @@ export function rowMetrics(row, settings) {
   const write5m = row.cw5Tok || 0;
   const write1h = row.cw1Tok || 0;
   const cached = row.cacheTok || 0;
-  // Les tokens écrits dans le cache sont calculés comme des tokens lus ordinaires.
+  // Tokens written to the cache are calculated as ordinary read tokens.
   const read = row.inTok + write5m + write1h + cached * settings.cacheReadRatio;
   const wh = ((row.outTok + read * settings.inputRatio) / 1000) * tier.whOut;
   const kwh = wh / 1000;
@@ -96,7 +96,7 @@ export function summarize(rows, settings) {
   return total;
 }
 
-// Abonnements payés : un mois compté dès qu'il contient de l'activité.
+// Paid subscriptions: a month is counted as soon as it contains activity.
 export function subscriptionCost(rows, settings) {
   const months = {};
   for (const row of rows) (months[row.source] ??= new Set()).add(row.day.slice(0, 7));

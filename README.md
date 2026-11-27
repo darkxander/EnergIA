@@ -277,9 +277,9 @@ These are intentions, with no dates and no commitment. In the planned order:
 
 1. **Other operating systems.** The server-only mode exists and works on Linux; it still
    has to be checked on Windows, then an icon added in the notification area.
-2. **English everywhere.** The page, the menu bar plugin, the README and the repository
-   description are translated. Still in French: the code comments and the commit
-   messages.
+2. **English everywhere.** The page, the menu bar plugin, the README, the repository
+   description and the code comments are in English. Still in French: the commit
+   messages, and a few internal names in the code.
 3. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
    donations from people who find the app useful fund its development. This means
    presenting the app where AI and the environment are discussed.

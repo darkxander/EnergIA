@@ -6,14 +6,14 @@ import { csvText } from "./csv.js";
 import { drawCard } from "./card.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", copilot: "Copilot", claudecode: "Claude Code", cowork: "Claude Cowork" };
-const NO_MODEL = ["claude", "gemini", "copilot"]; // exports qui ne disent pas quel modèle a répondu
-const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur cet ordinateur par le plugin, sans import
+const NO_MODEL = ["claude", "gemini", "copilot"]; // exports that do not say which model answered
+const LIVE_SOURCES = ["claudecode", "cowork"]; // measured on this computer by the plugin, without an import
 const API_HEADERS = { "X-EnergIA": "1" };
 const DATA_KEY = "EnergIA.data.v1";
 const SETTINGS_KEY = "EnergIA.settings.v1";
 const MANUAL_RATE_KEY = "EnergIA.rateManual";
 
-// Reprise des données enregistrées sous l'ancienne écriture du nom (« energia. »).
+// Picks up data saved under the old spelling of the name ("energia.").
 for (const key of [DATA_KEY, SETTINGS_KEY, MANUAL_RATE_KEY]) {
   const legacy = key.replace("EnergIA.", "energia.");
   const value = localStorage.getItem(legacy);
@@ -21,7 +21,7 @@ for (const key of [DATA_KEY, SETTINGS_KEY, MANUAL_RATE_KEY]) {
   if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
   localStorage.removeItem(legacy);
 }
-const DEFAULT_RATE_DATE = "2026-11-24"; // date du taux BCE inscrit dans defaults.json
+const DEFAULT_RATE_DATE = "2026-11-24"; // date of the ECB rate recorded in defaults.json
 
 const METRICS = {
   energy: { label: t("metric.energy"), get: (m) => m.wh, units: [["Wh", 1], ["kWh", 1000]] },
@@ -32,9 +32,9 @@ const METRICS = {
 
 const $ = (id) => document.getElementById(id);
 
-// ---------- Langue ----------
-// index.html est écrit en français ; en anglais, ses textes sont remplacés ici.
-// Changer de langue enregistre le choix et recharge la page.
+// ---------- Language ----------
+// index.html is written in French; in English, its texts are replaced here.
+// Changing language saves the choice and reloads the page.
 
 document.documentElement.lang = LANG;
 if (LANG === "en") {
@@ -42,7 +42,7 @@ if (LANG === "en") {
   for (const node of document.querySelectorAll("[data-i18n]")) node.innerHTML = PAGE_EN[node.dataset.i18n];
   for (const node of document.querySelectorAll("[data-i18n-aria]")) node.setAttribute("aria-label", PAGE_EN[node.dataset.i18nAria]);
 }
-const langButton = $("lang"); // absent d'une ancienne page restée en cache
+const langButton = $("lang"); // missing from an old page still in the cache
 if (langButton) {
   langButton.textContent = t("lang.switch");
   langButton.lang = LANG === "fr" ? "en" : "fr";
@@ -52,7 +52,7 @@ if (langButton) {
   });
 }
 
-// ---------- État ----------
+// ---------- State ----------
 
 function loadJSON(key, fallback) {
   try {
@@ -65,9 +65,9 @@ function loadJSON(key, fallback) {
 function mergeSettings(saved) {
   const s = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   if (!saved) return s;
-  // 0,9 était une valeur provisoire d'une version précédente, jamais un choix de l'utilisateur.
+  // 0.9 was a provisional value from an earlier version, never a choice made by the user.
   if (saved.eurPerUsd === 0.9) delete saved.eurPerUsd;
-  // 400 était la moyenne mondiale approchée d'avant la liste de pays : on reprend la valeur sourcée.
+  // 400 was the approximate world average before the country list: the sourced value is used again.
   if (saved.gCO2PerKWh === 400) delete saved.gCO2PerKWh;
   for (const key of Object.keys(s)) {
     if (key === "tiers") {
@@ -88,11 +88,11 @@ const state = {
   source: "all",
   metric: "energy",
   showTable: false,
-  rateDate: DEFAULT_RATE_DATE, // date du taux BCE utilisé, ou null s'il est saisi à la main
+  rateDate: DEFAULT_RATE_DATE, // date of the ECB rate in use, or null if it was entered by hand
 };
 if (localStorage.getItem(MANUAL_RATE_KEY)) state.rateDate = null;
-// Les imports sont gardés par conversation (`items`) ; les lignes affichées en découlent.
-// Un import fait avant cette écriture n'a que des lignes : il est gardé tel quel.
+// Imports are kept per conversation (`items`); the displayed rows are derived from them.
+// An import made before this format has only rows: it is kept as is.
 for (const [source, entry] of Object.entries(state.data)) {
   if (entry && entry.items) entry.rows = rowsOf(source, entry.items);
 }
@@ -102,7 +102,7 @@ function saveData() {
   for (const [source, entry] of Object.entries(state.data)) {
     if (entry.sample || entry.live) continue;
     const { rows, ...rest } = entry;
-    persistable[source] = entry.items ? rest : entry; // avec `items`, les lignes se recalculent
+    persistable[source] = entry.items ? rest : entry; // with `items`, the rows are recalculated
   }
   try {
     localStorage.setItem(DATA_KEY, JSON.stringify(persistable));
@@ -111,7 +111,7 @@ function saveData() {
   }
 }
 
-// ---------- Outils d'affichage ----------
+// ---------- Display helpers ----------
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -166,8 +166,8 @@ async function readFile(file) {
   const texts = [];
   if (/\.zip$/i.test(file.name)) {
     const entries = await listZipEntries(file);
-    // ChatGPT et Claude : conversations.json ; Google Takeout : le fichier JSON du dossier
-    // des applis Gemini ; Microsoft : les fichiers CSV de Copilot.
+    // ChatGPT and Claude: conversations.json; Google Takeout: the JSON file in the Gemini
+    // apps folder; Microsoft: Copilot's CSV files.
     const wanted = entries.filter((e) => /(^|\/)conversations[^/]*\.json$/i.test(e.name)
       || /gemini[^/]*\/[^/]*\.json$/i.test(e.name) || /copilot[^/]*\.csv$/i.test(e.name));
     if (!wanted.length) throw new Error(t("status.noConversations", { file: file.name }));
@@ -192,7 +192,7 @@ async function importFiles(files) {
           throw new Error(t("status.notJson", { file: file.name }));
         }
         if (!parsed) throw new Error(t("status.unknownFormat", { file: file.name }));
-        if (parsed.promptsOnly) continue; // demandes sans réponses : rien à compter
+        if (parsed.promptsOnly) continue; // prompts without replies: nothing to count
         imported[parsed.source] = combine(imported[parsed.source] || {}, parsed.items).items;
       }
     }
@@ -201,12 +201,12 @@ async function importFiles(files) {
     return;
   }
 
-  // Les données d'exemple disparaissent dès qu'un vrai fichier est importé.
+  // The sample data disappears as soon as a real file is imported.
   for (const source of Object.keys(state.data)) if (state.data[source].sample) delete state.data[source];
   const summary = [];
   for (const [source, incoming] of Object.entries(imported)) {
-    // Un nouvel import s'ajoute au précédent : une conversation déjà connue est mise à
-    // jour, pas comptée deux fois. Un import d'avant cette écriture (sans `items`) est remplacé.
+    // A new import is added to the previous one: a conversation already known is updated,
+    // not counted twice. An import from before this format (without `items`) is replaced.
     const previous = state.data[source];
     const merged = combine(previous?.items || {}, incoming);
     const total = Object.keys(merged.items).length;
@@ -222,7 +222,7 @@ async function importFiles(files) {
 }
 
 function loadSample() {
-  // Générateur pseudo-aléatoire déterministe.
+  // Deterministic pseudo-random generator.
   let seed = 42;
   const random = () => {
     seed = (seed * 1664525 + 1013904223) % 4294967296;
@@ -255,9 +255,9 @@ function loadSample() {
   render();
 }
 
-// ---------- Calculs ----------
+// ---------- Calculations ----------
 
-// Jour local (AAAA-MM-JJ) d'il y a `back` jours ; 0 = aujourd'hui.
+// Local day (YYYY-MM-DD) `back` days ago; 0 = today.
 function localDay(back = 0) {
   const date = new Date();
   date.setDate(date.getDate() - back);
@@ -265,7 +265,7 @@ function localDay(back = 0) {
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 }
 
-// Lignes du service choisi, de `from` (compris) à `to` (exclu) ; "" = sans borne.
+// Rows of the chosen service, from `from` (inclusive) to `to` (exclusive); "" = no bound.
 function rowsBetween(from, to, anySource = false) {
   const rows = [];
   for (const [source, entry] of Object.entries(state.data)) {
@@ -275,12 +275,12 @@ function rowsBetween(from, to, anySource = false) {
   return rows;
 }
 
-// N jours, aujourd'hui compris, en date locale (« 1 » = aujourd'hui seulement).
+// N days, today included, in local date ("1" = today only).
 function filteredRows() {
   return rowsBetween(state.period === "all" ? "" : localDay(Number(state.period) - 1), "");
 }
 
-// Les N jours qui précèdent la période affichée, ou null pour « Tout l'historique ».
+// The N days before the displayed period, or null for "Whole history".
 function previousRows() {
   if (state.period === "all") return null;
   const days = Number(state.period);
@@ -326,7 +326,7 @@ function buckets(rows) {
   });
 }
 
-// ---------- Rendu ----------
+// ---------- Rendering ----------
 
 function renderSources() {
   const box = $("sources");
@@ -350,8 +350,8 @@ function renderSources() {
   }
 }
 
-// Seuils d'alerte : énergie ou coût, pour aujourd'hui ou pour le mois en cours, tous
-// services confondus. Réglage, période, grandeur affichée, puis seuil et total dans la même unité.
+// Alert thresholds: energy or cost, for today or for the current month, across all
+// services. Setting, period, displayed quantity, then threshold and total in the same unit.
 const BUDGETS = [
   ["dailyBudgetWh", "day", "energy", (s) => s.dailyBudgetWh, (total) => total.wh],
   ["monthlyBudgetKWh", "month", "energy", (s) => s.monthlyBudgetKWh * 1000, (total) => total.wh],
@@ -370,7 +370,7 @@ function renderBudget() {
     totals[period] ??= summarize(rowsBetween(period === "day" ? today : `${today.slice(0, 8)}01`, "", true), state.settings);
     const value = valueOf(totals[period]);
     const over = value > budget;
-    // Une part non nulle qui s'arrondirait à 0 % : « moins de 1 % ».
+    // A non-zero share that would round to 0%: "less than 1%".
     const share = value > 0 && value / budget < 0.005
       ? t("budget.lessThan", { percent: percent.format(0.01) })
       : percent.format(value / budget);
@@ -385,11 +385,11 @@ function renderBudget() {
 const percent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0 });
 const signedPercent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0, signDisplay: "always" });
 
-// Les quatre tuiles (énergie, CO₂, eau, coût) et le total des lignes données.
+// The four tiles (energy, CO₂, water, cost) and the total of the given rows.
 function tilesFor(rows) {
   const s = state.settings;
   const total = summarize(rows, s);
-  // Écart avec les N jours précédents, quand une période est choisie et qu'ils ont des données.
+  // Difference from the previous N days, when a period is chosen and they have data.
   const previous = previousRows();
   const before = previous && previous.length ? summarize(previous, s) : null;
   const change = (now, then) => {
@@ -492,7 +492,7 @@ function renderChart(data) {
     present.forEach((source, index) => {
       const yTop = y(base + bucket.values[source]);
       let yBottom = y(base);
-      if (index > 0) yBottom -= gap; // filet de surface entre deux segments empilés
+      if (index > 0) yBottom -= gap; // hairline of surface colour between two stacked segments
       const height = Math.max(0, yBottom - yTop);
       const isTop = index === present.length - 1;
       const r = isTop ? Math.min(4, barW / 2, height) : 0;
@@ -582,10 +582,10 @@ function renderModels(rows) {
     + (lines.some((line) => line[8].endsWith("*")) ? t("price.asterisk") : "");
 }
 
-// Pays dont l'électricité sert au calcul du CO₂. Le choix n'est pas enregistré à part :
-// il se déduit de l'intensité carbone des hypothèses (valeurs toutes distinctes).
+// Country whose electricity is used to calculate CO₂. The choice is not saved separately:
+// it is deduced from the carbon intensity in the assumptions (all values are distinct).
 const carbonCountries = [
-  ...CARBON.countries.slice(0, 2), // Monde et Union européenne en tête
+  ...CARBON.countries.slice(0, 2), // World and European Union first
   ...CARBON.countries.slice(2).sort((a, b) => a[LANG].localeCompare(b[LANG], LANG)),
 ];
 
@@ -625,7 +625,7 @@ function render() {
   $("chart-table").hidden = !state.showTable;
 }
 
-// ---------- Hypothèses ----------
+// ---------- Assumptions ----------
 
 const SETTING_GROUPS = [
   [t("settings.energy"), [
@@ -675,7 +675,7 @@ function settingAt(path) {
   return { target, last };
 }
 
-// Case à cocher pour un réglage enregistré en 0 ou 1.
+// Checkbox for a setting saved as 0 or 1.
 function settingCheckbox(label, key) {
   const input = el("input", { type: "checkbox" });
   input.checked = Boolean(state.settings[key]);
@@ -687,7 +687,7 @@ function settingCheckbox(label, key) {
 }
 
 function renderSettings() {
-  // Réglages du titre de la barre de menus : seulement dans la fenêtre du plugin.
+  // Menu bar title settings: only in the plugin window.
   const menubarGroup = pluginWindow
     ? [el("fieldset", {}, el("legend", {}, t("settings.menubar")), settingCheckbox(t("settings.compactTitle"), "compactTitle"))]
     : [];
@@ -699,7 +699,7 @@ function renderSettings() {
         const value = Number(input.value);
         if (input.value === "" || !Number.isFinite(value) || value < 0) return;
         target[last] = value;
-        if (path === "eurPerUsd") { // un taux saisi à la main n'est plus remplacé par celui de la BCE
+        if (path === "eurPerUsd") { // a rate entered by hand is no longer replaced by the ECB's
           localStorage.setItem(MANUAL_RATE_KEY, "1");
           state.rateDate = null;
         }
@@ -710,17 +710,17 @@ function renderSettings() {
     }))));
 }
 
-// ---------- Événements ----------
+// ---------- Events ----------
 
 $("pick").addEventListener("click", () => (pluginWindow ? pickWithPlugin() : $("file").click()));
 
-// La fenêtre de la barre de menus n'ouvre pas le sélecteur de fichier du
-// navigateur : le plugin ouvre celui de macOS et renvoie le fichier choisi.
+// The menu bar window does not open the browser's file
+// picker: the plugin opens the macOS one and sends back the chosen file.
 async function pickWithPlugin() {
   setStatus(t("status.picking"));
   try {
     const response = await fetch("/api/pick", { method: "POST", headers: API_HEADERS });
-    if (response.status === 204) return setStatus(""); // annulé
+    if (response.status === 204) return setStatus(""); // cancelled
     if (!response.ok) throw new Error(String(response.status));
     const name = decodeURIComponent(response.headers.get("X-Filename") || "export.zip");
     await importFiles([new File([await response.blob()], name)]);
@@ -728,7 +728,7 @@ async function pickWithPlugin() {
     setStatus(t("status.pickFailed"), true);
   }
 }
-// Export CSV : les lignes de la période et du service affichés, par jour et par modèle.
+// CSV export: the rows of the displayed period and service, by day and by model.
 function exportLines() {
   const rows = filteredRows().slice().sort((a, b) =>
     a.day.localeCompare(b.day) || a.source.localeCompare(b.source) || String(a.model).localeCompare(String(b.model)));
@@ -743,9 +743,9 @@ function exportLines() {
   });
 }
 
-// Remet un fichier produit par la page : téléchargement dans un navigateur ; dans la
-// fenêtre de la barre de menus, qui ne sait pas télécharger, le plugin l'écrit dans le
-// dossier Téléchargements et le montre dans le Finder.
+// Delivers a file produced by the page: a download in a browser; in the
+// menu bar window, which cannot download, the plugin writes it to the
+// Downloads folder and shows it in the Finder.
 async function deliver(blob, extension) {
   if (pluginWindow) {
     try {
@@ -772,7 +772,7 @@ function exportCSV() {
 $("export-csv").addEventListener("click", exportCSV);
 $("export-csv").title = t("export.title");
 
-// Image de résumé : les quatre chiffres de la période et du service affichés.
+// Summary image: the four figures of the displayed period and service.
 function cardContent(rows) {
   let first = rows[0].day;
   let last = rows[0].day;
@@ -791,7 +791,7 @@ function cardContent(rows) {
   return {
     title: t("card.title"),
     subtitle: parts.join(" · "),
-    // La tuile du coût n'a pas d'équivalent : sa note rappelle que ce n'est pas une facture.
+    // The cost tile has no equivalent: its note is a reminder that this is not a bill.
     tiles: tilesFor(rows).tiles.map(({ name, value, equiv }, index) =>
       ({ name, value, equiv: index === 3 ? t("tile.costNote") : equiv })),
     note: t("card.note"),
@@ -821,9 +821,9 @@ $("file").addEventListener("change", (event) => {
 });
 $("sample").addEventListener("click", loadSample);
 
-// Un fichier peut être déposé n'importe où dans la fenêtre, pas seulement sur
-// la zone en pointillés. Sans cela, un dépôt à côté de la zone ferait quitter
-// la page au navigateur, qui ouvrirait le fichier à sa place.
+// A file can be dropped anywhere in the window, not only on
+// the dashed area. Without this, a drop beside the area would make the browser
+// leave the page and open the file in its place.
 const drop = $("drop");
 const carriesFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
 document.addEventListener("dragover", (event) => {
@@ -833,7 +833,7 @@ document.addEventListener("dragover", (event) => {
   drop.classList.add("over");
 });
 document.addEventListener("dragleave", (event) => {
-  if (!event.relatedTarget) drop.classList.remove("over"); // le pointeur a quitté la fenêtre
+  if (!event.relatedTarget) drop.classList.remove("over"); // the pointer has left the window
 });
 document.addEventListener("drop", (event) => {
   if (!carriesFiles(event)) return;
@@ -847,7 +847,7 @@ for (const key of ["period", "source", "metric"]) {
 }
 $("carbon").addEventListener("change", (event) => {
   const country = CARBON.countries.find((item) => item.code === event.target.value);
-  if (!country) return; // « Personnalisé » : la valeur saisie dans les hypothèses reste
+  if (!country) return; // "Custom": the value entered in the assumptions stays
   state.settings.gCO2PerKWh = country.g;
   saveSettings();
   renderSettings();
@@ -864,19 +864,19 @@ $("reset-settings").addEventListener("click", () => {
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(MANUAL_RATE_KEY);
   state.rateDate = DEFAULT_RATE_DATE;
-  if (menubar) loadClaudeCode(); // reprend le taux relevé par le plugin
+  if (menubar) loadClaudeCode(); // picks up the rate fetched by the plugin
   pushSettings();
   renderSettings();
   render();
 });
 
-// ---------- Barre de menus ----------
-// Servie par le plugin (barre de menus ou mode « serveur seul »), la page reçoit en
-// plus l'usage de Claude Code mesuré sur cet ordinateur. Ouverte autrement, /api
-// n'existe pas et rien ne change.
+// ---------- Menu bar ----------
+// Served by the plugin (menu bar or "server-only" mode), the page also receives
+// the Claude Code usage measured on this computer. Opened any other way, /api
+// does not exist and nothing changes.
 
-let menubar = false;      // servie par le plugin : mesures en direct
-let pluginWindow = false; // affichée dans la fenêtre de SwiftBar, pas dans un navigateur
+let menubar = false;      // served by the plugin: live measurements
+let pluginWindow = false; // displayed in the SwiftBar window, not in a browser
 
 async function api(path, options = {}) {
   const response = await fetch(path, { cache: "no-store", ...options, headers: { ...API_HEADERS, ...options.headers } });
@@ -886,11 +886,11 @@ async function api(path, options = {}) {
 
 function pushSettings() {
   if (!menubar) return;
-  // La langue affichée accompagne les réglages : le titre de la barre de menus la reprend.
+  // The displayed language goes with the settings: the menu bar title uses it.
   api("/api/settings", { method: "POST", body: JSON.stringify({ ...state.settings, lang: LANG }) }).catch(() => {});
 }
 
-// Taux BCE relevé chaque jour par le plugin, sauf si l'utilisateur a saisi le sien.
+// ECB rate fetched each day by the plugin, unless the user has entered their own.
 function applyRate(rate) {
   if (!rate || localStorage.getItem(MANUAL_RATE_KEY)) return;
   state.rateDate = rate.date;
@@ -905,45 +905,45 @@ async function loadClaudeCode() {
     const payload = await api("/api/claudecode");
     for (const source of LIVE_SOURCES) {
       const rows = payload.rows.filter((row) => row.source === source);
-      // Claude Code reste affiché même vide ; Cowork seulement s'il a servi.
+      // Claude Code stays displayed even when empty; Cowork only if it has been used.
       if (rows.length || source === "claudecode") state.data[source] = { rows, live: true, ready: payload.ready };
       else delete state.data[source];
     }
     applyRate(payload.rate);
     render();
-  } catch { /* serveur momentanément injoignable : on garde l'affichage */ }
+  } catch { /* server momentarily unreachable: the display is kept */ }
 }
 
 async function startMenubar() {
-  // Le plugin ne sert la page que sur 127.0.0.1 : ailleurs (version en ligne,
-  // serveur local), inutile d'interroger une API qui n'existe pas.
+  // The plugin serves the page only on 127.0.0.1: elsewhere (online version,
+  // local server), there is no point querying an API that does not exist.
   if (location.hostname !== "127.0.0.1") return;
   let beat;
   try {
     beat = await api("/api/beat");
   } catch {
-    return; // page ouverte hors du plugin
+    return; // page opened outside the plugin
   }
   menubar = true;
-  pluginWindow = beat.window !== false; // le mode « serveur seul » répond window: false
-  // Le titre compact appartient au plugin : on reprend sa valeur plutôt que de l'écraser.
+  pluginWindow = beat.window !== false; // "server-only" mode answers window: false
+  // The compact title belongs to the plugin: its value is used rather than overwritten.
   if (typeof beat.compactTitle === "number") state.settings.compactTitle = beat.compactTitle;
   if (pluginWindow) {
-    // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
-    // ici, l'import passe par le bouton.
+    // SwiftBar closes its window as soon as a file starts being dragged:
+    // here, the import goes through the button.
     $("drop-title").textContent = t("menubar.dropTitle");
     $("drop-hint").textContent = t("menubar.dropHint");
-    // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
-    // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
+    // The menu bar window does not open external links: the plugin
+    // opens them in the default browser (only links known to it).
     for (const link of document.querySelectorAll("a[data-link]")) {
       link.addEventListener("click", (event) => {
         event.preventDefault();
         api(`/api/open?link=${link.dataset.link}`).catch(() => {});
       });
     }
-    renderSettings(); // ajoute les réglages propres à la barre de menus
+    renderSettings(); // adds the settings specific to the menu bar
   }
-  // Tant que la page est visible, le plugin retient ses changements de titre.
+  // While the page is visible, the plugin holds back its title changes.
   setInterval(() => {
     if (document.visibilityState === "visible") api("/api/beat").catch(() => {});
   }, 1000);
@@ -955,10 +955,10 @@ async function startMenubar() {
 
 renderSettings();
 render();
-// La page a démarré : le message de secours d'index.html n'a plus lieu d'être
-// (il a pu s'afficher si le chargement a été très lent).
+// The page has started: the fallback message in index.html is no longer needed
+// (it may have been shown if loading was very slow).
 window.EnergIAReady = true;
-// Les boutons d'import sont inactifs dans index.html : avant ce point, un clic n'aurait rien fait.
+// The import buttons are disabled in index.html: before this point, a click would have done nothing.
 for (const id of ["pick", "sample"]) $(id).disabled = false;
 if ($("unsupported")) $("unsupported").hidden = true;
 startMenubar();

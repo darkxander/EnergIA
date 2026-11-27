@@ -20,7 +20,7 @@ const chatgptExport = [{
     a1: { id: "a1", parent: "u1", message: msg("assistant", "b".repeat(800), 1750000010, { model_slug: "gpt-4o" }) },
     u2: { id: "u2", parent: "a1", message: msg("user", "c".repeat(40), 1750000020) },
     a2: { id: "a2", parent: "u2", message: msg("assistant", "d".repeat(400), 1750000030, { model_slug: "o3" }) },
-    // Réponse régénérée : même parent que a2, compte aussi.
+    // Regenerated response: same parent as a2, counts too.
     a2b: { id: "a2b", parent: "u2", message: msg("assistant", "e".repeat(400), 1750000040, { model_slug: "o3" }) },
   },
 }];
@@ -35,12 +35,12 @@ const claudeExport = [{
   ],
 }];
 
-test("estimation des tokens", () => {
+test("token estimation", () => {
   assert.equal(estimateTokens(""), 0);
   assert.equal(estimateTokens("abcde"), 2);
 });
 
-test("export ChatGPT", () => {
+test("ChatGPT export", () => {
   const out = parseExport(chatgptExport);
   assert.equal(out.source, "chatgpt");
   assert.equal(out.conversations, 1);
@@ -54,7 +54,7 @@ test("export ChatGPT", () => {
   assert.equal(gpt4o.day, "2025-06-15");
 });
 
-test("export ChatGPT : une réponse en plusieurs messages compte pour un seul tour", () => {
+test("ChatGPT export: a response in several messages counts as a single turn", () => {
   const part = (role, type, text, time, extra = {}) => ({
     author: { role }, create_time: time, metadata: extra,
     content: type === "thoughts" ? { content_type: type, thoughts: [{ summary: "s", content: text }] }
@@ -66,8 +66,8 @@ test("export ChatGPT : une réponse en plusieurs messages compte pour un seul to
     mapping: {
       root: { message: null, parent: null },
       u1: { parent: "root", message: part("user", "text", "a".repeat(400), 1750000000) },
-      t1: { parent: "u1", message: part("assistant", "thoughts", "b".repeat(200), 1750000001) },        // sans modèle
-      r1: { parent: "t1", message: part("assistant", "reasoning_recap", "c".repeat(40), 1750000002) },  // sans modèle
+      t1: { parent: "u1", message: part("assistant", "thoughts", "b".repeat(200), 1750000001) },        // no model
+      r1: { parent: "t1", message: part("assistant", "reasoning_recap", "c".repeat(40), 1750000002) },  // no model
       a1: { parent: "r1", message: part("assistant", "text", "d".repeat(800), 1750000003, { model_slug: "gpt-5-thinking" }) },
       u2: { parent: "a1", message: part("user", "text", "e".repeat(40), 1750000010) },
       a2: { parent: "u2", message: part("assistant", "text", "f".repeat(400), 1750000011, { model_slug: "auto", resolved_model_slug: "gpt-5-2" }) },
@@ -77,11 +77,11 @@ test("export ChatGPT : une réponse en plusieurs messages compte pour un seul to
   assert.deepEqual(Object.keys(byModel).sort(), ["gpt-5-2", "gpt-5-thinking"]);
   const thinking = byModel["gpt-5-thinking"];
   assert.deepEqual([thinking.requests, thinking.responses, thinking.inTok, thinking.outTok], [1, 1, 100, 50 + 10 + 200]);
-  const next = byModel["gpt-5-2"]; // le modèle réellement utilisé, pas « auto »
+  const next = byModel["gpt-5-2"]; // the model actually used, not "auto"
   assert.deepEqual([next.requests, next.responses, next.inTok, next.outTok], [1, 1, 100 + 260 + 10, 100]);
 });
 
-test("export Claude", () => {
+test("Claude export", () => {
   const out = parseExport(claudeExport);
   assert.equal(out.source, "claude");
   assert.equal(out.rows.length, 2);
@@ -90,12 +90,12 @@ test("export Claude", () => {
   assert.deepEqual([d2.day, d2.requests, d2.inTok, d2.outTok], ["2026-03-02", 1, 310, 100]);
 });
 
-test("format inconnu", () => {
+test("unknown format", () => {
   assert.equal(parseExport({ foo: 1 }), null);
   assert.equal(parseExport([{ foo: 1 }]), null);
 });
 
-test("catégories de modèles", () => {
+test("model categories", () => {
   assert.equal(classifyModel("gpt-4o-mini"), "leger");
   assert.equal(classifyModel("gpt-4o"), "standard");
   assert.equal(classifyModel("o3"), "raisonnement");
@@ -107,11 +107,11 @@ test("catégories de modèles", () => {
   assert.equal(classifyModel("gpt-6-2-sol"), "standard");
 });
 
-test("modèle d'estimation", () => {
+test("estimation model", () => {
   const row = { day: "2026-03-01", source: "chatgpt", model: "modele-sans-prix", requests: 1, responses: 1, inTok: 2000, outTok: 300 };
   const m = rowMetrics(row, DEFAULT_SETTINGS);
-  assert.ok(Math.abs(m.wh - 0.3) < 1e-9); // (300 + 2000 × 0,1) / 1000 × 0,6
-  assert.ok(Math.abs(m.co2g - 0.13749) < 1e-9); // 0,0003 kWh × 458,3 g (moyenne mondiale 2025)
+  assert.ok(Math.abs(m.wh - 0.3) < 1e-9); // (300 + 2000 × 0.1) / 1000 × 0.6
+  assert.ok(Math.abs(m.co2g - 0.13749) < 1e-9); // 0.0003 kWh × 458.3 g (2025 world average)
   assert.ok(Math.abs(m.waterL - 0.0003) < 1e-12);
   assert.ok(Math.abs(m.eur - 0.008) < 1e-12);
   const total = summarize([row, row], DEFAULT_SETTINGS);
@@ -121,7 +121,7 @@ test("modèle d'estimation", () => {
   assert.equal(subscriptionCost([row, { ...row, day: "2026-04-02" }], settings), 40);
 });
 
-test("prix réels par modèle", () => {
+test("actual prices per model", () => {
   const million = { day: "2026-11-01", source: "claudecode", requests: 0, responses: 1,
     inTok: 1e6, cw5Tok: 1e6, cw1Tok: 1e6, cacheTok: 1e6, outTok: 1e6 };
   const eur = (model, extra = {}) => rowMetrics({ ...million, model, ...extra }, DEFAULT_SETTINGS).eur / DEFAULT_SETTINGS.eurPerUsd;
@@ -129,34 +129,34 @@ test("prix réels par modèle", () => {
   close(eur("claude-opus-5-5"), 4 + 5 + 8 + 0.2 + 20);
   close(eur("claude-fable-5-2"), 8 + 10 + 16 + 0.2 + 40);
   close(eur("claude-fable-5"), 10 + 12.5 + 20 + 1 + 50);
-  close(eur("claude-haiku-4-5-20251001"), 1 + 1.25 + 2 + 0.1 + 5); // suffixe de date ignoré
+  close(eur("claude-haiku-4-5-20251001"), 1 + 1.25 + 2 + 0.1 + 5); // date suffix ignored
   close(eur("claude-haiku-5-5-long"), 0.5 + 0.625 + 1 + 0.05 + 2.5);
   close(eur("claude-sonnet-5-5", { searches: 1000 }), 2 + 2.5 + 4 + 0.1 + 10 + 10);
-  // Modèles OpenAI : pas d'écriture de cache facturée à part ; lecture de cache au tarif "cached".
+  // OpenAI models: no cache writes billed separately; cache reads at the "cached" rate.
   close(eur("gpt-4o"), 2.5 * 3 + 1.25 + 10);
-  close(eur("gpt-5-pro"), 15 * 4 + 120); // pas de tarif de cache publié
-  // Noms tels qu'écrits dans l'export ChatGPT.
+  close(eur("gpt-5-pro"), 15 * 4 + 120); // no cache rate published
+  // Names as written in the ChatGPT export.
   assert.equal(priceFor("gpt-4-1"), priceFor("gpt-4.1"));
   assert.deepEqual(priceFor("gpt-5-thinking"), { in: 1.25, out: 10, read: 0.125 });
   assert.equal(priceFor("gpt-5-1-instant"), priceFor("gpt-5-1"));
   assert.equal(priceFor("gpt-5-t-mini"), priceFor("gpt-5-mini"));
   assert.equal(priceFor("gpt-6-2-astra").out, 40);
-  // Anciens modèles retirés de l'API : dernier prix publié.
-  assert.deepEqual(priceFor("text-davinci-002-render-sha"), { in: 0.5, out: 1.5 }); // GPT-3.5 dans ChatGPT
+  // Old models withdrawn from the API: last published price.
+  assert.deepEqual(priceFor("text-davinci-002-render-sha"), { in: 0.5, out: 1.5 }); // GPT-3.5 in ChatGPT
   assert.deepEqual(priceFor("o3-mini-high"), { in: 1.1, out: 4.4, read: 0.55 });
   assert.deepEqual(priceFor("o4-mini-high"), { in: 1.1, out: 4.4, read: 0.275 });
   assert.equal(priceFor("gpt-4-5").out, 150);
   assert.equal(priceFor("gpt-4").in, 30);
-  // Noms de ChatGPT sans correspondance officielle avec un modèle de l'API.
+  // ChatGPT names with no official match to an API model.
   for (const unknown of ["gpt-6", "gpt-6-mini", "gpt-5-6", "gpt-5-3", "research", "auto", "claude", "inconnu", ""]) {
-    assert.equal(priceFor(unknown), null, unknown); // repli sur le tarif indicatif de la catégorie
+    assert.equal(priceFor(unknown), null, unknown); // falls back to the category's indicative rate
   }
-  // Énergie : les écritures de cache comptent comme des tokens lus ordinaires.
+  // Energy: cache writes count as ordinary read tokens.
   const wh = rowMetrics({ ...million, model: "claude-sonnet-5-5" }, DEFAULT_SETTINGS).wh;
   close(wh, ((1e6 + (3e6 + 1e6 * 0.02) * 0.1) / 1000) * 0.6);
 });
 
-test("lecture d'une archive zip", async () => {
+test("reading a zip archive", async () => {
   const dir = mkdtempSync(join(tmpdir(), "EnergIA-"));
   writeFileSync(join(dir, "conversations.json"), JSON.stringify(claudeExport));
   writeFileSync(join(dir, "users.json"), "[]");
@@ -172,7 +172,7 @@ test("lecture d'une archive zip", async () => {
   await assert.rejects(listZipEntries(new Blob(["pas un zip"])));
 });
 
-test("i18n : mêmes clés et mêmes variables en français et en anglais", async () => {
+test("i18n: same keys and same variables in French and in English", async () => {
   const { TEXTS, pickLang, translate } = await import("../src/i18n.js");
   assert.deepEqual(Object.keys(TEXTS.en).sort(), Object.keys(TEXTS.fr).sort());
   const variables = (text) => (text.match(/\{\w+\}/g) || []).sort();
@@ -180,7 +180,7 @@ test("i18n : mêmes clés et mêmes variables en français et en anglais", async
     assert.deepEqual(variables(TEXTS.en[key]), variables(TEXTS.fr[key]), key);
   }
 
-  // Le choix enregistré l'emporte ; sinon français pour un navigateur en français, anglais ailleurs.
+  // The saved choice wins; otherwise French for a browser in French, English elsewhere.
   assert.equal(pickLang("en", "fr-FR"), "en");
   assert.equal(pickLang(null, "fr-CA"), "fr");
   assert.equal(pickLang(null, "de-DE"), "en");
@@ -191,7 +191,7 @@ test("i18n : mêmes clés et mêmes variables en français et en anglais", async
   assert.equal(translate("en", "euro", { amount: "54.50" }), "€54.50");
 });
 
-test("i18n : chaque texte marqué dans index.html a sa version anglaise", async () => {
+test("i18n: every text marked in index.html has its English version", async () => {
   const { PAGE_EN } = await import("../src/i18n.js");
   const { readFileSync } = await import("node:fs");
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -200,7 +200,7 @@ test("i18n : chaque texte marqué dans index.html a sa version anglaise", async 
   for (const key of keys) assert.ok(PAGE_EN[key], key);
 });
 
-test("zip : les erreurs portent un code que l'interface traduit", async () => {
+test("zip: errors carry a code that the interface translates", async () => {
   const { TEXTS } = await import("../src/i18n.js");
   await assert.rejects(listZipEntries(new Blob(["pas un zip, mais assez long pour être lu"])), { code: "zip.invalid" });
   await assert.rejects(readZipEntryText(new Blob([new Uint8Array(64)]), { offset: 0, compSize: 1, method: 99 }),
@@ -208,41 +208,41 @@ test("zip : les erreurs portent un code que l'interface traduit", async () => {
   for (const code of ["zip.invalid", "zip.method", "zip.noDecompression"]) assert.ok(TEXTS.fr[code] && TEXTS.en[code], code);
 });
 
-test("la page se passe de la syntaxe d'import JSON, absente des navigateurs anciens", () => {
+test("the page does without the JSON import syntax, absent from old browsers", () => {
   for (const file of ["app.js", "model.js", "parsers.js", "zip.js", "i18n.js"]) {
     const source = readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
     assert.doesNotMatch(source, /^import .* with \{/m, file);
   }
 });
 
-test("index.html porte le numéro de version des fichiers actuels (sinon : node tools/stamp.mjs)", async () => {
+test("index.html carries the version number of the current files (otherwise: node tools/stamp.mjs)", async () => {
   const { assetVersion, stamped } = await import("../tools/stamp.mjs");
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.equal(stamped(html, assetVersion()), html);
   assert.match(html, /src="src\/app\.js\?v=[0-9a-f]{8}"/);
 });
 
-test("intensité carbone : une liste de pays sourcée, aux valeurs distinctes", async () => {
+test("carbon intensity: a sourced list of countries, with distinct values", async () => {
   const { CARBON, DEFAULT_SETTINGS } = await import("../src/model.js");
   const values = CARBON.countries.map((country) => country.g);
-  assert.equal(new Set(values).size, values.length); // le pays choisi se retrouve d'après sa valeur
+  assert.equal(new Set(values).size, values.length); // the chosen country is found again from its value
   for (const country of CARBON.countries) assert.ok(country.code && country.fr && country.en && country.g > 0, country.code);
   const byCode = Object.fromEntries(CARBON.countries.map((country) => [country.code, country.g]));
-  assert.equal(byCode.WLD, DEFAULT_SETTINGS.gCO2PerKWh); // la valeur par défaut est la moyenne mondiale
+  assert.equal(byCode.WLD, DEFAULT_SETTINGS.gCO2PerKWh); // the default value is the world average
   assert.equal(byCode.FR, 41.4);
   assert.equal(byCode.US, 384.4);
   assert.ok(CARBON.source && CARBON.citation && CARBON.year);
 });
 
-test("seuils d'alerte : désactivés par défaut", async () => {
+test("alert thresholds: disabled by default", async () => {
   const { DEFAULT_SETTINGS } = await import("../src/model.js");
   for (const key of ["dailyBudgetWh", "monthlyBudgetKWh", "dailyBudgetEur", "monthlyBudgetEur"]) {
     assert.equal(DEFAULT_SETTINGS[key], 0, key);
   }
 });
 
-// Mêmes lignes et mêmes résultats que dans test/test_menubar.py : le plugin refait ce calcul.
-test("coût : mêmes chiffres que le plugin", async () => {
+// Same rows and same results as in test/test_menubar.py: the plugin redoes this calculation.
+test("cost: same figures as the plugin", async () => {
   const { DEFAULT_SETTINGS, rowMetrics } = await import("../src/model.js");
   const close = (row, expected) => assert.ok(Math.abs(rowMetrics(row, DEFAULT_SETTINGS).eur - expected) < 1e-9, row.model);
   close({ model: "claude-sonnet-5-5", inTok: 1000, cw5Tok: 200, cw1Tok: 300, cacheTok: 50000, outTok: 400, searches: 2 }, 0.02982894);
@@ -250,29 +250,29 @@ test("coût : mêmes chiffres que le plugin", async () => {
   close({ model: "modele-inconnu", inTok: 2000, cacheTok: 1000, outTok: 300 }, 0.00805);
 });
 
-test("CSV : séparateur et décimales selon la langue, cellules protégées", async () => {
+test("CSV: separator and decimals according to the language, cells protected", async () => {
   const { csvText } = await import("../src/csv.js");
   const lines = [["Jour", "Modèle", "Énergie (Wh)"], ["2026-11-25", "gpt-4o", 0.607], ["2026-11-26", 'a;b "c"', 1234.5678912]];
   assert.equal(csvText(lines, "fr"),
     '\uFEFFJour;Modèle;Énergie (Wh)\r\n2026-11-25;gpt-4o;0,607\r\n2026-11-26;"a;b ""c""";1234,57\r\n');
   assert.equal(csvText(lines, "en"),
     '\uFEFFJour,Modèle,Énergie (Wh)\r\n2026-11-25,gpt-4o,0.607\r\n2026-11-26,"a;b ""c""",1234.57\r\n');
-  // Six chiffres significatifs ; entiers entiers, petits nombres sans notation scientifique.
+  // Six significant figures; whole numbers stay whole, small numbers without scientific notation.
   assert.equal(csvText([[1200, 1234567, 0, 0.00035964, 0.0000004, 1e-14]], "en"), "\uFEFF1200,1234567,0,0.00035964,0.0000004,0\r\n");
-  // Un texte qui commence comme une formule ne doit pas être exécuté par le tableur.
+  // A text that starts like a formula must not be executed by the spreadsheet.
   assert.equal(csvText([["=SOMME(A1)", "-1", "@x", "a,b"]], "en"), "\uFEFF'=SOMME(A1),'-1,'@x,\"a,b\"\r\n");
 });
 
-test("image de résumé : coupe des textes en lignes", async () => {
+test("summary image: wrapping texts into lines", async () => {
   const { wrapLines } = await import("../src/card.js");
-  const measure = (text) => text.length; // un caractère = une unité de largeur
+  const measure = (text) => text.length; // one character = one unit of width
   assert.deepEqual(wrapLines(measure, "un deux trois", 20), ["un deux trois"]);
   assert.deepEqual(wrapLines(measure, "un deux trois quatre", 10), ["un deux", "trois qua…"]);
   assert.deepEqual(wrapLines(measure, "un deux trois quatre", 10, 3), ["un deux", "trois", "quatre"]);
   assert.deepEqual(wrapLines(measure, "", 10), []);
 });
 
-test("imports qui se cumulent : une conversation n'est comptée qu'une fois", async () => {
+test("cumulative imports: a conversation is counted only once", async () => {
   const { combine, parseExport, rowsOf } = await import("../src/parsers.js");
   const conv = (id, updated, answers) => ({
     id, create_time: 1750000000, update_time: updated,
@@ -289,34 +289,34 @@ test("imports qui se cumulent : une conversation n'est comptée qu'une fois", as
   assert.ok(!JSON.stringify(first.items).includes('"a"'), "l'identifiant n'est pas gardé");
   assert.deepEqual(first.rows, rowsOf("chatgpt", first.items));
 
-  // Le même export une seconde fois : rien ne change.
+  // The same export a second time: nothing changes.
   const again = combine(first.items, first.items);
   assert.deepEqual([again.added, again.updated, again.same, requests(again.items)], [0, 0, 2, 2]);
 
-  // Un export plus récent : « a » inchangée, « b » a grandi, « c » est nouvelle.
+  // A more recent export: "a" unchanged, "b" has grown, "c" is new.
   const second = parseExport([conv("a", 100, [400]), conv("b", 200, [400, 800]), conv("c", 200, [400])]);
   const merged = combine(first.items, second.items);
   assert.deepEqual([merged.added, merged.updated, merged.same], [1, 1, 1]);
   assert.equal(Object.keys(merged.items).length, 3);
-  assert.equal(requests(merged.items), 4); // 1 + 2 + 1, et non 2 + 4
+  assert.equal(requests(merged.items), 4); // 1 + 2 + 1, and not 2 + 4
 
-  // Un export plus ancien importé après coup n'écrase pas la version récente,
-  // et une conversation supprimée depuis reste comptée.
+  // An older export imported afterwards does not overwrite the recent version,
+  // and a conversation deleted since then is still counted.
   const back = combine(merged.items, parseExport([conv("b", 100, [400])]).items);
   assert.deepEqual([back.kept, requests(back.items)], [1, 4]);
   assert.deepEqual(first.items, parseExport([conv("a", 100, [400]), conv("b", 100, [400])]).items, "combine ne modifie pas l'existant");
 
-  // Deux fichiers d'un autre compte : tout s'ajoute.
+  // Two files from another account: everything is added.
   const other = combine(merged.items, parseExport([conv("z", 50, [400])]).items);
   assert.deepEqual([other.added, requests(other.items)], [1, 5]);
 
-  // Claude : la clé vient de l'uuid, et ne se confond pas avec celle de ChatGPT.
+  // Claude: the key comes from the uuid, and is not confused with ChatGPT's.
   const claude = parseExport(claudeExport);
   assert.equal(Object.keys(claude.items).length, 1);
   assert.deepEqual(combine(claude.items, parseExport(claudeExport).items).same, 1);
 });
 
-test("export Copilot : les deux dispositions du CSV", async () => {
+test("Copilot export: the two CSV layouts", async () => {
   const { parseCsv, parseFileText } = await import("../src/parsers.js");
   assert.deepEqual(parseCsv('\uFEFFa,b\r\n"x, ""y""\nz",2\r\n'), [["a", "b"], ['x, "y"\nz', "2"]]);
   assert.deepEqual(parseCsv("a;b\n1;2"), [["a", "b"], ["1", "2"]]);
@@ -327,7 +327,7 @@ test("export Copilot : les deux dispositions du CSV", async () => {
     `Voyage,2026-02-17T14:36:20,AI,"${"r".repeat(400)}"`,
     `Voyage,2026-02-17T14:40:00,user,${q}`,
     `Voyage,2026-02-17T14:40:09,AI,${"r".repeat(200)}`,
-    // Même titre un mois plus tard : une autre conversation, le contexte repart de zéro.
+    // Same title a month later: another conversation, the context starts again from zero.
     `Voyage,2026-03-20T10:00:00,user,${q}`,
     `Voyage,2026-03-20T10:00:09,AI,${"r".repeat(200)}`,
   ].join("\r\n"));
@@ -337,14 +337,14 @@ test("export Copilot : les deux dispositions du CSV", async () => {
   assert.deepEqual([second.day, second.requests, second.inTok, second.outTok], ["2026-03-20", 1, 10, 50]);
 
   const chat = parseFileText(`CreatedAt,MessageContent,Author,ChatName\n2/17/2026 11:36:11 PM -02:00,${q},user,Chat\n2/17/2026 11:36:30 PM -02:00,${"r".repeat(400)},Copilot,Chat\n`);
-  assert.deepEqual(chat.rows.map((r) => [r.day, r.requests, r.inTok, r.outTok]), [["2026-02-18", 1, 10, 100]]); // 23 h 36 à UTC−2
+  assert.deepEqual(chat.rows.map((r) => [r.day, r.requests, r.inTok, r.outTok]), [["2026-02-18", 1, 10, 100]]); // 23:36 at UTC−2
 
   const prompts = parseFileText("Timestamp,ClientApp,Prompt\n2026-01-01T00:00:00,App,bonjour\n");
-  assert.deepEqual([prompts.promptsOnly, prompts.rows.length], [true, 0]); // des demandes seules : rien à compter
+  assert.deepEqual([prompts.promptsOnly, prompts.rows.length], [true, 0]); // requests only: nothing to count
   assert.equal(parseFileText("x,y\n1,2\n"), null);
 });
 
-test("export Gemini : les trois formes décrites, et rien d'autre de « Mon activité »", async () => {
+test("Gemini export: the three forms described, and nothing else from `My Activity`", async () => {
   const { parseFileText } = await import("../src/parsers.js");
   const { classifyModel } = await import("../src/model.js");
   const q = "q".repeat(40);
@@ -356,21 +356,21 @@ test("export Gemini : les trois formes décrites, et rien d'autre de « Mon acti
     { header: "Gemini", title: "Used Gemini Apps", time: "2026-05-02T10:05:00.000Z", products: ["Gemini Apps"],
       userInteractions: [{ userInteraction: { endpoint: "x", request: JSON.stringify({ text: q }), response: JSON.stringify({ parts: [{ text: "r".repeat(200) }] }) } }] },
     { header: "YouTube", title: "Watched x", time: "2026-05-02T10:05:00.000Z", products: ["YouTube"] },
-    { header: "Gemini", title: "Used Gemini Apps", time: "2026-05-03T10:05:00.000Z", products: ["Gemini Apps"] }, // ni demande ni réponse
+    { header: "Gemini", title: "Used Gemini Apps", time: "2026-05-03T10:05:00.000Z", products: ["Gemini Apps"] }, // neither request nor response
   ];
   const out = parseFileText(JSON.stringify(events));
-  assert.deepEqual([out.source, out.conversations], ["gemini", 2]); // les deux premiers partagent un lien
+  assert.deepEqual([out.source, out.conversations], ["gemini", 2]); // the first two share a link
   const [first, second] = out.rows.sort((a, b) => a.day.localeCompare(b.day));
   assert.deepEqual([first.day, first.model, first.requests, first.inTok, first.outTok], ["2026-05-01", "gemini", 2, 10 + (10 + 100 + 10), 150]);
   assert.deepEqual([second.day, second.requests, second.inTok, second.outTok], ["2026-05-02", 1, 10, 50]);
   assert.equal(parseFileText(JSON.stringify([events[3]])), null);
-  assert.equal(classifyModel("gemini"), "standard"); // « gemini » contient « mini » sans être un modèle léger
+  assert.equal(classifyModel("gemini"), "standard"); // "gemini" contains "mini" without being a light model
   assert.equal(classifyModel("o3-mini"), "leger");
 });
 
-test("install.sh : syntaxe valide, et aucune variable collée à un caractère accentué", () => {
+test("install.sh: valid syntax, and no variable stuck to an accented character", () => {
   const path = new URL("../install.sh", import.meta.url);
   execFileSync("sh", ["-n", path.pathname]);
-  // « $DOSSIER… » : certains shells prennent le caractère non ASCII pour la suite du nom.
+  // "$DOSSIER…": some shells take the non-ASCII character as the continuation of the name.
   assert.deepEqual(readFileSync(path, "utf8").match(/\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]/g), null);
 });

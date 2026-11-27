@@ -1,6 +1,6 @@
-// Textes de l'interface, en français et en anglais.
-// La langue vient du choix enregistré, sinon de celle du navigateur :
-// français si le navigateur est en français, anglais dans tous les autres cas.
+// Interface texts, in French and in English.
+// The language comes from the saved choice, otherwise from the browser's:
+// French if the browser is in French, English in all other cases.
 
 export const LANG_KEY = "EnergIA.lang";
 export const LANGS = ["fr", "en"];
@@ -20,10 +20,10 @@ export function pickLang(saved, browser) {
 
 const browserLang = globalThis.navigator?.language || "";
 export const LANG = pickLang(stored(), browserLang);
-// Formats de nombres et de dates : ceux du navigateur s'il est dans la langue affichée.
+// Number and date formats: the browser's if it is in the displayed language.
 export const LOCALE = browserLang.toLowerCase().startsWith(LANG) ? browserLang : LANG === "fr" ? "fr-FR" : "en-GB";
 
-// Textes produits par le code. Les mêmes clés et les mêmes {variables} dans les deux langues.
+// Texts produced by the code. The same keys and the same {variables} in both languages.
 export const TEXTS = {
   fr: {
     "metric.energy": "Énergie",
@@ -255,8 +255,8 @@ export const TEXTS = {
   },
 };
 
-// Textes écrits dans index.html (en français) : leur version anglaise, par clé data-i18n.
-// Les valeurs peuvent contenir du HTML ; elles ne viennent que de ce fichier.
+// Texts written in index.html (in French): their English version, by data-i18n key.
+// The values may contain HTML; they come only from this file.
 export const PAGE_EN = {
   "page.title": "EnergIA – what your AI usage amounts to",
   "page.tagline": "What your AI usage amounts to, in energy, CO₂, water and euros.",

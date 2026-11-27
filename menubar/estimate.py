@@ -1,7 +1,7 @@
-"""Estimation d'énergie pour le titre de la barre de menus.
+"""Energy estimate for the menu bar title.
 
-Même calcul que src/model.js (garder les deux en accord), avec les mêmes
-valeurs par défaut (src/defaults.json) et les réglages faits dans la page.
+Same calculation as src/model.js (keep the two in agreement), with the same
+default values (src/defaults.json) and the settings made in the page.
 """
 
 import copy
@@ -20,7 +20,7 @@ SETTINGS = os.path.join(PATHS["config"], "settings.json")
 
 LANGS = ("fr", "en")
 
-_LEGER = re.compile(r"(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna")  # « gemini » n'est pas « mini »
+_LEGER = re.compile(r"(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna")  # "gemini" is not "mini"
 _GRAND = re.compile(r"opus|fable|mythos|astra")
 _RAISONNEMENT = re.compile(r"^o\d|thinking|reason|research|(^|-)pro($|-)")
 
@@ -41,8 +41,8 @@ def _number(value):
 
 
 def merge(defaults, saved):
-    """Les réglages enregistrés par-dessus les valeurs par défaut ; seuls des
-    nombres plausibles sur des clés connues sont acceptés."""
+    """The saved settings on top of the default values; only plausible
+    numbers on known keys are accepted."""
     out = copy.deepcopy(defaults)
     if not isinstance(saved, dict):
         return out
@@ -61,13 +61,13 @@ def merge(defaults, saved):
                             inner[field] = new[name][field]
         elif _number(new):
             out[key] = new
-    if saved.get("lang") in LANGS:  # langue affichée par la page, reprise par le titre
+    if saved.get("lang") in LANGS:  # language displayed by the page, reused by the title
         out["lang"] = saved["lang"]
     return out
 
 
 def _system_languages():
-    """Texte dont le début donne la langue du système."""
+    """Text whose beginning gives the system language."""
     if sys.platform == "darwin":
         return subprocess.run(["/usr/bin/defaults", "read", "-g", "AppleLanguages"],
                               capture_output=True, text=True, timeout=5, check=False).stdout
@@ -75,12 +75,12 @@ def _system_languages():
         if os.environ.get(name):
             return os.environ[name]
     import locale
-    return locale.getlocale()[0] or ""  # sous Windows : « French_France », « fr_FR »…
+    return locale.getlocale()[0] or ""  # on Windows: "French_France", "fr_FR"…
 
 
 def system_lang(read=None):
-    """Langue du système : français si c'est la première langue préférée, anglais sinon
-    (même règle que la page avec la langue du navigateur)."""
+    """System language: French if it is the first preferred language, English otherwise
+    (same rule as the page with the browser's language)."""
     try:
         text = (read or _system_languages)()
     except (OSError, ValueError, subprocess.SubprocessError):
@@ -93,7 +93,7 @@ _system_lang = None
 
 
 def lang_of(settings):
-    """La langue choisie dans la page, sinon celle du système (lue une seule fois)."""
+    """The language chosen in the page, otherwise the system's (read only once)."""
     global _system_lang
     if settings.get("lang") in LANGS:
         return settings["lang"]
@@ -132,8 +132,8 @@ _MODE = re.compile(r"-(thinking|instant|high|medium|low|auto)(?=-|$)")
 
 
 def price_for(model):
-    """Prix publics du modèle (dollars par million de tokens), ou None s'il est inconnu.
-    Même règle que priceFor dans src/model.js."""
+    """Public prices of the model (dollars per million tokens), or None if it is unknown.
+    Same rule as priceFor in src/model.js."""
     global _prices
     if _prices is None:
         with open(PRICES, encoding="utf-8") as f:
@@ -148,7 +148,7 @@ def price_for(model):
 
 
 def eur(row, settings):
-    """Coût au tarif de l'API, en euros. Même calcul que rowMetrics dans src/model.js."""
+    """Cost at the API rate, in euros. Same calculation as rowMetrics in src/model.js."""
     write5m, write1h, cached = row.get("cw5Tok", 0), row.get("cw1Tok", 0), row.get("cacheTok", 0)
     price = price_for(row["model"])
     if not price:
@@ -163,8 +163,8 @@ def eur(row, settings):
 
 
 def over_budget(rows, settings, today):
-    """Vrai si l'un des seuils choisis dans la page est dépassé : énergie ou coût,
-    pour le jour `today` (AAAA-MM-JJ) ou pour son mois."""
+    """True if one of the thresholds chosen in the page is exceeded: energy or cost,
+    for the day `today` (YYYY-MM-DD) or for its month."""
     month = [row for row in rows if row["day"][:7] == today[:7]]
     day = [row for row in month if row["day"] == today]
     checks = ((settings.get("dailyBudgetWh", 0), day, wh), (settings.get("monthlyBudgetKWh", 0) * 1000, month, wh),
@@ -174,9 +174,9 @@ def over_budget(rows, settings, today):
 
 
 def format_energy(value, lang="fr", compact=False):
-    """12 Wh, 3,4 Wh, 1,25 kWh : trois chiffres significatifs au plus.
-    Virgule décimale en français, point en anglais.
-    Compact : sans espace et avec moins de chiffres (523Wh, 12Wh, 1,3kWh)."""
+    """12 Wh, 3,4 Wh, 1,25 kWh: three significant digits at most.
+    Decimal comma in French, point in English.
+    Compact: no space and fewer digits (523Wh, 12Wh, 1,3kWh)."""
     unit = "Wh"
     if value >= 1000:
         value, unit = value / 1000, "kWh"
