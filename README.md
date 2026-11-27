@@ -21,7 +21,8 @@ browser, English otherwise), and the link at the top right of the page switches 
 
 ![The four summary tiles in dark theme: 188 kWh, 75.3 kg CO₂e, 188 L and €17,160 at API prices](docs/tuiles.png)
 
-*The summary tiles, here for eight months of real Claude Code usage.*
+*The summary tiles, here for eight months of real Claude Code usage. The screenshot predates
+the country list: its CO₂ figure is computed at 400 g/kWh.*
 
 All figures are **order-of-magnitude estimates**: providers do not publish the actual
 consumption of their models. See [Limitations](#limitations).
@@ -33,6 +34,8 @@ consumption of their models. See [Limitations](#limitations).
 - A chart by day or by month, by service, with a table view.
 - A table by model.
 - A period filter (from "Today" to the whole history) and a service filter.
+- The choice of the country whose electricity is used to compute CO₂ (27 countries and
+  regions).
 - Calculation assumptions that can all be changed.
 
 ## Using the web page
@@ -111,7 +114,10 @@ SwiftBar.
    sets an energy per thousand generated tokens. A token read weighs a fraction of a token
    generated, and a token re-read from the cache a smaller fraction still.
 3. **CO₂ and water.** Energy is multiplied by a carbon intensity (g CO₂e/kWh) and by a
-   water consumption (L/kWh).
+   water consumption (L/kWh). The carbon intensity is that of the chosen country, the world
+   average by default (458 g CO₂e/kWh in 2025). The values per country
+   ([src/carbon.json](src/carbon.json)) are lifecycle emissions, collected on 27 November
+   2026: Ember (2026), with processing by [Our World in Data](https://ourworldindata.org/grapher/carbon-intensity-electricity).
 4. **Cost.** What these tokens would cost if paid by usage, at the public prices of the
    Anthropic and OpenAI APIs ([src/prices.json](src/prices.json)), converted to euros.
 
@@ -125,6 +131,9 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 - **The weight of tokens re-read from the cache is the most uncertain assumption.** They
   make up most of Claude Code's volume, and their weight (2% of a token read by default)
   changes the total a great deal.
+- **The country to choose is where the models run, not necessarily yours.** Providers do
+  not say in which data centre a request is handled; the world average is a default
+  choice, not a measurement.
 - **The cost is not your bill.** With a subscription, you pay the plan, not the tokens.
   Current prices are applied to the whole history.
 - **Prices need maintaining.** The prices in [src/prices.json](src/prices.json) were
@@ -156,7 +165,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/parsers.js`, `src/zip.js` | Reading ChatGPT and Claude exports |
 | `src/i18n.js` | Interface texts in French and English |
 | `src/model.js` | Computing energy, CO₂, water and cost |
-| `src/defaults.json`, `src/prices.json` | Default assumptions and model prices |
+| `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin: Claude Code logs, local server, exchange rate |
 | `tools/stamp.mjs` | Stamps the page's files with a version number |
 | `test/` | Tests |
@@ -189,7 +198,6 @@ These are intentions, with no dates and no commitment. In the planned order:
 
 Then, in no set order:
 
-- **Choice of country for CO₂**, from a list, instead of a figure to type in.
 - **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
   their exports allow.
 - **Threshold and alert**: a budget in kWh or euros, flagged in the menu bar when it is

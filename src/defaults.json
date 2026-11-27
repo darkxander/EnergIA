@@ -9,7 +9,7 @@
   "cacheReadRatio": 0.02,
   "lowFactor": 0.5,
   "highFactor": 2,
-  "gCO2PerKWh": 400,
+  "gCO2PerKWh": 458.3,
   "waterLPerKWh": 1,
   "eurPerUsd": 0.9122,
   "subs": { "chatgpt": 0, "claude": 0 }

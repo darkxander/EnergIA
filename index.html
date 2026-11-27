@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EnergIA – ce que représente votre usage de l'IA</title>
-  <link rel="stylesheet" href="styles.css?v=9a5ddb22">
+  <link rel="stylesheet" href="styles.css?v=b1effc9a">
 </head>
 <body class="viz-root">
   <header class="top">
@@ -66,6 +66,9 @@
             <option value="cowork">Claude Cowork</option>
           </select>
         </label>
+        <label><span data-i18n="filter.carbon">Pays (CO₂)</span>
+          <select id="carbon"></select>
+        </label>
         <p id="volume" class="muted"></p>
       </div>
 
@@ -102,7 +105,7 @@
       <details id="hypotheses">
         <summary><h2 data-i18n="hypotheses.title">Hypothèses de calcul</h2></summary>
         <p data-i18n="hypotheses.intro">Les fournisseurs publient peu de chiffres : tout ce qui est affiché ici est une <strong>estimation d'ordre de grandeur</strong>. Le nombre de tokens est estimé à partir de la longueur du texte (environ 4 caractères par token), puis converti en énergie selon la catégorie du modèle. Pour Claude Code, les nombres de tokens sont mesurés et non estimés ; la conversion en énergie reste une estimation. Le paramètre le plus incertain est le poids des tokens relus du cache : ils représentent l'essentiel du volume de Claude Code, et aucun chiffre public ne dit ce qu'ils consomment.</p>
-        <p class="muted" data-i18n="hypotheses.refs">Repères publics : OpenAI a indiqué environ 0,34 Wh pour une requête ChatGPT moyenne (juin 2025) ; Google, 0,24 Wh pour une requête texte Gemini médiane (août 2025). L'intensité carbone dépend du pays du centre de données : environ 400 g CO₂e/kWh en moyenne mondiale, bien moins en France.</p>
+        <p class="muted" data-i18n="hypotheses.refs">Repères publics : OpenAI a indiqué environ 0,34 Wh pour une requête ChatGPT moyenne (juin 2025) ; Google, 0,24 Wh pour une requête texte Gemini médiane (août 2025). L'intensité carbone dépend du pays où tournent les modèles, pas forcément du vôtre : les grands fournisseurs s'appuient pour une bonne part sur des centres de données aux États-Unis. Elle va de 458 g CO₂e/kWh en moyenne mondiale à 41 en France (2025, émissions sur le cycle de vie ; source : Ember, via Our World in Data).</p>
         <form id="settings" class="settings"></form>
         <button id="reset-settings" type="button" data-i18n="hypotheses.reset">Rétablir les valeurs par défaut</button>
       </details>
@@ -138,13 +141,13 @@
   <script type="importmap">
   {
     "imports": {
-      "./src/i18n.js": "./src/i18n.js?v=9a5ddb22",
-      "./src/model.js": "./src/model.js?v=9a5ddb22",
-      "./src/parsers.js": "./src/parsers.js?v=9a5ddb22",
-      "./src/zip.js": "./src/zip.js?v=9a5ddb22"
+      "./src/i18n.js": "./src/i18n.js?v=b1effc9a",
+      "./src/model.js": "./src/model.js?v=b1effc9a",
+      "./src/parsers.js": "./src/parsers.js?v=b1effc9a",
+      "./src/zip.js": "./src/zip.js?v=b1effc9a"
     }
   }
   </script>
-  <script type="module" src="src/app.js?v=9a5ddb22"></script>
+  <script type="module" src="src/app.js?v=b1effc9a"></script>
 </body>
 </html>

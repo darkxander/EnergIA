@@ -1,6 +1,6 @@
 import { listZipEntries, readZipEntryText } from "./zip.js";
 import { parseExport } from "./parsers.js";
-import { DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
+import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
@@ -64,6 +64,8 @@ function mergeSettings(saved) {
   if (!saved) return s;
   // 0,9 était une valeur provisoire d'une version précédente, jamais un choix de l'utilisateur.
   if (saved.eurPerUsd === 0.9) delete saved.eurPerUsd;
+  // 400 était la moyenne mondiale approchée d'avant la liste de pays : on reprend la valeur sourcée.
+  if (saved.gCO2PerKWh === 400) delete saved.gCO2PerKWh;
   for (const key of Object.keys(s)) {
     if (key === "tiers") {
       for (const tier of Object.keys(s.tiers)) Object.assign(s.tiers[tier], saved.tiers?.[tier]);
@@ -497,8 +499,34 @@ function renderModels(rows) {
     + (lines.some((line) => line[8].endsWith("*")) ? t("price.asterisk") : "");
 }
 
+// Pays dont l'électricité sert au calcul du CO₂. Le choix n'est pas enregistré à part :
+// il se déduit de l'intensité carbone des hypothèses (valeurs toutes distinctes).
+const carbonCountries = [
+  ...CARBON.countries.slice(0, 2), // Monde et Union européenne en tête
+  ...CARBON.countries.slice(2).sort((a, b) => a[LANG].localeCompare(b[LANG], LANG)),
+];
+
+function renderCarbon() {
+  const select = $("carbon");
+  const current = state.settings.gCO2PerKWh;
+  const option = (value, label) => el("option", { value }, label);
+  const options = carbonCountries.map((country) =>
+    option(country.code, t("carbon.option", { name: country[LANG], g: nf(country.g) })));
+  const match = carbonCountries.find((country) => country.g === current);
+  if (!match) options.unshift(option("custom", t("carbon.custom", { g: nf(current) })));
+  select.replaceChildren(...options);
+  select.value = match ? match.code : "custom";
+  select.title = t("carbon.title", { year: CARBON.year, source: CARBON.citation });
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+  pushSettings();
+}
+
 function render() {
   renderSources();
+  renderCarbon();
   const hasData = Object.keys(state.data).length > 0;
   $("results").hidden = !hasData;
   if (!hasData) return;
@@ -568,8 +596,7 @@ function renderSettings() {
           localStorage.setItem(MANUAL_RATE_KEY, "1");
           state.rateDate = null;
         }
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
-        pushSettings();
+        saveSettings();
         render();
       });
       return el("label", {}, label, input);
@@ -624,6 +651,14 @@ document.addEventListener("drop", (event) => {
 for (const key of ["period", "source", "metric"]) {
   $(key).addEventListener("change", (event) => { state[key] = event.target.value; render(); });
 }
+$("carbon").addEventListener("change", (event) => {
+  const country = CARBON.countries.find((item) => item.code === event.target.value);
+  if (!country) return; // « Personnalisé » : la valeur saisie dans les hypothèses reste
+  state.settings.gCO2PerKWh = country.g;
+  saveSettings();
+  renderSettings();
+  render();
+});
 $("toggle-table").addEventListener("click", (event) => {
   state.showTable = !state.showTable;
   event.target.textContent = t(state.showTable ? "chart.showChart" : "chart.showTable");

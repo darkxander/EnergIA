@@ -1,0 +1,171 @@
+{
+  "source": "https://ourworldindata.org/grapher/carbon-intensity-electricity",
+  "citation": "Ember (2026) – with major processing by Our World in Data",
+  "basis": "Émissions sur le cycle de vie, tous gaz à effet de serre, en g CO₂e par kWh d'électricité produite",
+  "year": 2025,
+  "checked": "2026-11-27",
+  "countries": [
+    {
+      "code": "WLD",
+      "fr": "Moyenne mondiale",
+      "en": "World average",
+      "g": 458.3
+    },
+    {
+      "code": "EU",
+      "fr": "Union européenne",
+      "en": "European Union",
+      "g": 209.9
+    },
+    {
+      "code": "AU",
+      "fr": "Australie",
+      "en": "Australia",
+      "g": 525.2
+    },
+    {
+      "code": "AT",
+      "fr": "Autriche",
+      "en": "Austria",
+      "g": 116.9
+    },
+    {
+      "code": "BE",
+      "fr": "Belgique",
+      "en": "Belgium",
+      "g": 149.8
+    },
+    {
+      "code": "BR",
+      "fr": "Brésil",
+      "en": "Brazil",
+      "g": 110.0
+    },
+    {
+      "code": "CA",
+      "fr": "Canada",
+      "en": "Canada",
+      "g": 190.7
+    },
+    {
+      "code": "CN",
+      "fr": "Chine",
+      "en": "China",
+      "g": 525.3
+    },
+    {
+      "code": "DK",
+      "fr": "Danemark",
+      "en": "Denmark",
+      "g": 114.4
+    },
+    {
+      "code": "FI",
+      "fr": "Finlande",
+      "en": "Finland",
+      "g": 57.5
+    },
+    {
+      "code": "FR",
+      "fr": "France",
+      "en": "France",
+      "g": 41.4
+    },
+    {
+      "code": "DE",
+      "fr": "Allemagne",
+      "en": "Germany",
+      "g": 329.6
+    },
+    {
+      "code": "IN",
+      "fr": "Inde",
+      "en": "India",
+      "g": 670.1
+    },
+    {
+      "code": "IE",
+      "fr": "Irlande",
+      "en": "Ireland",
+      "g": 256.5
+    },
+    {
+      "code": "IT",
+      "fr": "Italie",
+      "en": "Italy",
+      "g": 284.8
+    },
+    {
+      "code": "JP",
+      "fr": "Japon",
+      "en": "Japan",
+      "g": 477.3
+    },
+    {
+      "code": "NL",
+      "fr": "Pays-Bas",
+      "en": "Netherlands",
+      "g": 253.6
+    },
+    {
+      "code": "NO",
+      "fr": "Norvège",
+      "en": "Norway",
+      "g": 28.1
+    },
+    {
+      "code": "PL",
+      "fr": "Pologne",
+      "en": "Poland",
+      "g": 588.6
+    },
+    {
+      "code": "PT",
+      "fr": "Portugal",
+      "en": "Portugal",
+      "g": 127.9
+    },
+    {
+      "code": "SG",
+      "fr": "Singapour",
+      "en": "Singapore",
+      "g": 497.1
+    },
+    {
+      "code": "KR",
+      "fr": "Corée du Sud",
+      "en": "South Korea",
+      "g": 417.1
+    },
+    {
+      "code": "ES",
+      "fr": "Espagne",
+      "en": "Spain",
+      "g": 153.6
+    },
+    {
+      "code": "SE",
+      "fr": "Suède",
+      "en": "Sweden",
+      "g": 35.3
+    },
+    {
+      "code": "CH",
+      "fr": "Suisse",
+      "en": "Switzerland",
+      "g": 39.2
+    },
+    {
+      "code": "GB",
+      "fr": "Royaume-Uni",
+      "en": "United Kingdom",
+      "g": 217.4
+    },
+    {
+      "code": "US",
+      "fr": "États-Unis",
+      "en": "United States",
+      "g": 384.4
+    }
+  ]
+}

@@ -26,7 +26,8 @@ async function loadJSON(name) {
   return response.json();
 }
 
-const [DEFAULTS, PRICES] = await Promise.all([loadJSON("./defaults.json"), loadJSON("./prices.json")]);
+const [DEFAULTS, PRICES, CARBON_DATA] = await Promise.all(
+  [loadJSON("./defaults.json"), loadJSON("./prices.json"), loadJSON("./carbon.json")]);
 
 export const PRICE_SOURCE = { url: PRICES.source, checked: PRICES.checked };
 
@@ -42,6 +43,9 @@ export function priceFor(model) {
 }
 
 export const DEFAULT_SETTINGS = DEFAULTS;
+
+// Intensité carbone de l'électricité par pays (g CO₂e/kWh), source dans carbon.json.
+export const CARBON = CARBON_DATA;
 
 // Même règle que menubar/estimate.py : garder les deux en accord.
 export function classifyModel(model) {

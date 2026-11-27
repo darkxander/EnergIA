@@ -111,7 +111,7 @@ test("modèle d'estimation", () => {
   const row = { day: "2026-03-01", source: "chatgpt", model: "modele-sans-prix", requests: 1, responses: 1, inTok: 2000, outTok: 300 };
   const m = rowMetrics(row, DEFAULT_SETTINGS);
   assert.ok(Math.abs(m.wh - 0.3) < 1e-9); // (300 + 2000 × 0,1) / 1000 × 0,6
-  assert.ok(Math.abs(m.co2g - 0.12) < 1e-9);
+  assert.ok(Math.abs(m.co2g - 0.13749) < 1e-9); // 0,0003 kWh × 458,3 g (moyenne mondiale 2025)
   assert.ok(Math.abs(m.waterL - 0.0003) < 1e-12);
   assert.ok(Math.abs(m.eur - 0.008) < 1e-12);
   const total = summarize([row, row], DEFAULT_SETTINGS);
@@ -220,4 +220,16 @@ test("index.html porte le numéro de version des fichiers actuels (sinon : node 
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.equal(stamped(html, assetVersion()), html);
   assert.match(html, /src="src\/app\.js\?v=[0-9a-f]{8}"/);
+});
+
+test("intensité carbone : une liste de pays sourcée, aux valeurs distinctes", async () => {
+  const { CARBON, DEFAULT_SETTINGS } = await import("../src/model.js");
+  const values = CARBON.countries.map((country) => country.g);
+  assert.equal(new Set(values).size, values.length); // le pays choisi se retrouve d'après sa valeur
+  for (const country of CARBON.countries) assert.ok(country.code && country.fr && country.en && country.g > 0, country.code);
+  const byCode = Object.fromEntries(CARBON.countries.map((country) => [country.code, country.g]));
+  assert.equal(byCode.WLD, DEFAULT_SETTINGS.gCO2PerKWh); // la valeur par défaut est la moyenne mondiale
+  assert.equal(byCode.FR, 41.4);
+  assert.equal(byCode.US, 384.4);
+  assert.ok(CARBON.source && CARBON.citation && CARBON.year);
 });
