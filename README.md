@@ -85,6 +85,25 @@ is not counted twice: it is updated if it has grown. So you can import a more re
 of the same account, or the exports of several accounts. "Remove" starts again from
 scratch.
 
+## Adding up a team's usage
+
+Nothing is centralised, and there is no account and no server:
+
+1. Each member opens the "Team" section of their page, enters a name or a pseudonym, and
+   clicks "Export my team file". The file (`.json`) contains that name and their counters
+   per day, per service and per model: no text, no conversation title.
+2. Each sends their file to the person who does the total, by whatever means they choose.
+3. That person imports the files received like any export. A "Team" view appears: the same
+   tiles, chart and tables, for the whole team, plus a table per member. The CSV export and
+   the summary image follow the view shown.
+
+A more recent file from the same member replaces the previous one. The calculations use the
+assumptions of the person who does the total, not those of each member. Alert thresholds
+stay personal and are not shown in the team view.
+
+This is a first step: reading the usage reports of organisation consoles and a monthly
+report are still under consideration.
+
 ## One-command install (macOS, Linux)
 
 ```sh
@@ -298,8 +317,9 @@ Then, in no set order:
 
 - **Other services**: checking Gemini and Copilot parsing on real exports, then Mistral and
   other coding tools, depending on what their exports allow.
-- **Team version, under consideration**: AI usage added up for a team or an organisation,
-  with a report. If this interests you, say so in an
+- **Team version, next steps under consideration**: adding up the members' files exists;
+  still under consideration are reading the usage reports of organisation consoles and a
+  monthly report. If this interests you, say so in an
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 To consolidate alongside: reading a real Claude export, and updating prices, which is

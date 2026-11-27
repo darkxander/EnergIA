@@ -294,10 +294,14 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= MAX_EXPORT:
                 raise ValueError
             data = self.rfile.read(length)
-            if self.headers.get("Content-Type", "").split(";")[0].strip() == "image/png":
+            kind = self.headers.get("Content-Type", "").split(";")[0].strip()
+            if kind == "image/png":
                 extension = "png"
                 if not data.startswith(PNG_SIGNATURE):
                     raise ValueError
+            elif kind == "application/json":  # the team file
+                extension = "json"
+                json.loads(data)
             else:
                 extension = "csv"
                 data.decode("utf-8")  # text, nothing else

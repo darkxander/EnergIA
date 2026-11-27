@@ -101,6 +101,9 @@ details ul { padding-left: 20px; }
 .filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 16px 0 0; }
 .filters p { margin: 0 0 0 auto; }
 
+.team-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 12px 0; }
+.team-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+.team-form input { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-1); color: var(--text-primary); min-width: 220px; }
 .budget { margin: 12px 0 0; font-size: 13px; color: var(--text-secondary); }
 .budget span { display: block; }
 .budget .over { color: var(--critical); font-weight: 600; }

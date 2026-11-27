@@ -439,9 +439,54 @@ export function parseCopilotCsv(text) {
   return all.result();
 }
 
+// ---------- Team file ----------
+// What a member sends to the person who adds up a team: counters per day, service and
+// model, under the name the member chose. No text, no title, no conversation key.
+
+export const TEAM_FORMAT = "energia-team";
+const COUNTERS = ["requests", "responses", "inTok", "outTok", "cw5Tok", "cw1Tok", "cacheTok", "searches"];
+
+export function teamFile(member, rows, exportedAt) {
+  const merged = new Map();
+  for (const row of rows) {
+    const key = `${row.day}|${row.source}|${row.model}`;
+    let line = merged.get(key);
+    if (!line) {
+      line = { day: row.day, source: row.source, model: row.model };
+      merged.set(key, line);
+    }
+    for (const name of COUNTERS) if (row[name]) line[name] = (line[name] || 0) + row[name];
+  }
+  const lines = [...merged.values()].sort((a, b) =>
+    a.day.localeCompare(b.day) || a.source.localeCompare(b.source) || a.model.localeCompare(b.model));
+  return { format: TEAM_FORMAT, version: 1, member, exportedAt, rows: lines };
+}
+
+// Reads a team file, or returns null if it is not one. The file comes from someone
+// else: only well-formed rows and plausible numbers are kept.
+export function parseTeamFile(json) {
+  if (!json || json.format !== TEAM_FORMAT || !Array.isArray(json.rows)) return null;
+  const member = String(json.member ?? "").trim().slice(0, 80);
+  if (!member) return null;
+  const rows = [];
+  for (const raw of json.rows) {
+    if (!raw || typeof raw.day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw.day)) continue;
+    if (typeof raw.source !== "string" || typeof raw.model !== "string") continue;
+    const row = { day: raw.day, source: raw.source.slice(0, 40), model: raw.model.slice(0, 120), member,
+      requests: 0, responses: 0, inTok: 0, outTok: 0 };
+    for (const name of COUNTERS) {
+      if (Number.isFinite(raw[name]) && raw[name] >= 0 && raw[name] < 1e15) row[name] = raw[name];
+    }
+    rows.push(row);
+  }
+  const exportedAt = typeof json.exportedAt === "string" && !Number.isNaN(Date.parse(json.exportedAt)) ? json.exportedAt : "";
+  return { team: true, member, exportedAt, rows };
+}
+
 // ---------- Detection ----------
 
 export function parseExport(json) {
+  if (json && json.format === TEAM_FORMAT) return parseTeamFile(json);
   const list = Array.isArray(json) ? json : json && Array.isArray(json.conversations) ? json.conversations : null;
   if (!list) return null;
   if (list.some((c) => c && c.mapping)) return parseChatGPT(list);

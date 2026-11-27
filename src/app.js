@@ -1,5 +1,5 @@
 import { listZipEntries, readZipEntryText } from "./zip.js";
-import { combine, parseFileText, rowsOf } from "./parsers.js";
+import { combine, parseFileText, rowsOf, teamFile } from "./parsers.js";
 import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 import { csvText } from "./csv.js";
@@ -11,6 +11,8 @@ const LIVE_SOURCES = ["claudecode", "cowork"]; // measured on this computer by t
 const API_HEADERS = { "X-EnergIA": "1" };
 const DATA_KEY = "EnergIA.data.v1";
 const SETTINGS_KEY = "EnergIA.settings.v1";
+const TEAM_KEY = "EnergIA.team.v1";         // the team files received, one per member
+const MEMBER_KEY = "EnergIA.memberName";    // the name written in one's own team file
 const MANUAL_RATE_KEY = "EnergIA.rateManual";
 
 // Picks up data saved under the old spelling of the name ("energia.").
@@ -84,6 +86,8 @@ function mergeSettings(saved) {
 const state = {
   data: loadJSON(DATA_KEY, {}), // { chatgpt: { rows, conversations, importedAt }, claude: {...} }
   settings: mergeSettings(loadJSON(SETTINGS_KEY, null)),
+  team: loadJSON(TEAM_KEY, {}),   // { key: { name, exportedAt, rows } }, from imported team files
+  view: "mine",                   // "mine": one's own data; "team": the members' files added up
   period: "all",
   source: "all",
   metric: "energy",
@@ -182,6 +186,7 @@ async function importFiles(files) {
   if (!files.length) return;
   setStatus(t("status.parsing"));
   const imported = {};
+  const teamFiles = [];
   try {
     for (const file of files) {
       for (const text of await readFile(file)) {
@@ -193,6 +198,10 @@ async function importFiles(files) {
         }
         if (!parsed) throw new Error(t("status.unknownFormat", { file: file.name }));
         if (parsed.promptsOnly) continue; // prompts without replies: nothing to count
+        if (parsed.team) {
+          teamFiles.push(parsed);
+          continue;
+        }
         imported[parsed.source] = combine(imported[parsed.source] || {}, parsed.items).items;
       }
     }
@@ -216,9 +225,27 @@ async function importFiles(files) {
       requests: nf(state.data[source].rows.reduce((sum, row) => sum + row.requests, 0)),
     }) + (previous && !previous.items ? ` ${t("status.replacedOld")}` : ""));
   }
+  // Team files: one per member; a newer file from the same member replaces the previous one.
+  for (const file of teamFiles) {
+    const rows = file.rows.filter((row) => row.source in SOURCES);
+    state.team[file.member.toLowerCase()] = { name: file.member, exportedAt: file.exportedAt, rows };
+    summary.push(t("team.added", { name: file.member, requests: nf(rows.reduce((sum, row) => sum + row.requests, 0)) }));
+  }
+  if (teamFiles.length) {
+    state.view = "team";
+    saveTeam();
+  }
   saveData();
   setStatus(t("status.imported", { summary: summary.join(" · ") }));
   render();
+}
+
+function saveTeam() {
+  try {
+    localStorage.setItem(TEAM_KEY, JSON.stringify(state.team));
+  } catch {
+    setStatus(t("status.tooBig"), true);
+  }
 }
 
 function loadSample() {
@@ -265,12 +292,23 @@ function localDay(back = 0) {
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 }
 
+const teamView = () => state.view === "team" && Object.keys(state.team).length > 0;
+
 // Rows of the chosen service, from `from` (inclusive) to `to` (exclusive); "" = no bound.
+// In the team view, the rows of every member's file (each row carries its `member`).
 function rowsBetween(from, to, anySource = false) {
+  const wanted = (source) => anySource || state.source === "all" || state.source === source;
+  const inRange = (row) => row.day >= from && (!to || row.day < to);
   const rows = [];
+  if (teamView()) {
+    for (const member of Object.values(state.team)) {
+      for (const row of member.rows) if (wanted(row.source) && inRange(row)) rows.push(row);
+    }
+    return rows;
+  }
   for (const [source, entry] of Object.entries(state.data)) {
-    if (!anySource && state.source !== "all" && state.source !== source) continue;
-    for (const row of entry.rows) if (row.day >= from && (!to || row.day < to)) rows.push(row);
+    if (!wanted(source)) continue;
+    for (const row of entry.rows) if (inRange(row)) rows.push(row);
   }
   return rows;
 }
@@ -348,6 +386,16 @@ function renderSources() {
         onclick: () => { delete state.data[source]; saveData(); setStatus(""); render(); },
       }, t("source.remove"))));
   }
+  for (const [key, member] of Object.entries(state.team)) {
+    const requests = member.rows.reduce((sum, row) => sum + row.requests, 0);
+    const when = member.exportedAt ? new Date(member.exportedAt).toLocaleDateString(LOCALE) : "?";
+    box.append(el("span", {},
+      t("team.line", { name: member.name, requests: nf(requests), date: when }),
+      el("button", {
+        class: "link", type: "button",
+        onclick: () => { delete state.team[key]; saveTeam(); setStatus(""); render(); },
+      }, t("source.remove"))));
+  }
 }
 
 // Alert thresholds: energy or cost, for today or for the current month, across all
@@ -361,6 +409,10 @@ const BUDGETS = [
 
 function renderBudget() {
   const box = $("budget");
+  if (teamView()) { // the thresholds are personal
+    box.hidden = true;
+    return;
+  }
   const today = localDay(0);
   const totals = {};
   const lines = [];
@@ -399,7 +451,10 @@ function tilesFor(rows) {
   };
   const range = (key, value) =>
     t("tile.range", { low: fmt(key, value * s.lowFactor), high: fmt(key, value * s.highFactor) });
-  const subs = subscriptionCost(rows, s);
+  // In the team view, each member pays their own subscriptions.
+  const byMember = new Map();
+  for (const row of rows) byMember.set(row.member, [...(byMember.get(row.member) || []), row]);
+  const subs = [...byMember.values()].reduce((sum, group) => sum + subscriptionCost(group, s), 0);
   const tiles = [
     {
       name: t("metric.energy"), value: fmt("energy", total.wh), range: range("energy", total.wh),
@@ -607,14 +662,45 @@ function saveSettings() {
   pushSettings();
 }
 
+// The team view: who used what, over the displayed period and service.
+function renderMembers(rows) {
+  const section = $("members-card");
+  section.hidden = !teamView();
+  if (section.hidden) return;
+  const groups = new Map();
+  for (const row of rows) groups.set(row.member, [...(groups.get(row.member) || []), row]);
+  const lines = [...groups.entries()].map(([name, group]) => ({ name, total: summarize(group, state.settings) }));
+  const all = lines.reduce((sum, line) => sum + line.total.wh, 0);
+  lines.sort((a, b) => b.total.wh - a.total.wh);
+  const [first, ...others] = t("team.columns").split("|");
+  $("members").replaceChildren(table(
+    [{ label: first, text: true }, ...others.map((label) => ({ label }))],
+    lines.map(({ name, total }) => [
+      name, nf(total.requests), fmt("energy", total.wh), fmt("co2", total.co2g),
+      fmt("water", total.waterL * 1000), fmt("cost", total.eur), all > 0 ? percent.format(total.wh / all) : "–",
+    ])));
+}
+
+function renderView() {
+  const count = Object.keys(state.team).length;
+  const hasOwn = Object.keys(state.data).length > 0;
+  if (!count) state.view = "mine";
+  else if (!hasOwn) state.view = "team"; // nothing of one's own to show
+  $("view-label").hidden = !(count && hasOwn);
+  $("view").options[1].textContent = t("view.team", { count });
+  $("view").value = state.view;
+}
+
 function render() {
+  renderView();
   renderSources();
   renderCarbon();
-  const hasData = Object.keys(state.data).length > 0;
+  const hasData = Object.keys(state.data).length > 0 || teamView();
   $("results").hidden = !hasData;
   if (!hasData) return;
   const rows = filteredRows();
   const data = buckets(rows);
+  renderMembers(rows);
   renderBudget();
   renderTiles(rows);
   renderChart(data);
@@ -731,11 +817,11 @@ async function pickWithPlugin() {
 // CSV export: the rows of the displayed period and service, by day and by model.
 function exportLines() {
   const rows = filteredRows().slice().sort((a, b) =>
-    a.day.localeCompare(b.day) || a.source.localeCompare(b.source) || String(a.model).localeCompare(String(b.model)));
+    String(a.member || "").localeCompare(String(b.member || "")) || a.day.localeCompare(b.day) || a.source.localeCompare(b.source) || String(a.model).localeCompare(String(b.model)));
   return rows.map((row) => {
     const m = rowMetrics(row, state.settings);
     return [
-      row.day, SOURCES[row.source], NO_MODEL.includes(row.source) ? t("models.unknown") : row.model,
+      ...(teamView() ? [row.member] : []), row.day, SOURCES[row.source], NO_MODEL.includes(row.source) ? t("models.unknown") : row.model,
       t(`tier.${classifyModel(row.model)}`), row.requests,
       row.inTok + (row.cw5Tok || 0) + (row.cw1Tok || 0), row.cacheTok || 0, row.outTok,
       m.wh, m.co2g, m.waterL, m.eur, t(priceFor(row.model) ? "export.no" : "export.yes"),
@@ -746,7 +832,7 @@ function exportLines() {
 // Delivers a file produced by the page: a download in a browser; in the
 // menu bar window, which cannot download, the plugin writes it to the
 // Downloads folder and shows it in the Finder.
-async function deliver(blob, extension) {
+async function deliver(blob, extension, stem = "EnergIA") {
   if (pluginWindow) {
     try {
       const saved = await api("/api/export", { method: "POST", body: blob, headers: { "Content-Type": blob.type } });
@@ -757,7 +843,7 @@ async function deliver(blob, extension) {
     return;
   }
   const url = URL.createObjectURL(blob);
-  const link = el("a", { href: url, download: `EnergIA-${localDay(0)}.${extension}` });
+  const link = el("a", { href: url, download: `${stem}-${localDay(0)}.${extension}` });
   document.body.append(link);
   link.click();
   link.remove();
@@ -767,7 +853,8 @@ async function deliver(blob, extension) {
 function exportCSV() {
   const lines = exportLines();
   if (!lines.length) return setStatus(t("export.empty"), true);
-  return deliver(new Blob([csvText([t("export.columns").split("|"), ...lines], LANG)], { type: "text/csv" }), "csv");
+  const header = [...(teamView() ? [t("team.columns").split("|")[0]] : []), ...t("export.columns").split("|")];
+  return deliver(new Blob([csvText([header, ...lines], LANG)], { type: "text/csv" }), "csv");
 }
 $("export-csv").addEventListener("click", exportCSV);
 $("export-csv").title = t("export.title");
@@ -787,9 +874,10 @@ function cardContent(rows) {
     t("card.range", { from: date(first), to: date(last) }),
     state.source === "all" ? t("card.allServices") : SOURCES[state.source],
   ];
-  if (sources.some((source) => state.data[source].sample)) parts.push(t("card.sample"));
+  if (teamView()) parts.push(t("card.members", { count: new Set(rows.map((row) => row.member)).size }));
+  else if (sources.some((source) => state.data[source].sample)) parts.push(t("card.sample"));
   return {
-    title: t("card.title"),
+    title: t(teamView() ? "card.teamTitle" : "card.title"),
     subtitle: parts.join(" · "),
     // The cost tile has no equivalent: its note is a reminder that this is not a bill.
     tiles: tilesFor(rows).tiles.map(({ name, value, equiv }, index) =>
@@ -813,6 +901,22 @@ async function shareImage() {
   }
 }
 $("share-image").addEventListener("click", shareImage);
+
+// Team file: one's own counters, under a chosen name, to send to whoever adds up the team.
+$("member-name").value = localStorage.getItem(MEMBER_KEY) || "";
+$("member-name").addEventListener("input", (event) => localStorage.setItem(MEMBER_KEY, event.target.value.trim()));
+$("team-export").addEventListener("click", () => {
+  const name = $("member-name").value.trim();
+  if (!name) return setStatus(t("team.needName"), true);
+  const rows = [];
+  for (const [source, entry] of Object.entries(state.data)) {
+    if (!entry.sample) for (const row of entry.rows) rows.push({ ...row, source });
+  }
+  if (!rows.length) return setStatus(t("team.needData"), true);
+  const file = teamFile(name, rows, new Date().toISOString());
+  return deliver(new Blob([JSON.stringify(file)], { type: "application/json" }), "json", "EnergIA-team");
+});
+$("view").addEventListener("change", (event) => { state.view = event.target.value; render(); });
 $("share-image").title = t("share.title");
 
 $("file").addEventListener("change", (event) => {

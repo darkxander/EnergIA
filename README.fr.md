@@ -90,6 +90,26 @@ n'est pas comptée deux fois : elle est mise à jour si elle a grandi. Vous pouv
 importer un export plus récent du même compte, ou les exports de plusieurs comptes.
 « Supprimer » repart de zéro.
 
+## Additionner l'usage d'une équipe
+
+Rien n'est centralisé, et il n'y a ni compte ni serveur :
+
+1. Chaque membre ouvre la rubrique « Équipe » de sa page, indique un nom ou un pseudonyme,
+   et clique sur « Exporter mon fichier d'équipe ». Le fichier (`.json`) contient ce nom et
+   ses compteurs par jour, par service et par modèle : aucun texte, aucun titre de
+   conversation.
+2. Chacun envoie son fichier à la personne qui fait le total, par le moyen de son choix.
+3. Cette personne importe les fichiers reçus comme n'importe quel export. Une vue
+   « Équipe » apparaît : mêmes tuiles, graphique et tableaux, pour l'ensemble de l'équipe,
+   plus un tableau par membre. L'export CSV et l'image de résumé suivent la vue affichée.
+
+Un fichier plus récent du même membre remplace le précédent. Les calculs utilisent les
+hypothèses de la personne qui fait le total, pas celles de chaque membre. Les seuils
+d'alerte restent personnels et ne s'affichent pas dans la vue d'équipe.
+
+C'est une première étape : la lecture des relevés d'usage des consoles d'organisation et
+un rapport mensuel restent à l'étude.
+
 ## Installer en une commande (macOS, Linux)
 
 ```sh
@@ -314,8 +334,9 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
   puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
-- **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une
-  organisation, avec un rapport. Si cela vous intéresse, dites-le dans une
+- **Version équipe, suite à l'étude** : l'addition des fichiers des membres existe ;
+  restent à l'étude la lecture des relevés d'usage des consoles d'organisation et un
+  rapport mensuel. Si cela vous intéresse, dites-le dans une
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,

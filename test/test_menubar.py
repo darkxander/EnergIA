@@ -431,6 +431,12 @@ class ServerTest(unittest.TestCase):
         with open(image, "rb") as f:
             self.assertEqual(f.read(), b"\x89PNG\r\n\x1a\nabc")
         self.assertEqual(self.get("/api/export", png, b"pas une image")[0], 400)
+        # The team file: JSON, and nothing else under that type.
+        team = {"X-EnergIA": "1", "Content-Type": "application/json"}
+        saved = os.path.join(folder, "EnergIA-2026-11-25.json")
+        self.assertEqual(json.loads(self.get("/api/export", team, b'{"format": "energia-team"}')[2])["path"], saved)
+        self.assertEqual(self.get("/api/export", team, b"{pas du json")[0], 400)
+        os.remove(saved)
         self.assertEqual(len(os.listdir(folder)), 3)
         self.dash.window = False  # server-only mode: the browser downloads by itself
         self.assertEqual(self.get("/api/export", api, text)[0], 404)

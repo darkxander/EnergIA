@@ -374,3 +374,27 @@ test("install.sh: valid syntax, and no variable stuck to an accented character",
   // "$DOSSIER…": some shells take the non-ASCII character as the continuation of the name.
   assert.deepEqual(readFileSync(path, "utf8").match(/\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]/g), null);
 });
+
+test("team file: counters only, and a file received is read with caution", async () => {
+  const { parseFileText, teamFile } = await import("../src/parsers.js");
+  const row = (extra) => ({ day: "2026-11-01", source: "chatgpt", model: "gpt-4o", requests: 2, responses: 2, inTok: 10, outTok: 20, ...extra });
+  const file = teamFile("Alice", [row(), row({ cacheTok: 7 }), row({ day: "2026-11-02", source: "claudecode", model: "claude-opus-5-5" })], "2026-11-27T10:00:00.000Z");
+  assert.deepEqual(Object.keys(file), ["format", "version", "member", "exportedAt", "rows"]);
+  // Same day, service and model: one line, counters added up.
+  assert.deepEqual(file.rows[0], { day: "2026-11-01", source: "chatgpt", model: "gpt-4o", requests: 4, responses: 4, inTok: 20, outTok: 40, cacheTok: 7 });
+  assert.equal(file.rows.length, 2);
+
+  const read = parseFileText(JSON.stringify(file));
+  assert.deepEqual([read.team, read.member, read.exportedAt, read.rows.length], [true, "Alice", "2026-11-27T10:00:00.000Z", 2]);
+  assert.deepEqual(read.rows[0], { day: "2026-11-01", source: "chatgpt", model: "gpt-4o", member: "Alice", requests: 4, responses: 4, inTok: 20, outTok: 40, cacheTok: 7 });
+
+  // A file from someone else: malformed rows and implausible numbers are dropped.
+  const odd = parseFileText(JSON.stringify({ format: "energia-team", member: "  Bob  ", exportedAt: "hier", rows: [
+    row({ requests: -5, outTok: "beaucoup", inTok: 1e30, extra: "x" }), { day: "01/11/2026", source: "chatgpt", model: "m" },
+    { day: "2026-11-01", source: 3, model: "m" }, null, "texte",
+  ] }));
+  assert.deepEqual([odd.member, odd.exportedAt, odd.rows.length], ["Bob", "", 1]);
+  assert.deepEqual(odd.rows[0], { day: "2026-11-01", source: "chatgpt", model: "gpt-4o", member: "Bob", requests: 0, responses: 2, inTok: 0, outTok: 0 });
+  assert.equal(parseFileText(JSON.stringify({ format: "energia-team", member: "", rows: [] })), null); // no name
+  assert.equal(parseFileText(JSON.stringify({ format: "autre", rows: [] })), null);
+});
