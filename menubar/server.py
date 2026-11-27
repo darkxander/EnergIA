@@ -32,6 +32,7 @@ POLL = 60                 # secondes entre deux lectures des journaux
 WIDTH, HEIGHT = 860, 680  # taille de la fenêtre, en pixels
 BEAT_TIMEOUT = 4.0        # sans battement pendant ce délai : fenêtre refermée
 LABEL = "⚡"
+OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
 MAX_BODY = 20_000
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 # Seuls liens que la page peut faire ouvrir dans le navigateur par défaut.
@@ -133,7 +134,9 @@ class Dashboard:
         settings = estimate.load_settings(self.settings_path)
         today = self.today()
         total = sum(estimate.wh(row, settings) for row in self.store.rows() if row["day"] == today)
-        return f"{LABEL} {estimate.format_energy(total, estimate.lang_of(settings))}"
+        budget = settings.get("dailyBudgetWh", 0)
+        label = OVER_LABEL if budget > 0 and total > budget else LABEL
+        return f"{label} {estimate.format_energy(total, estimate.lang_of(settings))}"
 
     def pick(self):
         """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""

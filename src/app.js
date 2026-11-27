@@ -239,21 +239,34 @@ function loadSample() {
 
 // ---------- Calculs ----------
 
-function filteredRows() {
-  let cutoff = "";
-  if (state.period !== "all") {
-    // N jours, aujourd'hui compris, en date locale (« 1 » = aujourd'hui seulement).
-    const start = new Date();
-    start.setDate(start.getDate() - (Number(state.period) - 1));
-    const two = (n) => String(n).padStart(2, "0");
-    cutoff = `${start.getFullYear()}-${two(start.getMonth() + 1)}-${two(start.getDate())}`;
-  }
+// Jour local (AAAA-MM-JJ) d'il y a `back` jours ; 0 = aujourd'hui.
+function localDay(back = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() - back);
+  const two = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
+}
+
+// Lignes du service choisi, de `from` (compris) à `to` (exclu) ; "" = sans borne.
+function rowsBetween(from, to, anySource = false) {
   const rows = [];
   for (const [source, entry] of Object.entries(state.data)) {
-    if (state.source !== "all" && state.source !== source) continue;
-    for (const row of entry.rows) if (row.day >= cutoff) rows.push(row);
+    if (!anySource && state.source !== "all" && state.source !== source) continue;
+    for (const row of entry.rows) if (row.day >= from && (!to || row.day < to)) rows.push(row);
   }
   return rows;
+}
+
+// N jours, aujourd'hui compris, en date locale (« 1 » = aujourd'hui seulement).
+function filteredRows() {
+  return rowsBetween(state.period === "all" ? "" : localDay(Number(state.period) - 1), "");
+}
+
+// Les N jours qui précèdent la période affichée, ou null pour « Tout l'historique ».
+function previousRows() {
+  if (state.period === "all") return null;
+  const days = Number(state.period);
+  return rowsBetween(localDay(2 * days - 1), localDay(days - 1));
 }
 
 function buckets(rows) {
@@ -319,15 +332,41 @@ function renderSources() {
   }
 }
 
+// Seuil d'énergie par jour : l'énergie d'aujourd'hui, tous services confondus.
+function renderBudget() {
+  const box = $("budget");
+  const budget = state.settings.dailyBudgetWh;
+  box.hidden = !(budget > 0);
+  if (box.hidden) return;
+  const today = summarize(rowsBetween(localDay(0), "", true), state.settings).wh;
+  const over = today > budget;
+  box.className = over ? "budget over" : "budget";
+  box.textContent = t(over ? "budget.over" : "budget.under", {
+    today: fmt("energy", today), budget: fmt("energy", budget), percent: percent.format(today / budget),
+  });
+}
+
+const percent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0 });
+const signedPercent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0, signDisplay: "always" });
+
 function renderTiles(rows) {
   const s = state.settings;
   const total = summarize(rows, s);
+  // Écart avec les N jours précédents, quand une période est choisie et qu'ils ont des données.
+  const previous = previousRows();
+  const before = previous && previous.length ? summarize(previous, s) : null;
+  const change = (now, then) => {
+    if (!before || !(then > 0)) return "";
+    const vars = { change: signedPercent.format(now / then - 1), days: state.period };
+    return t(state.period === "1" ? "tile.changeYesterday" : "tile.changeDays", vars);
+  };
   const range = (key, value) =>
     t("tile.range", { low: fmt(key, value * s.lowFactor), high: fmt(key, value * s.highFactor) });
   const subs = subscriptionCost(rows, s);
   const tiles = [
     {
       name: t("metric.energy"), value: fmt("energy", total.wh), range: range("energy", total.wh),
+      change: change(total.wh, before?.wh),
       equiv: t("tile.energyEquiv", {
         charges: nf(total.wh / EQUIVALENTS.smartphoneChargeWh),
         km: nf(total.wh / EQUIVALENTS.electricCarWhPerKm),
@@ -345,6 +384,7 @@ function renderTiles(rows) {
     },
     {
       name: t("tile.costName"), value: fmt("cost", total.eur),
+      change: change(total.eur, before?.eur),
       range: t("tile.costNote"),
       equiv: subs > 0 ? t("tile.subs", { amount: fmt("cost", subs) }) : "",
     },
@@ -354,7 +394,8 @@ function renderTiles(rows) {
       el("div", { class: "name" }, t.name),
       el("div", { class: "value" }, t.value),
       el("p", { class: "range" }, t.range),
-      t.equiv ? el("p", { class: "equiv" }, t.equiv) : null)));
+      t.equiv ? el("p", { class: "equiv" }, t.equiv) : null,
+      t.change ? el("p", { class: "change" }, t.change) : null)));
   $("volume").textContent = t("volume", { requests: nf(total.requests), tokens: nfBig(total.tokens) });
 }
 
@@ -532,6 +573,7 @@ function render() {
   if (!hasData) return;
   const rows = filteredRows();
   const data = buckets(rows);
+  renderBudget();
   renderTiles(rows);
   renderChart(data);
   renderChartTable(data);
@@ -568,6 +610,9 @@ const SETTING_GROUPS = [
     [t("settings.largeOut"), "tiers.grand.eurOut"],
     [t("settings.reasoningIn"), "tiers.raisonnement.eurIn"],
     [t("settings.reasoningOut"), "tiers.raisonnement.eurOut"],
+  ]],
+  [t("settings.budget"), [
+    [t("settings.dailyBudget"), "dailyBudgetWh"],
   ]],
   [t("settings.subs"), [
     ["ChatGPT", "subs.chatgpt"],

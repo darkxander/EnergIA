@@ -36,6 +36,10 @@ consumption of their models. See [Limitations](#limitations).
 - A period filter (from "Today" to the whole history) and a service filter.
 - The choice of the country whose electricity is used to compute CO₂ (27 countries and
   regions).
+- The change from the previous period, on the energy and cost tiles, as soon as a period is
+  chosen.
+- An optional energy threshold per day: the page shows where you stand and flags when it is
+  exceeded.
 - Calculation assumptions that can all be changed.
 
 ## Using the web page
@@ -76,7 +80,9 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 ```
 
 Replace `~/.config/swiftbar` with your SwiftBar plugin folder if it is different. The title
-shows, for example, `⚡ 1.02 kWh` (`⚡ 1,02 kWh` in French); a click opens the dashboard. The
+shows, for example, `⚡ 1.02 kWh` (`⚡ 1,02 kWh` in French); a click opens the dashboard. If
+you have set an energy threshold per day in the calculation assumptions, the lightning bolt
+becomes a red dot (`🔴 1.02 kWh`) when it is exceeded. The
 plugin uses the language shown in the page, and the language of macOS until the page has
 been opened.
 
@@ -222,8 +228,7 @@ Then, in no set order:
 
 - **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
   their exports allow.
-- **Threshold and alert**: a budget in kWh or euros, flagged in the menu bar when it is
-  exceeded, and a comparison with the previous period.
+- **Threshold in euros or per month**, in addition to the energy threshold per day.
 - **Exporting results**: a CSV file and a summary image to share.
 - **Imports that add up**, instead of replacing the previous one.
 - **Team version, under consideration**: AI usage added up for a team or an organisation,

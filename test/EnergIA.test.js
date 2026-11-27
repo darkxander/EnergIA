@@ -233,3 +233,8 @@ test("intensité carbone : une liste de pays sourcée, aux valeurs distinctes", 
   assert.equal(byCode.US, 384.4);
   assert.ok(CARBON.source && CARBON.citation && CARBON.year);
 });
+
+test("seuil d'énergie par jour : désactivé par défaut", async () => {
+  const { DEFAULT_SETTINGS } = await import("../src/model.js");
+  assert.equal(DEFAULT_SETTINGS.dailyBudgetWh, 0);
+});

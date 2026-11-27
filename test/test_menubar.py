@@ -292,6 +292,15 @@ class ServerTest(unittest.TestCase):
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}, "lang": "en"}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6.07 Wh")
+        # Seuil d'énergie par jour : le point rouge remplace l'éclair quand il est dépassé.
+        post = lambda saved: self.get("/api/settings", {**api, "Content-Type": "application/json"},
+                                      json.dumps(saved).encode())[0]
+        self.assertEqual(post({"dailyBudgetWh": 0.5}), 200)
+        self.assertEqual(self.dash.title(), "🔴 0,61 Wh")
+        self.assertEqual(post({"dailyBudgetWh": 5}), 200)
+        self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
+        self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0 : pas de seuil
+        self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
 
     def test_server_only_mode(self):
         api = {"X-EnergIA": "1"}
