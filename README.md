@@ -163,6 +163,32 @@ node --test test/
 python3 test/test_menubar.py
 ```
 
+## Feuille de route
+
+Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
+
+1. **README en anglais.**
+2. **Version en ligne**, pour essayer la page sans rien installer. Les fichiers resteront
+   analysés dans le navigateur.
+3. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
+   avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
+   zone de notification.
+4. **Appli en anglais et en français**, selon la langue du navigateur.
+
+Puis, sans ordre arrêté :
+
+- **Choix du pays pour le CO₂**, dans une liste, au lieu d'un chiffre à saisir.
+- **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
+  permettent leurs exports.
+- **Seuil et alerte** : un budget en kWh ou en euros, signalé dans la barre de menus quand
+  il est dépassé, et une comparaison avec la période précédente.
+- **Export des résultats** : fichier CSV et image de résumé à partager.
+- **Imports qui se cumulent**, au lieu de remplacer le précédent.
+- **Installation en une commande.**
+
+À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,
+aujourd'hui manuelle.
+
 ## Soutenir le projet
 
 EnergIA est gratuite et ouverte. Si elle vous est utile, vous pouvez soutenir son
