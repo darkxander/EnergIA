@@ -352,8 +352,12 @@ function renderBudget() {
     totals[period] ??= summarize(rowsBetween(period === "day" ? today : `${today.slice(0, 8)}01`, "", true), state.settings);
     const value = valueOf(totals[period]);
     const over = value > budget;
+    // Une part non nulle qui s'arrondirait à 0 % : « moins de 1 % ».
+    const share = value > 0 && value / budget < 0.005
+      ? t("budget.lessThan", { percent: percent.format(0.01) })
+      : percent.format(value / budget);
     lines.push(el("span", { class: over ? "over" : "" }, t(`budget.${period}.${over ? "over" : "under"}`, {
-      value: fmt(metric, value), budget: fmt(metric, budget), percent: percent.format(value / budget),
+      value: fmt(metric, value), budget: fmt(metric, budget), percent: share,
     })));
   }
   box.hidden = !lines.length;
