@@ -15,11 +15,11 @@ Claude Code and Claude Cowork. It comes in two forms that share the same page:
 The app is in English and French. It follows your browser's language (French for a French
 browser, English otherwise), and the link at the top right of the page switches language.
 
-![EnergIA dashboard with the sample data: energy, CO₂, water and cost tiles, then the monthly chart for ChatGPT and Claude](docs/capture-en.jpg)
+![EnergIA dashboard with the sample data: filters and exports, energy, CO₂, water and cost tiles, the monthly chart for ChatGPT and Claude, then the table by model](docs/capture-en.jpg)
 
 *The dashboard, here with the built-in sample data.*
 
-![The four summary tiles in dark theme: 190 kWh, 87 kg CO₂e, 190 L and €17,223 at API prices](docs/tuiles.png)
+![The four summary tiles in dark theme: 191 kWh, 87.5 kg CO₂e, 191 L and €17,279 at API prices](docs/tuiles.png)
 
 *The summary tiles, here for eight months of real Claude Code usage, with the world average
 for CO₂.*

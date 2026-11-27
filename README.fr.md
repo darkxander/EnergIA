@@ -12,11 +12,11 @@ Claude Code et Claude Cowork. Elle existe sous deux formes, qui partagent la mê
 - un **élément de barre de menus macOS** (plugin [SwiftBar](https://github.com/swiftbar/SwiftBar))
   qui affiche l'énergie estimée du jour pour Claude Code, et ouvre le tableau de bord au clic.
 
-![Tableau de bord EnergIA avec les données d'exemple : tuiles énergie, CO₂, eau et coût, puis le graphique d'évolution par mois pour ChatGPT et Claude](docs/capture.jpg)
+![Tableau de bord EnergIA avec les données d'exemple : filtres et exports, tuiles énergie, CO₂, eau et coût, graphique d'évolution par mois pour ChatGPT et Claude, puis tableau par modèle](docs/capture.jpg)
 
 *Le tableau de bord, ici avec les données d'exemple intégrées.*
 
-![Les quatre tuiles de résumé en thème sombre : 190 kWh, 87 kg CO₂e, 190 L et 17 223 € au tarif de l'API](docs/tuiles.png)
+![Les quatre tuiles de résumé en thème sombre : 191 kWh, 87,5 kg CO₂e, 191 L et 17 279 € au tarif de l'API](docs/tuiles.png)
 
 *Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois, avec la moyenne
 mondiale pour le CO₂.*
