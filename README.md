@@ -65,9 +65,9 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 Remplacez `~/.config/swiftbar` par votre dossier de plugins SwiftBar s'il est différent.
 Le titre affiche par exemple `⚡ 1,02 kWh` ; un clic ouvre le tableau de bord.
 
-![Capture de l'élément EnergIA dans la barre de menus : un éclair suivi de 128 Wh](docs/barre-de-menus.png)
+![Capture de la partie droite de la barre de menus : l'élément EnergIA, un éclair suivi de 137 Wh, parmi les autres icônes](docs/barre-de-menus.png)
 
-*L'élément dans la barre de menus, ici avec 128 Wh estimés pour la journée en cours.*
+*L'élément dans la barre de menus, ici avec 137 Wh estimés pour la journée en cours.*
 
 Le plugin :
 
