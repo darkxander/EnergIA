@@ -332,18 +332,32 @@ function renderSources() {
   }
 }
 
-// Seuil d'énergie par jour : l'énergie d'aujourd'hui, tous services confondus.
+// Seuils d'alerte : énergie ou coût, pour aujourd'hui ou pour le mois en cours, tous
+// services confondus. Réglage, période, grandeur affichée, puis seuil et total dans la même unité.
+const BUDGETS = [
+  ["dailyBudgetWh", "day", "energy", (s) => s.dailyBudgetWh, (total) => total.wh],
+  ["monthlyBudgetKWh", "month", "energy", (s) => s.monthlyBudgetKWh * 1000, (total) => total.wh],
+  ["dailyBudgetEur", "day", "cost", (s) => s.dailyBudgetEur, (total) => total.eur],
+  ["monthlyBudgetEur", "month", "cost", (s) => s.monthlyBudgetEur, (total) => total.eur],
+];
+
 function renderBudget() {
   const box = $("budget");
-  const budget = state.settings.dailyBudgetWh;
-  box.hidden = !(budget > 0);
-  if (box.hidden) return;
-  const today = summarize(rowsBetween(localDay(0), "", true), state.settings).wh;
-  const over = today > budget;
-  box.className = over ? "budget over" : "budget";
-  box.textContent = t(over ? "budget.over" : "budget.under", {
-    today: fmt("energy", today), budget: fmt("energy", budget), percent: percent.format(today / budget),
-  });
+  const today = localDay(0);
+  const totals = {};
+  const lines = [];
+  for (const [, period, metric, budgetOf, valueOf] of BUDGETS) {
+    const budget = budgetOf(state.settings);
+    if (!(budget > 0)) continue;
+    totals[period] ??= summarize(rowsBetween(period === "day" ? today : `${today.slice(0, 8)}01`, "", true), state.settings);
+    const value = valueOf(totals[period]);
+    const over = value > budget;
+    lines.push(el("span", { class: over ? "over" : "" }, t(`budget.${period}.${over ? "over" : "under"}`, {
+      value: fmt(metric, value), budget: fmt(metric, budget), percent: percent.format(value / budget),
+    })));
+  }
+  box.hidden = !lines.length;
+  box.replaceChildren(...lines);
 }
 
 const percent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0 });
@@ -613,6 +627,9 @@ const SETTING_GROUPS = [
   ]],
   [t("settings.budget"), [
     [t("settings.dailyBudget"), "dailyBudgetWh"],
+    [t("settings.monthlyBudget"), "monthlyBudgetKWh"],
+    [t("settings.dailyBudgetEur"), "dailyBudgetEur"],
+    [t("settings.monthlyBudgetEur"), "monthlyBudgetEur"],
   ]],
   [t("settings.subs"), [
     ["ChatGPT", "subs.chatgpt"],

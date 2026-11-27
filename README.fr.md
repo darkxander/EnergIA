@@ -34,8 +34,8 @@ publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites)
 - Le choix du pays dont l'électricité sert au calcul du CO₂ (27 pays et régions).
 - L'écart avec la période précédente, sur les tuiles d'énergie et de coût, dès qu'une
   période est choisie.
-- Un seuil d'énergie par jour, facultatif : la page indique où vous en êtes, et signale un
-  dépassement.
+- Des seuils d'alerte facultatifs, en énergie ou en euros, par jour ou par mois : la page
+  indique où vous en êtes, et signale un dépassement.
 - Des hypothèses de calcul toutes modifiables.
 
 L'appli existe en français et en anglais. Elle suit la langue du navigateur (français pour
@@ -84,8 +84,10 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 
 Remplacez `~/.config/swiftbar` par votre dossier de plugins SwiftBar s'il est différent.
 Le titre affiche par exemple `⚡ 1,02 kWh` (`⚡ 1.02 kWh` en anglais) ; un clic ouvre le
-tableau de bord. Si vous avez fixé un seuil d'énergie par jour dans les hypothèses de
-calcul, l'éclair devient un point rouge (`🔴 1,02 kWh`) quand il est dépassé.
+tableau de bord. Si vous avez fixé un seuil d'alerte dans les hypothèses de calcul
+(énergie ou coût, par jour ou par mois), l'éclair devient un point rouge (`🔴 1,02 kWh`)
+dès que l'un d'eux est dépassé. Le plugin ne compte pour cela que ce qu'il mesure, Claude
+Code et Cowork ; la page, elle, ajoute les exports importés.
 
 Si la barre de menus est chargée, macOS masque sans prévenir les éléments qui ne tiennent
 plus, surtout sur un écran à encoche. La case « Titre compact », dans les hypothèses de
@@ -246,7 +248,6 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
   permettent leurs exports.
-- **Seuil en euros ou par mois**, en plus du seuil d'énergie par jour.
 - **Export des résultats** : fichier CSV et image de résumé à partager.
 - **Imports qui se cumulent**, au lieu de remplacer le précédent.
 - **Installation en une commande.**

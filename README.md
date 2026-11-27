@@ -38,8 +38,8 @@ consumption of their models. See [Limitations](#limitations).
   regions).
 - The change from the previous period, on the energy and cost tiles, as soon as a period is
   chosen.
-- An optional energy threshold per day: the page shows where you stand and flags when it is
-  exceeded.
+- Optional alert thresholds, in energy or in euros, per day or per month: the page shows
+  where you stand and flags when one is exceeded.
 - Calculation assumptions that can all be changed.
 
 ## Using the web page
@@ -81,8 +81,10 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 
 Replace `~/.config/swiftbar` with your SwiftBar plugin folder if it is different. The title
 shows, for example, `⚡ 1.02 kWh` (`⚡ 1,02 kWh` in French); a click opens the dashboard. If
-you have set an energy threshold per day in the calculation assumptions, the lightning bolt
-becomes a red dot (`🔴 1.02 kWh`) when it is exceeded.
+you have set an alert threshold in the calculation assumptions (energy or cost, per day or
+per month), the lightning bolt becomes a red dot (`🔴 1.02 kWh`) as soon as one of them is
+exceeded. For this the plugin only counts what it measures, Claude Code and Cowork; the
+page also adds the imported exports.
 
 When the menu bar is crowded, macOS silently hides the items that no longer fit, especially
 on a screen with a notch. The "Compact title" checkbox, in the calculation assumptions of
@@ -233,7 +235,6 @@ Then, in no set order:
 
 - **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
   their exports allow.
-- **Threshold in euros or per month**, in addition to the energy threshold per day.
 - **Exporting results**: a CSV file and a summary image to share.
 - **Imports that add up**, instead of replacing the previous one.
 - **Team version, under consideration**: AI usage added up for a team or an organisation,

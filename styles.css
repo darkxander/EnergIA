@@ -98,7 +98,8 @@ details ul { padding-left: 20px; }
 .filters p { margin: 0 0 0 auto; }
 
 .budget { margin: 12px 0 0; font-size: 13px; color: var(--text-secondary); }
-.budget.over { color: var(--critical); font-weight: 600; }
+.budget span { display: block; }
+.budget .over { color: var(--critical); font-weight: 600; }
 .tile .change { font-size: 13px; margin: 2px 0 0; color: var(--text-secondary); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
 .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }

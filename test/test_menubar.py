@@ -140,6 +140,22 @@ class EstimateTest(unittest.TestCase):
         self.assertAlmostEqual(estimate.wh(row, settings), 0.3)
         cached = {"model": "claude-sonnet-5-5", "inTok": 0, "cacheTok": 100000, "outTok": 0}
         self.assertAlmostEqual(estimate.wh(cached, settings), 0.12)  # 100 000 × 0,02 × 0,1 / 1000 × 0,6
+        # Coût : mêmes lignes et mêmes résultats que le test « coût » de test/EnergIA.test.js.
+        priced = {"model": "claude-sonnet-5-5", "inTok": 1000, "cw5Tok": 200, "cw1Tok": 300, "cacheTok": 50000,
+                  "outTok": 400, "searches": 2}
+        self.assertAlmostEqual(estimate.eur(priced, settings), 0.02982894)
+        self.assertAlmostEqual(estimate.eur({"model": "gpt-5-thinking", "inTok": 2000, "outTok": 300}, settings), 0.0050171)
+        unknown = {"model": "modele-inconnu", "inTok": 2000, "cacheTok": 1000, "outTok": 300}
+        self.assertAlmostEqual(estimate.eur(unknown, settings), 0.00805)
+        # Seuils : le jour et le mois se comptent séparément, hier n'entre pas dans le jour.
+        rows = [dict(row, day="2026-11-24"), dict(row, day="2026-11-25"), dict(row, day="2026-10-31")]
+        over = lambda **budgets: estimate.over_budget(rows, {**settings, **budgets}, "2026-11-25")
+        self.assertFalse(over())
+        self.assertEqual((over(dailyBudgetWh=0.29), over(dailyBudgetWh=0.31)), (True, False))
+        self.assertEqual((over(monthlyBudgetKWh=0.00059), over(monthlyBudgetKWh=0.00061)), (True, False))
+        day_cost = estimate.eur(row, settings)
+        self.assertEqual((over(dailyBudgetEur=day_cost * 0.9), over(dailyBudgetEur=day_cost * 1.1)), (True, False))
+        self.assertEqual((over(monthlyBudgetEur=day_cost * 1.9), over(monthlyBudgetEur=day_cost * 2.1)), (True, False))
         for model, tier in [("gpt-4o-mini", "leger"), ("claude-haiku-5-5", "leger"), ("claude-fable-5-2", "grand"),
                             ("claude-opus-5-5", "grand"), ("o3", "raisonnement"), ("gpt-5-pro", "raisonnement"),
                             ("claude-sonnet-5-5", "standard"), ("claude", "standard")]:
@@ -308,6 +324,13 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
         self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0 : pas de seuil
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
+        # Les autres seuils : énergie par mois (en kWh), coût par jour et par mois (en euros).
+        for key, low, high in [("monthlyBudgetKWh", 0.0005, 0.005), ("dailyBudgetEur", 0.0001, 100),
+                               ("monthlyBudgetEur", 0.0001, 100)]:
+            self.assertEqual(post({key: low}), 200)
+            self.assertEqual(self.dash.title(), "🔴 0,61 Wh", key)
+            self.assertEqual(post({key: high}), 200)
+            self.assertEqual(self.dash.title(), "⚡ 0,61 Wh", key)
         # Titre compact : ni pictogramme ni espaces ; la page le relit ensuite auprès du plugin.
         self.assertEqual(post({"compactTitle": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
         self.assertEqual(self.dash.title(), "607Wh")

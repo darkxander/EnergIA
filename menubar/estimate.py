@@ -15,6 +15,7 @@ from paths import PATHS
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 DEFAULTS = os.path.join(HERE, "..", "src", "defaults.json")
+PRICES = os.path.join(HERE, "..", "src", "prices.json")
 SETTINGS = os.path.join(PATHS["config"], "settings.json")
 
 LANGS = ("fr", "en")
@@ -124,6 +125,52 @@ def wh(row, settings):
     read = (row["inTok"] + row.get("cw5Tok", 0) + row.get("cw1Tok", 0)
             + row.get("cacheTok", 0) * settings["cacheReadRatio"])
     return (row["outTok"] + read * settings["inputRatio"]) / 1000 * tier["whOut"]
+
+
+_prices = None
+_MODE = re.compile(r"-(thinking|instant|high|medium|low|auto)(?=-|$)")
+
+
+def price_for(model):
+    """Prix publics du modèle (dollars par million de tokens), ou None s'il est inconnu.
+    Même règle que priceFor dans src/model.js."""
+    global _prices
+    if _prices is None:
+        with open(PRICES, encoding="utf-8") as f:
+            _prices = json.load(f)
+    name = re.sub(r"-\d{8}$", "", str(model or "").lower().replace(".", "-"))
+    plain = _MODE.sub("", re.sub(r"-t-mini$", "-mini", name))
+    for candidate in (name, plain):
+        price = _prices["models"].get(_prices["aliases"].get(candidate, candidate))
+        if price:
+            return price
+    return None
+
+
+def eur(row, settings):
+    """Coût au tarif de l'API, en euros. Même calcul que rowMetrics dans src/model.js."""
+    write5m, write1h, cached = row.get("cw5Tok", 0), row.get("cw1Tok", 0), row.get("cacheTok", 0)
+    price = price_for(row["model"])
+    if not price:
+        tier = settings["tiers"][classify(row["model"])]
+        read = row["inTok"] + write5m + write1h + cached * settings["cacheReadRatio"]
+        return (read * tier["eurIn"] + row["outTok"] * tier["eurOut"]) / 1e6
+    usd = (row["inTok"] * price["in"] + write5m * price.get("write5m", price["in"])
+           + write1h * price.get("write1h", price["in"]) + cached * price.get("read", price["in"])
+           + row["outTok"] * price["out"]) / 1e6
+    usd += row.get("searches", 0) * _prices["webSearchUsdPer1000"] / 1000
+    return usd * settings["eurPerUsd"]
+
+
+def over_budget(rows, settings, today):
+    """Vrai si l'un des seuils choisis dans la page est dépassé : énergie ou coût,
+    pour le jour `today` (AAAA-MM-JJ) ou pour son mois."""
+    month = [row for row in rows if row["day"][:7] == today[:7]]
+    day = [row for row in month if row["day"] == today]
+    checks = ((settings.get("dailyBudgetWh", 0), day, wh), (settings.get("monthlyBudgetKWh", 0) * 1000, month, wh),
+              (settings.get("dailyBudgetEur", 0), day, eur), (settings.get("monthlyBudgetEur", 0), month, eur))
+    return any(budget > 0 and sum(measure(row, settings) for row in period) > budget
+               for budget, period, measure in checks)
 
 
 def format_energy(value, lang="fr", compact=False):

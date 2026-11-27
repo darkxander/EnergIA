@@ -234,7 +234,18 @@ test("intensité carbone : une liste de pays sourcée, aux valeurs distinctes", 
   assert.ok(CARBON.source && CARBON.citation && CARBON.year);
 });
 
-test("seuil d'énergie par jour : désactivé par défaut", async () => {
+test("seuils d'alerte : désactivés par défaut", async () => {
   const { DEFAULT_SETTINGS } = await import("../src/model.js");
-  assert.equal(DEFAULT_SETTINGS.dailyBudgetWh, 0);
+  for (const key of ["dailyBudgetWh", "monthlyBudgetKWh", "dailyBudgetEur", "monthlyBudgetEur"]) {
+    assert.equal(DEFAULT_SETTINGS[key], 0, key);
+  }
+});
+
+// Mêmes lignes et mêmes résultats que dans test/test_menubar.py : le plugin refait ce calcul.
+test("coût : mêmes chiffres que le plugin", async () => {
+  const { DEFAULT_SETTINGS, rowMetrics } = await import("../src/model.js");
+  const close = (row, expected) => assert.ok(Math.abs(rowMetrics(row, DEFAULT_SETTINGS).eur - expected) < 1e-9, row.model);
+  close({ model: "claude-sonnet-5-5", inTok: 1000, cw5Tok: 200, cw1Tok: 300, cacheTok: 50000, outTok: 400, searches: 2 }, 0.02982894);
+  close({ model: "gpt-5-thinking", inTok: 2000, outTok: 300 }, 0.0050171);
+  close({ model: "modele-inconnu", inTok: 2000, cacheTok: 1000, outTok: 300 }, 0.00805);
 });

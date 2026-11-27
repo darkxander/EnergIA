@@ -134,9 +134,9 @@ class Dashboard:
                 return f"{LABEL} …"
         settings = estimate.load_settings(self.settings_path)
         today = self.today()
-        total = sum(estimate.wh(row, settings) for row in self.store.rows() if row["day"] == today)
-        budget = settings.get("dailyBudgetWh", 0)
-        label = OVER_LABEL if budget > 0 and total > budget else LABEL
+        rows = self.store.rows()
+        total = sum(estimate.wh(row, settings) for row in rows if row["day"] == today)
+        label = OVER_LABEL if estimate.over_budget(rows, settings, today) else LABEL
         lang = estimate.lang_of(settings)
         if settings.get("compactTitle"):
             # Choisi dans la page : ni pictogramme ni espaces, moins de chiffres. Au-dessus
