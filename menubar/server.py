@@ -46,15 +46,15 @@ STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8"
           ".js": "text/javascript; charset=utf-8", ".json": "application/json"}
 
 
-PICK_PROMPT = {"fr": "Choisissez votre export ChatGPT ou Claude (.zip ou conversations.json)",
-               "en": "Choose your ChatGPT or Claude export (.zip or conversations.json)"}
+PICK_PROMPT = {"fr": "Choisissez votre export ChatGPT, Claude, Gemini ou Copilot (.zip, .json ou .csv)",
+               "en": "Choose your ChatGPT, Claude, Gemini or Copilot export (.zip, .json or .csv)"}
 PORT_ERROR = {"fr": "port {port} indisponible : {reason}", "en": "port {port} unavailable: {reason}"}
 SERVING = {"fr": "EnergIA : tableau de bord sur {url} (Ctrl+C pour arrêter)",
            "en": "EnergIA: dashboard at {url} (Ctrl+C to stop)"}
 PORT_HINT = {"fr": "EnergIA tourne peut-être déjà (barre de menus ou autre fenêtre). Essayez --port avec un autre numéro.",
              "en": "EnergIA may already be running (menu bar or another window). Try --port with another number."}
-PICK_TYPES = '{"public.zip-archive", "public.json", "zip", "json"}'
-PICK_EXTENSIONS = (".zip", ".json")
+PICK_TYPES = '{"public.zip-archive", "public.json", "public.comma-separated-values-text", "zip", "json", "csv"}'
+PICK_EXTENSIONS = (".zip", ".json", ".csv")
 
 
 def pick_file(lang="fr"):

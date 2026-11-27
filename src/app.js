@@ -1,11 +1,12 @@
 import { listZipEntries, readZipEntryText } from "./zip.js";
-import { combine, parseExport, rowsOf } from "./parsers.js";
+import { combine, parseFileText, rowsOf } from "./parsers.js";
 import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 import { csvText } from "./csv.js";
 import { drawCard } from "./card.js";
 
-const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
+const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", copilot: "Copilot", claudecode: "Claude Code", cowork: "Claude Cowork" };
+const NO_MODEL = ["claude", "gemini", "copilot"]; // exports qui ne disent pas quel modèle a répondu
 const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur cet ordinateur par le plugin, sans import
 const API_HEADERS = { "X-EnergIA": "1" };
 const DATA_KEY = "EnergIA.data.v1";
@@ -165,7 +166,10 @@ async function readFile(file) {
   const texts = [];
   if (/\.zip$/i.test(file.name)) {
     const entries = await listZipEntries(file);
-    const wanted = entries.filter((e) => /(^|\/)conversations[^/]*\.json$/i.test(e.name));
+    // ChatGPT et Claude : conversations.json ; Google Takeout : le fichier JSON du dossier
+    // des applis Gemini ; Microsoft : les fichiers CSV de Copilot.
+    const wanted = entries.filter((e) => /(^|\/)conversations[^/]*\.json$/i.test(e.name)
+      || /gemini[^/]*\/[^/]*\.json$/i.test(e.name) || /copilot[^/]*\.csv$/i.test(e.name));
     if (!wanted.length) throw new Error(t("status.noConversations", { file: file.name }));
     for (const entry of wanted) texts.push(await readZipEntryText(file, entry));
   } else {
@@ -181,14 +185,14 @@ async function importFiles(files) {
   try {
     for (const file of files) {
       for (const text of await readFile(file)) {
-        let json;
+        let parsed;
         try {
-          json = JSON.parse(text);
+          parsed = parseFileText(text);
         } catch {
           throw new Error(t("status.notJson", { file: file.name }));
         }
-        const parsed = parseExport(json);
         if (!parsed) throw new Error(t("status.unknownFormat", { file: file.name }));
+        if (parsed.promptsOnly) continue; // demandes sans réponses : rien à compter
         imported[parsed.source] = combine(imported[parsed.source] || {}, parsed.items).items;
       }
     }
@@ -555,7 +559,7 @@ function renderModels(rows) {
     .sort((a, b) => b.total.wh - a.total.wh)
     .map(({ source, model, total }) => [
       SOURCES[source],
-      source === "claude" ? t("models.unknown") : model,
+      NO_MODEL.includes(source) ? t("models.unknown") : model,
       t(`tier.${classifyModel(model)}`),
       nf(total.requests),
       nfBig(total.outTok),
@@ -658,6 +662,8 @@ const SETTING_GROUPS = [
   [t("settings.subs"), [
     ["ChatGPT", "subs.chatgpt"],
     ["Claude", "subs.claude"],
+    ["Gemini", "subs.gemini"],
+    ["Copilot", "subs.copilot"],
   ]],
 ];
 
@@ -729,7 +735,7 @@ function exportLines() {
   return rows.map((row) => {
     const m = rowMetrics(row, state.settings);
     return [
-      row.day, SOURCES[row.source], row.source === "claude" ? t("models.unknown") : row.model,
+      row.day, SOURCES[row.source], NO_MODEL.includes(row.source) ? t("models.unknown") : row.model,
       t(`tier.${classifyModel(row.model)}`), row.requests,
       row.inTok + (row.cw5Tok || 0) + (row.cw1Tok || 0), row.cacheTok || 0, row.outTok,
       m.wh, m.co2g, m.waterL, m.eur, t(priceFor(row.model) ? "export.no" : "export.yes"),

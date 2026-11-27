@@ -17,5 +17,5 @@
   "dailyBudgetEur": 0,
   "monthlyBudgetEur": 0,
   "compactTitle": 0,
-  "subs": { "chatgpt": 0, "claude": 0 }
+  "subs": { "chatgpt": 0, "claude": 0, "gemini": 0, "copilot": 0 }
 }

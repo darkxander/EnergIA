@@ -4,10 +4,10 @@
 
 What your AI usage amounts to, in energy, CO₂, water and euros.
 
-EnergIA estimates the footprint of your conversations with ChatGPT, Claude, Claude Code and
-Claude Cowork. It comes in two forms that share the same page:
+EnergIA estimates the footprint of your conversations with ChatGPT, Claude, Gemini, Copilot,
+Claude Code and Claude Cowork. It comes in two forms that share the same page:
 
-- a **web page** where you import your ChatGPT or Claude export, which you can
+- a **web page** where you import your ChatGPT, Claude, Gemini or Copilot export, which you can
   [try online](https://darkxander.github.io/EnergIA/) without installing anything;
 - a **macOS menu bar item** ([SwiftBar](https://github.com/swiftbar/SwiftBar) plugin) that
   shows today's estimated energy for Claude Code and opens the dashboard on click.
@@ -61,7 +61,7 @@ To run it yourself, the page loads JavaScript modules, so it needs a local serve
 python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
-Then open <http://localhost:8791> and import your export (`.zip` or `conversations.json`):
+Then open <http://localhost:8791> and import your export (`.zip`, `.json` or `.csv`):
 drop it anywhere on the page, or click "Choose a file". "See an example" shows made-up
 data.
 
@@ -70,6 +70,11 @@ To get an export:
 - **ChatGPT**: Settings → Data controls → Export data.
 - **Claude**: Settings → Privacy → Export data, on the web or in the desktop app (not on
   mobile). The link sent by email expires after 24 hours.
+- **Gemini**: on [takeout.google.com](https://takeout.google.com), tick only "My Activity",
+  then in its options keep only Gemini Apps and choose the JSON format. By default Google
+  provides HTML, which is not read.
+- **Copilot**: on [account.microsoft.com/privacy](https://account.microsoft.com/privacy),
+  under Copilot, "Export all activity history". You get `.csv` files.
 
 Files are analysed in the browser. Nothing is sent over the Internet, and the text of your
 conversations is not kept: only counters per day and per model are stored in the browser's
@@ -204,13 +209,22 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 - **Exports.** The Claude export does not say which model was used. The hidden reasoning of
   reasoning models does not appear in exports, and images are not counted. Parsing has
   been checked on a real ChatGPT export; for the Claude export, only on test files.
+- **Gemini and Copilot: parsing not checked on real exports.** Google and Microsoft do not
+  document these formats. Parsing relies on public descriptions, which for Gemini do not
+  agree with each other: three shapes are accepted. These exports do not say which model
+  answered: the "standard" category and an indicative price are applied. The Gemini export
+  may omit replies, and the Copilot export does not identify conversations: they are
+  rebuilt from their title. If you import one of these exports, feedback in an
+  [issue](https://github.com/darkxander/EnergIA/issues) is welcome.
+- **Mistral is not supported.** I found neither a confirmed official export of Mistral's
+  assistant nor a reliable description of its file format.
 
 ## Code layout
 
 | Path | Role |
 |---|---|
 | `index.html`, `styles.css`, `src/app.js` | The page and its interface |
-| `src/parsers.js`, `src/zip.js` | Reading ChatGPT and Claude exports |
+| `src/parsers.js`, `src/zip.js` | Reading ChatGPT, Claude, Gemini and Copilot exports |
 | `src/i18n.js` | Interface texts in French and English |
 | `src/csv.js` | Writing the CSV export |
 | `src/card.js` | Drawing the summary image |
@@ -248,8 +262,8 @@ These are intentions, with no dates and no commitment. In the planned order:
 
 Then, in no set order:
 
-- **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
-  their exports allow.
+- **Other services**: checking Gemini and Copilot parsing on real exports, then Mistral and
+  other coding tools, depending on what their exports allow.
 - **Team version, under consideration**: AI usage added up for a team or an organisation,
   with a report. If this interests you, say so in an
   [issue](https://github.com/darkxander/EnergIA/issues).

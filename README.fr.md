@@ -4,10 +4,10 @@
 
 Ce que représente votre usage de l'IA, en énergie, CO₂, eau et euros.
 
-EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude, Claude Code et Claude Cowork. Elle
-existe sous deux formes, qui partagent la même page :
+EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude, Gemini, Copilot,
+Claude Code et Claude Cowork. Elle existe sous deux formes, qui partagent la même page :
 
-- une **page web** où l'on importe son export ChatGPT ou Claude, à
+- une **page web** où l'on importe son export ChatGPT, Claude, Gemini ou Copilot, à
   [essayer en ligne](https://darkxander.github.io/EnergIA/) sans rien installer ;
 - un **élément de barre de menus macOS** (plugin [SwiftBar](https://github.com/swiftbar/SwiftBar))
   qui affiche l'énergie estimée du jour pour Claude Code, et ouvre le tableau de bord au clic.
@@ -63,8 +63,8 @@ JavaScript :
 python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
-Ouvrez ensuite <http://localhost:8791>, puis importez votre export (`.zip` ou
-`conversations.json`) : déposez-le n'importe où sur la page, ou cliquez sur « Choisir un
+Ouvrez ensuite <http://localhost:8791>, puis importez votre export (`.zip`,
+`.json` ou `.csv`) : déposez-le n'importe où sur la page, ou cliquez sur « Choisir un
 fichier ». « Voir un exemple » affiche des données fictives.
 
 Pour obtenir un export :
@@ -73,6 +73,12 @@ Pour obtenir un export :
 - **Claude** : Paramètres → Confidentialité → Exporter les données, sur le web ou dans
   l'appli pour ordinateur (pas sur mobile). Le lien reçu par e-mail expire au bout de
   24 heures.
+- **Gemini** : sur [takeout.google.com](https://takeout.google.com), ne cochez que « Mon
+  activité », puis dans ses options ne gardez que les applis Gemini et choisissez le format
+  JSON. Par défaut, Google fournit du HTML, qui n'est pas lu.
+- **Copilot** : sur [account.microsoft.com/privacy](https://account.microsoft.com/privacy),
+  rubrique Copilot, « Exporter tout l'historique d'activité ». Vous obtenez des fichiers
+  `.csv`.
 
 Les fichiers sont analysés dans le navigateur. Rien n'est envoyé sur Internet, et le
 texte des conversations n'est pas conservé : seuls des compteurs par jour et par modèle
@@ -215,13 +221,23 @@ dans « Hypothèses de calcul ».
   modèles à raisonnement n'apparaît pas dans les exports, et les images ne sont pas comptées.
   La lecture a été vérifiée sur un vrai export ChatGPT ; celle de l'export Claude ne l'a
   été que sur des fichiers de test.
+- **Gemini et Copilot : lecture non vérifiée sur de vrais exports.** Google et Microsoft ne
+  documentent pas ces formats. La lecture s'appuie sur des descriptions publiques, qui pour
+  Gemini ne s'accordent pas entre elles : trois formes sont acceptées. Ces exports ne
+  disent pas quel modèle a répondu : la catégorie « standard » et un prix indicatif sont
+  appliqués. L'export Gemini peut omettre des réponses, et l'export Copilot n'identifie pas
+  les conversations : elles sont reconstituées d'après leur titre. Si vous importez l'un
+  de ces exports, un retour dans une
+  [issue](https://github.com/darkxander/EnergIA/issues) est bienvenu.
+- **Mistral n'est pas pris en charge.** Je n'ai trouvé ni export officiel confirmé de
+  l'assistant de Mistral, ni description fiable du format de ses fichiers.
 
 ## Organisation du code
 
 | Chemin | Rôle |
 |---|---|
 | `index.html`, `styles.css`, `src/app.js` | La page et son interface |
-| `src/parsers.js`, `src/zip.js` | Lecture des exports ChatGPT et Claude |
+| `src/parsers.js`, `src/zip.js` | Lecture des exports ChatGPT, Claude, Gemini et Copilot |
 | `src/i18n.js` | Textes de l'interface en français et en anglais |
 | `src/csv.js` | Écriture de l'export CSV |
 | `src/card.js` | Dessin de l'image de résumé |
@@ -262,8 +278,8 @@ Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
 Puis, sans ordre arrêté :
 
-- **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
-  permettent leurs exports.
+- **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
+  puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
 - **Installation en une commande.**
 - **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une
   organisation, avec un rapport. Si cela vous intéresse, dites-le dans une

@@ -50,7 +50,7 @@ export const CARBON = CARBON_DATA;
 // Même règle que menubar/estimate.py : garder les deux en accord.
 export function classifyModel(model) {
   const m = String(model || "").toLowerCase();
-  if (/mini|nano|haiku|flash|instant|lite|luna/.test(m)) return "leger";
+  if (/(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna/.test(m)) return "leger"; // « gemini » n'est pas « mini »
   if (/opus|fable|mythos|astra/.test(m)) return "grand";
   if (/^o\d|thinking|reason|research|(^|-)pro($|-)/.test(m)) return "raisonnement";
   return "standard";

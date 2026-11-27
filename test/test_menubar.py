@@ -158,7 +158,8 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual((over(monthlyBudgetEur=day_cost * 1.9), over(monthlyBudgetEur=day_cost * 2.1)), (True, False))
         for model, tier in [("gpt-4o-mini", "leger"), ("claude-haiku-5-5", "leger"), ("claude-fable-5-2", "grand"),
                             ("claude-opus-5-5", "grand"), ("o3", "raisonnement"), ("gpt-5-pro", "raisonnement"),
-                            ("claude-sonnet-5-5", "standard"), ("claude", "standard")]:
+                            ("claude-sonnet-5-5", "standard"), ("claude", "standard"),
+                            ("gemini", "standard"), ("copilot", "standard"), ("o3-mini", "leger")]:
             self.assertEqual(estimate.classify(model), tier, model)
 
     def test_format(self):

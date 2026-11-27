@@ -315,3 +315,55 @@ test("imports qui se cumulent : une conversation n'est comptée qu'une fois", as
   assert.equal(Object.keys(claude.items).length, 1);
   assert.deepEqual(combine(claude.items, parseExport(claudeExport).items).same, 1);
 });
+
+test("export Copilot : les deux dispositions du CSV", async () => {
+  const { parseCsv, parseFileText } = await import("../src/parsers.js");
+  assert.deepEqual(parseCsv('\uFEFFa,b\r\n"x, ""y""\nz",2\r\n'), [["a", "b"], ['x, "y"\nz', "2"]]);
+  assert.deepEqual(parseCsv("a;b\n1;2"), [["a", "b"], ["1", "2"]]);
+  const q = "q".repeat(40);
+  const history = parseFileText([
+    "Conversation,Time,Author,Message",
+    `Voyage,2026-02-17T14:36:11,user,${q}`,
+    `Voyage,2026-02-17T14:36:20,AI,"${"r".repeat(400)}"`,
+    `Voyage,2026-02-17T14:40:00,user,${q}`,
+    `Voyage,2026-02-17T14:40:09,AI,${"r".repeat(200)}`,
+    // Même titre un mois plus tard : une autre conversation, le contexte repart de zéro.
+    `Voyage,2026-03-20T10:00:00,user,${q}`,
+    `Voyage,2026-03-20T10:00:09,AI,${"r".repeat(200)}`,
+  ].join("\r\n"));
+  assert.deepEqual([history.source, history.conversations], ["copilot", 2]);
+  const [first, second] = history.rows.sort((a, b) => a.day.localeCompare(b.day));
+  assert.deepEqual([first.day, first.model, first.requests, first.inTok, first.outTok], ["2026-02-17", "copilot", 2, 10 + 120, 150]);
+  assert.deepEqual([second.day, second.requests, second.inTok, second.outTok], ["2026-03-20", 1, 10, 50]);
+
+  const chat = parseFileText(`CreatedAt,MessageContent,Author,ChatName\n2/17/2026 11:36:11 PM -02:00,${q},user,Chat\n2/17/2026 11:36:30 PM -02:00,${"r".repeat(400)},Copilot,Chat\n`);
+  assert.deepEqual(chat.rows.map((r) => [r.day, r.requests, r.inTok, r.outTok]), [["2026-02-18", 1, 10, 100]]); // 23 h 36 à UTC−2
+
+  const prompts = parseFileText("Timestamp,ClientApp,Prompt\n2026-01-01T00:00:00,App,bonjour\n");
+  assert.deepEqual([prompts.promptsOnly, prompts.rows.length], [true, 0]); // des demandes seules : rien à compter
+  assert.equal(parseFileText("x,y\n1,2\n"), null);
+});
+
+test("export Gemini : les trois formes décrites, et rien d'autre de « Mon activité »", async () => {
+  const { parseFileText } = await import("../src/parsers.js");
+  const { classifyModel } = await import("../src/model.js");
+  const q = "q".repeat(40);
+  const events = [
+    { header: "Gemini Apps", title: q, titleUrl: "https://gemini.google.com/app/abc123", time: "2026-05-01T10:00:00.000Z",
+      products: ["Gemini Apps"], safeHtmlItem: [{ html: `<p>${"r".repeat(400)}</p>` }] },
+    { header: "Gemini", title: "Used Gemini Apps", titleUrl: "https://gemini.google.com/app/c/abc123", time: "2026-05-01T10:05:00.000Z",
+      products: ["Gemini Apps"], details: [{ name: "Request", value: q }, { name: "Response", value: "r".repeat(200) }] },
+    { header: "Gemini", title: "Used Gemini Apps", time: "2026-05-02T10:05:00.000Z", products: ["Gemini Apps"],
+      userInteractions: [{ userInteraction: { endpoint: "x", request: JSON.stringify({ text: q }), response: JSON.stringify({ parts: [{ text: "r".repeat(200) }] }) } }] },
+    { header: "YouTube", title: "Watched x", time: "2026-05-02T10:05:00.000Z", products: ["YouTube"] },
+    { header: "Gemini", title: "Used Gemini Apps", time: "2026-05-03T10:05:00.000Z", products: ["Gemini Apps"] }, // ni demande ni réponse
+  ];
+  const out = parseFileText(JSON.stringify(events));
+  assert.deepEqual([out.source, out.conversations], ["gemini", 2]); // les deux premiers partagent un lien
+  const [first, second] = out.rows.sort((a, b) => a.day.localeCompare(b.day));
+  assert.deepEqual([first.day, first.model, first.requests, first.inTok, first.outTok], ["2026-05-01", "gemini", 2, 10 + (10 + 100 + 10), 150]);
+  assert.deepEqual([second.day, second.requests, second.inTok, second.outTok], ["2026-05-02", 1, 10, 50]);
+  assert.equal(parseFileText(JSON.stringify([events[3]])), null);
+  assert.equal(classifyModel("gemini"), "standard"); // « gemini » contient « mini » sans être un modèle léger
+  assert.equal(classifyModel("o3-mini"), "leger");
+});

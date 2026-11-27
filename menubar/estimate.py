@@ -20,7 +20,7 @@ SETTINGS = os.path.join(PATHS["config"], "settings.json")
 
 LANGS = ("fr", "en")
 
-_LEGER = re.compile(r"mini|nano|haiku|flash|instant|lite|luna")
+_LEGER = re.compile(r"(^|[-_ ])mini|nano|haiku|flash|instant|lite|luna")  # « gemini » n'est pas « mini »
 _GRAND = re.compile(r"opus|fable|mythos|astra")
 _RAISONNEMENT = re.compile(r"^o\d|thinking|reason|research|(^|-)pro($|-)")
 

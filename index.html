@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EnergIA – ce que représente votre usage de l'IA</title>
-  <link rel="stylesheet" href="styles.css?v=5e1677d8">
+  <link rel="stylesheet" href="styles.css?v=edd37ef8">
 </head>
 <body class="viz-root">
   <header class="top">
@@ -23,13 +23,13 @@
     <section class="card" aria-labelledby="import-title">
       <h2 id="import-title" data-i18n="import.title">Importer mes données</h2>
       <div id="drop" class="drop">
-        <p><strong id="drop-title" data-i18n="import.dropTitle">Déposez ici votre export ChatGPT ou Claude</strong><br>
-          <span id="drop-hint" class="muted" data-i18n="import.dropHint">Archive .zip ou fichier conversations.json</span></p>
+        <p><strong id="drop-title" data-i18n="import.dropTitle">Déposez ici votre export ChatGPT, Claude, Gemini ou Copilot</strong><br>
+          <span id="drop-hint" class="muted" data-i18n="import.dropHint">Archive .zip, fichier .json ou fichier .csv</span></p>
         <div class="actions">
           <button id="pick" type="button" class="primary" data-i18n="import.pick" disabled>Choisir un fichier</button>
           <button id="sample" type="button" data-i18n="import.sample" disabled>Voir un exemple</button>
         </div>
-        <input id="file" type="file" accept=".zip,.json" multiple hidden>
+        <input id="file" type="file" accept=".zip,.json,.csv" multiple hidden>
       </div>
       <p class="muted" data-i18n="import.privacy">Vos fichiers sont analysés dans votre navigateur. Rien n'est envoyé sur Internet, et le texte de vos conversations n'est pas conservé.</p>
       <p id="status" role="status"></p>
@@ -39,7 +39,10 @@
         <ul>
           <li data-i18n="help.chatgpt"><strong>ChatGPT</strong> : Paramètres → Gestion des données → Exporter les données. Un lien de téléchargement arrive par e-mail.</li>
           <li data-i18n="help.claude"><strong>Claude</strong> : Paramètres → Confidentialité → Exporter les données, sur le web ou dans l'appli pour ordinateur (pas sur mobile). Un lien de téléchargement arrive par e-mail ; il expire au bout de 24 heures.</li>
+          <li data-i18n="help.gemini"><strong>Gemini</strong> : sur takeout.google.com, ne cochez que « Mon activité », puis dans ses options ne gardez que les applis Gemini et choisissez le format JSON (par défaut, c'est du HTML, qui n'est pas lu). Importez l'archive ou son fichier .json.</li>
+          <li data-i18n="help.copilot"><strong>Copilot</strong> : sur account.microsoft.com/privacy, rubrique Copilot, « Exporter tout l'historique d'activité ». Importez le ou les fichiers .csv téléchargés.</li>
         </ul>
+        <p class="muted" data-i18n="help.unverified">La lecture des exports Gemini et Copilot repose sur des descriptions publiques de leur format et n'a pas encore été vérifiée sur de vrais exports. Ces exports ne disent pas quel modèle a répondu.</p>
         <p class="muted" data-i18n="help.team">Pas de bouton « Exporter les données » dans Claude ? Avec un compte d'organisation (Team ou Enterprise), l'export doit d'abord être autorisé par un propriétaire de l'organisation. Sans cela, seuls Claude Code et Claude Cowork peuvent être mesurés.</p>
         <p class="muted" data-i18n="help.replace">Un nouvel import s'ajoute au précédent pour le même service : les conversations déjà importées ne sont pas comptées deux fois. « Supprimer » repart de zéro.</p>
       </details>
@@ -62,6 +65,8 @@
             <option value="all" data-i18n="filter.allServices">Tous</option>
             <option value="chatgpt">ChatGPT (export)</option>
             <option value="claude">Claude (export)</option>
+            <option value="gemini">Gemini (export)</option>
+            <option value="copilot">Copilot (export)</option>
             <option value="claudecode">Claude Code</option>
             <option value="cowork">Claude Cowork</option>
           </select>
@@ -145,15 +150,15 @@
   <script type="importmap">
   {
     "imports": {
-      "./src/card.js": "./src/card.js?v=5e1677d8",
-      "./src/csv.js": "./src/csv.js?v=5e1677d8",
-      "./src/i18n.js": "./src/i18n.js?v=5e1677d8",
-      "./src/model.js": "./src/model.js?v=5e1677d8",
-      "./src/parsers.js": "./src/parsers.js?v=5e1677d8",
-      "./src/zip.js": "./src/zip.js?v=5e1677d8"
+      "./src/card.js": "./src/card.js?v=edd37ef8",
+      "./src/csv.js": "./src/csv.js?v=edd37ef8",
+      "./src/i18n.js": "./src/i18n.js?v=edd37ef8",
+      "./src/model.js": "./src/model.js?v=edd37ef8",
+      "./src/parsers.js": "./src/parsers.js?v=edd37ef8",
+      "./src/zip.js": "./src/zip.js?v=edd37ef8"
     }
   }
   </script>
-  <script type="module" src="src/app.js?v=5e1677d8"></script>
+  <script type="module" src="src/app.js?v=edd37ef8"></script>
 </body>
 </html>

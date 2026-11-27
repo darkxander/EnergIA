@@ -1,4 +1,4 @@
-// Lecture des exports de données ChatGPT et Claude.
+// Lecture des exports de données ChatGPT, Claude, Gemini et Copilot.
 // Aucun texte de conversation n'est conservé : seuls des compteurs par jour et par
 // modèle sortent d'ici, rangés par conversation sous une clé anonyme. Cette clé sert
 // à ne pas compter deux fois une conversation présente dans deux imports.
@@ -256,6 +256,189 @@ function parseClaude(conversations) {
   return all.result();
 }
 
+// ---------- Gemini ----------
+// Google Takeout, « Mon activité » pour les applis Gemini, au format JSON : un tableau
+// d'événements, un par échange. Google ne documente pas ce format, et les descriptions
+// publiques ne s'accordent pas ; les trois formes décrites sont acceptées :
+//   - details : [{ name: "Request" | "Response", value }] ;
+//   - userInteractions : [{ userInteraction: { request, response } }] (textes JSON) ;
+//   - title (« Prompted … ») pour la demande et safeHtmlItem : [{ html }] pour la réponse.
+// L'export ne dit pas quel modèle a répondu. Non vérifié sur un export réel.
+
+const isGeminiEvent = (e) => e && typeof e.time === "string"
+  && /gemini|bard/i.test(`${e.header || ""} ${(Array.isArray(e.products) ? e.products : []).join(" ")} ${e.titleUrl || ""}`);
+
+// Tous les textes d'une valeur JSON, bout à bout.
+function deepText(value) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(deepText).join("");
+  if (value && typeof value === "object") return Object.values(value).map(deepText).join("");
+  return "";
+}
+
+// Un texte qui contient du JSON : ses textes seulement ; sinon le texte tel quel.
+function unwrap(text) {
+  if (typeof text !== "string") return deepText(text);
+  if (!/^\s*[[{"]/.test(text)) return text;
+  try {
+    return deepText(JSON.parse(text));
+  } catch {
+    return text;
+  }
+}
+
+const stripHtml = (html) => String(html || "").replace(/<[^>]*>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+
+function geminiExchange(event) {
+  let prompt = "";
+  let reply = "";
+  if (Array.isArray(event.details)) {
+    const named = (pattern) => event.details.filter((d) => d && pattern.test(String(d.name || ""))).map((d) => deepText(d.value)).join("");
+    prompt = named(/request|prompt/i);
+    reply = named(/response|answer/i);
+  }
+  if (Array.isArray(event.userInteractions)) {
+    for (const entry of event.userInteractions) {
+      const interaction = (entry && entry.userInteraction) || entry || {};
+      prompt += unwrap(interaction.request);
+      reply += unwrap(interaction.response);
+    }
+  }
+  if (Array.isArray(event.safeHtmlItem)) {
+    reply += event.safeHtmlItem.map((item) => stripHtml(item && item.html)).join(" ");
+    if (!prompt && typeof event.title === "string") prompt = event.title; // « Prompted … », libellé compris
+  }
+  return { prompt, reply };
+}
+
+function parseGemini(events) {
+  // Les échanges d'une même conversation portent le même lien ; sans lien, chacun est seul.
+  const groups = new Map();
+  for (const event of events) {
+    if (!isGeminiEvent(event)) continue;
+    const time = Date.parse(event.time);
+    if (Number.isNaN(time)) continue;
+    const { prompt, reply } = geminiExchange(event);
+    if (!prompt && !reply) continue;
+    const link = /\/app\/(?:c\/)?([\w-]+)/.exec(event.titleUrl || "");
+    const id = link ? link[1] : `t:${event.time}`;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push({ time, prompt: estimateTokens(prompt), reply: estimateTokens(reply) });
+  }
+  const all = new Collector("gemini");
+  let index = 0;
+  for (const [id, exchanges] of groups) {
+    exchanges.sort((a, b) => a.time - b.time);
+    const agg = new Aggregator("gemini");
+    let context = 0;
+    for (const exchange of exchanges) {
+      agg.add(dayOf(new Date(exchange.time)), "gemini", 1, context + exchange.prompt, exchange.reply);
+      context += exchange.prompt + exchange.reply;
+    }
+    all.add(agg, index++, id, exchanges[0].time, exchanges[exchanges.length - 1].time / 1000);
+  }
+  return all.result();
+}
+
+// ---------- Copilot ----------
+// Export CSV du tableau de bord de confidentialité de Microsoft. Deux dispositions,
+// reconnues à leur ligne d'en-tête :
+//   - Conversation, Time, Author, Message (historique des applis Copilot) ;
+//   - CreatedAt, MessageContent, Author, ChatName (Copilot Chat, Microsoft 365).
+// Un troisième fichier (Timestamp, ClientApp, Prompt) ne contient que des demandes, sans
+// réponses : il est reconnu mais rien n'en est compté. L'export ne donne ni modèle ni
+// identifiant de conversation. Non vérifié sur un export réel.
+
+// Texte CSV -> tableau de lignes ; guillemets doublés et retours à la ligne dans les cellules.
+export function parseCsv(text) {
+  const source = String(text).replace(/^\uFEFF/, "");
+  const firstLine = source.slice(0, source.search(/\r|\n|$/));
+  const separator = !firstLine.includes(",") && firstLine.includes(";") ? ";" : ",";
+  const lines = [];
+  let line = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    if (quoted) {
+      if (char !== '"') cell += char;
+      else if (source[i + 1] === '"') { cell += '"'; i += 1; }
+      else quoted = false;
+    } else if (char === '"') quoted = true;
+    else if (char === separator) { line.push(cell); cell = ""; }
+    else if (char === "\n" || char === "\r") {
+      if (char === "\r" && source[i + 1] === "\n") i += 1;
+      line.push(cell);
+      cell = "";
+      if (line.length > 1 || line[0] !== "") lines.push(line);
+      line = [];
+    } else cell += char;
+  }
+  line.push(cell);
+  if (line.length > 1 || line[0] !== "") lines.push(line);
+  return lines;
+}
+
+// « 2026-02-17T14:36:11 » ou « 2/17/2026 2:36:11 PM +01:00 » -> millisecondes, ou NaN.
+function copilotTime(text) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?\s*(?:([+-])(\d{2}):?(\d{2}))?$/i.exec(String(text).trim());
+  if (!m) return Date.parse(String(text).trim());
+  let hour = Number(m[4]) % (m[7] ? 12 : 24);
+  if (m[7] && m[7].toUpperCase() === "PM") hour += 12;
+  const utc = Date.UTC(Number(m[3]), Number(m[1]) - 1, Number(m[2]), hour, Number(m[5]), Number(m[6] || 0));
+  return m[8] ? utc - (m[8] === "-" ? -1 : 1) * (Number(m[9]) * 60 + Number(m[10])) * 60000 : utc;
+}
+
+const COPILOT_GAP = 24 * 3600 * 1000; // au-delà, un même titre est compté comme une autre conversation
+
+export function parseCopilotCsv(text) {
+  const [header, ...lines] = parseCsv(text);
+  if (!header) return null;
+  const names = header.map((name) => name.trim().toLowerCase());
+  const column = (...wanted) => names.findIndex((name) => wanted.includes(name));
+  const author = column("author");
+  const message = column("message", "messagecontent");
+  const time = column("time", "createdat");
+  const title = column("conversation", "chatname");
+  const all = new Collector("copilot");
+  if (author < 0 || message < 0 || time < 0 || title < 0) {
+    // Le fichier des applis Windows : des demandes seules, rien à compter.
+    return column("prompt") >= 0 && column("timestamp") >= 0 ? { ...all.result(), promptsOnly: true } : null;
+  }
+  const byTitle = new Map();
+  for (const line of lines) {
+    const at = copilotTime(line[time] || "");
+    if (Number.isNaN(at)) continue;
+    const key = line[title] || "";
+    if (!byTitle.has(key)) byTitle.set(key, []);
+    byTitle.get(key).push({ at, human: /^(user|human)$/i.test((line[author] || "").trim()), tokens: estimateTokens(line[message] || "") });
+  }
+  let index = 0;
+  for (const [key, messages] of byTitle) {
+    messages.sort((a, b) => a.at - b.at);
+    let start = 0;
+    for (let i = 1; i <= messages.length; i++) {
+      if (i < messages.length && messages[i].at - messages[i - 1].at <= COPILOT_GAP) continue;
+      const session = messages.slice(start, i);
+      start = i;
+      const agg = new Aggregator("copilot");
+      let context = 0;
+      let pendingRequests = 0;
+      for (const item of session) {
+        if (item.human) {
+          if (item.tokens > 0) pendingRequests += 1;
+        } else if (item.tokens > 0) {
+          agg.add(dayOf(new Date(item.at)), "copilot", pendingRequests, context, item.tokens);
+          pendingRequests = 0;
+        }
+        context += item.tokens;
+      }
+      all.add(agg, index++, `${key}|${session[0].at}`, session[0].at, session[session.length - 1].at / 1000);
+    }
+  }
+  return all.result();
+}
+
 // ---------- Détection ----------
 
 export function parseExport(json) {
@@ -263,5 +446,13 @@ export function parseExport(json) {
   if (!list) return null;
   if (list.some((c) => c && c.mapping)) return parseChatGPT(list);
   if (list.some((c) => c && Array.isArray(c.chat_messages))) return parseClaude(list);
+  if (list.some(isGeminiEvent)) return parseGemini(list);
   return null;
+}
+
+// Le texte d'un fichier : JSON (ChatGPT, Claude, Gemini) ou CSV (Copilot).
+// Renvoie null si le format n'est pas reconnu ; lève une erreur si le JSON est invalide.
+export function parseFileText(text) {
+  const clean = String(text).replace(/^\uFEFF/, "");
+  return /^\s*[[{]/.test(clean) ? parseExport(JSON.parse(clean)) : parseCopilotCsv(clean);
 }
