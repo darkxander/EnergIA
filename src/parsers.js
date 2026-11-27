@@ -63,6 +63,10 @@ export function rowsOf(source, items) {
       row.responses += part.responses;
       row.inTok += part.inTok;
       row.outTok += part.outTok;
+      // Cache and web-search counters: only the organisation usage reports carry them.
+      for (const name of ["cw5Tok", "cw1Tok", "cacheTok", "searches"]) {
+        if (part[name]) row[name] = (row[name] || 0) + part[name];
+      }
     }
   }
   return [...rows.values()];
@@ -439,6 +443,80 @@ export function parseCopilotCsv(text) {
   return all.result();
 }
 
+// ---------- Organisation usage reports ----------
+// The JSON answers of the providers' usage APIs, which an organisation's administrator
+// can download: real token counts for the whole organisation, per day and per model.
+//   - Anthropic: GET /v1/organizations/usage_report/messages
+//     { data: [{ starting_at, ending_at, results: [{ model, uncached_input_tokens,
+//       cache_creation: { ephemeral_5m_input_tokens, ephemeral_1h_input_tokens },
+//       cache_read_input_tokens, output_tokens, server_tool_use: { web_search_requests } }] }] }
+//   - OpenAI: GET /v1/organization/usage/completions
+//     { object: "page", data: [{ object: "bucket", start_time, end_time, results: [{ model,
+//       input_tokens (cached and cache-write tokens included), input_cached_tokens,
+//       input_cache_write_tokens, input_uncached_tokens, output_tokens, num_model_requests }] }] }
+// Formats taken from the official API references; not checked on real answers.
+// A file may hold one answer or a list of answers (the pages of a long period). Each day
+// is kept as a whole: a day imported again replaces the previous one.
+
+const count = (value) => (Number.isFinite(value) && value > 0 ? value : 0);
+
+function anthropicUsage(result) {
+  const creation = result.cache_creation || {};
+  return {
+    inTok: count(result.uncached_input_tokens), cw5Tok: count(creation.ephemeral_5m_input_tokens),
+    cw1Tok: count(creation.ephemeral_1h_input_tokens), cacheTok: count(result.cache_read_input_tokens),
+    outTok: count(result.output_tokens), searches: count((result.server_tool_use || {}).web_search_requests),
+    requests: 0, // the report does not count requests
+  };
+}
+
+function openaiUsage(result) {
+  const cached = count(result.input_cached_tokens);
+  const written = count(result.input_cache_write_tokens);
+  const uncached = Number.isFinite(result.input_uncached_tokens)
+    ? count(result.input_uncached_tokens) : Math.max(0, count(result.input_tokens) - cached - written);
+  return { inTok: uncached, cw5Tok: written, cw1Tok: 0, cacheTok: cached, outTok: count(result.output_tokens),
+    searches: 0, requests: count(result.num_model_requests) };
+}
+
+// `pages`: the answers; `source`: "anthropicapi" or "openaiapi".
+function parseUsageReport(pages, source) {
+  const anthropic = source === "anthropicapi";
+  const days = new Map(); // day -> (model -> row)
+  for (const page of pages) {
+    for (const bucket of page.data) {
+      if (!bucket || !Array.isArray(bucket.results)) continue;
+      const day = anthropic ? dayOf(new Date(bucket.starting_at)) : dayOf(new Date(bucket.start_time * 1000));
+      if (!day) continue;
+      if (!days.has(day)) days.set(day, new Map());
+      const models = days.get(day);
+      for (const result of bucket.results) {
+        if (!result) continue;
+        // Without "group by model" the report does not name the model.
+        const model = typeof result.model === "string" && result.model ? result.model : "inconnu";
+        const usage = anthropic ? anthropicUsage(result) : openaiUsage(result);
+        let row = models.get(model);
+        if (!row) {
+          row = { day, model, requests: 0, responses: 0, inTok: 0, outTok: 0, cw5Tok: 0, cw1Tok: 0, cacheTok: 0, searches: 0 };
+          models.set(model, row);
+        }
+        for (const [name, value] of Object.entries(usage)) row[name] += value;
+        row.responses = row.requests;
+      }
+    }
+  }
+  const items = {};
+  for (const [day, models] of days) {
+    if (models.size) items[shortKey(`${source}:day:${day}`)] = { u: 0, rows: [...models.values()] };
+  }
+  return { source, conversations: Object.keys(items).length, rows: rowsOf(source, items), items, days: true };
+}
+
+const isAnthropicUsage = (page) => page && Array.isArray(page.data)
+  && page.data.some((bucket) => bucket && typeof bucket.starting_at === "string" && Array.isArray(bucket.results));
+const isOpenAIUsage = (page) => page && Array.isArray(page.data)
+  && page.data.some((bucket) => bucket && Number.isFinite(bucket.start_time) && Array.isArray(bucket.results));
+
 // ---------- Team file ----------
 // What a member sends to the person who adds up a team: counters per day, service and
 // model, under the name the member chose. No text, no title, no conversation key.
@@ -487,6 +565,9 @@ export function parseTeamFile(json) {
 
 export function parseExport(json) {
   if (json && json.format === TEAM_FORMAT) return parseTeamFile(json);
+  const pages = Array.isArray(json) ? json : [json];
+  if (pages.some(isAnthropicUsage)) return parseUsageReport(pages.filter(isAnthropicUsage), "anthropicapi");
+  if (pages.some(isOpenAIUsage)) return parseUsageReport(pages.filter(isOpenAIUsage), "openaiapi");
   const list = Array.isArray(json) ? json : json && Array.isArray(json.conversations) ? json.conversations : null;
   if (!list) return null;
   if (list.some((c) => c && c.mapping)) return parseChatGPT(list);

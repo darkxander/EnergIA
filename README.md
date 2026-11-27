@@ -107,7 +107,40 @@ figures with their range and the change from the previous month, the tables per 
 service and per model, the change over six months, then the method and the assumptions
 used. It follows the view and service shown, so it also exists for your own data alone.
 
-Still under consideration: reading the usage reports of organisation consoles.
+### Organisation usage reports
+
+An administrator can also import the usage reports of the Anthropic and OpenAI APIs: these
+are real tokens for the whole organisation, per day and per model, far more reliable than
+an estimate from the text. An admin key is needed; it stays with you, the page only reads
+the resulting file.
+
+```sh
+curl "https://api.anthropic.com/v1/organizations/usage_report/messages?starting_at=2026-11-01T00:00:00Z&ending_at=2026-12-01T00:00:00Z&bucket_width=1d&group_by[]=model&limit=31" \
+  -H "anthropic-version: 2026-10-21" -H "x-api-key: $ANTHROPIC_ADMIN_KEY" > anthropic-usage.json
+
+curl "https://api.openai.com/v1/organization/usage/completions?start_time=1793491200&bucket_width=1d&group_by=model&limit=31" \
+  -H "Authorization: Bearer $OPENAI_ADMIN_KEY" > openai-usage.json
+```
+
+Then import the `.json` files like any export: two services appear, "Anthropic API" and
+"OpenAI API". Ask for reports per day and grouped by model: without that grouping, the
+model is unknown and an indicative price is applied. A day imported a second time replaces
+the previous one.
+
+Good to know:
+
+- Parsing follows the official references of both APIs
+  ([Anthropic](https://platform.claude.com/docs/en/manage-claude/usage-cost-api),
+  [OpenAI](https://developers.openai.com/api/reference/resources/organization/subresources/usage)),
+  but **has not been checked on real answers**, and the commands above have not been
+  tried, for lack of an admin key. `start_time` is a date in Unix seconds (here 1 November
+  2026).
+- If an answer says `has_more`, the following pages have to be requested; a file may hold
+  one answer or a list of answers.
+- Anthropic's report does not count requests: the column stays at 0.
+- The consoles' CSV exports are not read: their columns are not documented.
+- Beware of double counting: Claude Code usage paid with an API key appears both in the
+  report and in the measurements made on the computer.
 
 ## One-command install (macOS, Linux)
 
@@ -323,9 +356,9 @@ Then, in no set order:
 
 - **Other services**: checking Gemini and Copilot parsing on real exports, then Mistral and
   other coding tools, depending on what their exports allow.
-- **Team version, next steps under consideration**: adding up the members' files and the
-  monthly report exist; still under consideration is reading the usage reports of
-  organisation consoles. If this interests you, say so in an
+- **Team version**: adding up the members' files, the monthly report and reading the APIs'
+  usage reports exist. Still to do: checking that parsing on real answers, and reading the
+  consoles' CSV exports. If this interests you, say so in an
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 To consolidate alongside: reading a real Claude export, and updating prices, which is

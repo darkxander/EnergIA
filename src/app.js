@@ -6,7 +6,11 @@ import { csvText } from "./csv.js";
 import { drawCard } from "./card.js";
 import { reportHtml, shiftMonth } from "./report.js";
 
-const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", copilot: "Copilot", claudecode: "Claude Code", cowork: "Claude Cowork" };
+const SOURCES = {
+  chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", copilot: "Copilot", claudecode: "Claude Code", cowork: "Claude Cowork",
+  anthropicapi: LANG === "fr" ? "API Anthropic" : "Anthropic API", openaiapi: LANG === "fr" ? "API OpenAI" : "OpenAI API",
+};
+const USAGE_SOURCES = ["anthropicapi", "openaiapi"]; // organisation usage reports: kept per day, not per conversation
 const NO_MODEL = ["claude", "gemini", "copilot"]; // exports that do not say which model answered
 const LIVE_SOURCES = ["claudecode", "cowork"]; // measured on this computer by the plugin, without an import
 const API_HEADERS = { "X-EnergIA": "1" };
@@ -221,6 +225,10 @@ async function importFiles(files) {
     const merged = combine(previous?.items || {}, incoming);
     const total = Object.keys(merged.items).length;
     state.data[source] = { items: merged.items, rows: rowsOf(source, merged.items), conversations: total, importedAt: new Date().toISOString() };
+    if (USAGE_SOURCES.includes(source)) {
+      summary.push(t("status.importedDays", { source: SOURCES[source], days: nf(total), added: nf(merged.added), updated: nf(merged.updated + merged.same) }));
+      continue;
+    }
     summary.push(t(previous?.items ? "status.mergedSource" : "status.importedSource", {
       source: SOURCES[source], conversations: nf(total), added: nf(merged.added), updated: nf(merged.updated),
       requests: nf(state.data[source].rows.reduce((sum, row) => sum + row.requests, 0)),
@@ -381,7 +389,8 @@ function renderSources() {
       : t("source.importedOn", { date: new Date(entry.importedAt).toLocaleDateString(LOCALE) });
     box.append(el("span", {},
       el("span", { class: `swatch ${source}` }),
-      t("source.line", { source: SOURCES[source], conversations: nf(entry.conversations), when }),
+      t(USAGE_SOURCES.includes(source) ? "source.daysLine" : "source.line",
+        { source: SOURCES[source], conversations: nf(entry.conversations), when }),
       el("button", {
         class: "link", type: "button",
         onclick: () => { delete state.data[source]; saveData(); setStatus(""); render(); },
@@ -594,7 +603,8 @@ function table(headers, lines) {
 }
 
 function renderChartTable(data) {
-  const sources = Object.keys(SOURCES);
+  // Only the services that have something to show in the displayed period.
+  const sources = Object.keys(SOURCES).filter((source) => data.some((bucket) => bucket.values[source] > 0));
   $("chart-table").replaceChildren(table(
     [{ label: t("chart.period"), text: true }, ...sources.map((s) => ({ label: SOURCES[s] })), { label: t("chart.total") }],
     data.map((b) => [b.full, ...sources.map((s) => fmt(state.metric, b.values[s])), fmt(state.metric, b.total)])));

@@ -114,7 +114,40 @@ tableaux par membre, par service et par modèle, l'évolution sur six mois, puis
 et les hypothèses utilisées. Il suit la vue et le service affichés : il existe donc aussi
 pour vos seules données.
 
-Reste à l'étude : la lecture des relevés d'usage des consoles d'organisation.
+### Relevés d'usage de l'organisation
+
+Un administrateur peut aussi importer les relevés d'usage des API d'Anthropic et d'OpenAI :
+ce sont des tokens réels pour toute l'organisation, par jour et par modèle, bien plus
+fiables qu'une estimation d'après le texte. Il faut une clé d'administration ; elle reste
+chez vous, la page ne lit que le fichier obtenu.
+
+```sh
+curl "https://api.anthropic.com/v1/organizations/usage_report/messages?starting_at=2026-11-01T00:00:00Z&ending_at=2026-12-01T00:00:00Z&bucket_width=1d&group_by[]=model&limit=31" \
+  -H "anthropic-version: 2026-10-21" -H "x-api-key: $ANTHROPIC_ADMIN_KEY" > anthropic-usage.json
+
+curl "https://api.openai.com/v1/organization/usage/completions?start_time=1793491200&bucket_width=1d&group_by=model&limit=31" \
+  -H "Authorization: Bearer $OPENAI_ADMIN_KEY" > openai-usage.json
+```
+
+Importez ensuite les fichiers `.json` comme n'importe quel export : deux services
+apparaissent, « API Anthropic » et « API OpenAI ». Demandez des relevés par jour et groupés
+par modèle : sans ce groupement, le modèle est inconnu et un prix indicatif est appliqué.
+Un jour importé une seconde fois remplace le précédent.
+
+À savoir :
+
+- La lecture suit les références officielles des deux API
+  ([Anthropic](https://platform.claude.com/docs/en/manage-claude/usage-cost-api),
+  [OpenAI](https://developers.openai.com/api/reference/resources/organization/subresources/usage)),
+  mais **n'a pas été vérifiée sur de vraies réponses**, et les commandes ci-dessus n'ont
+  pas été essayées, faute de clé d'administration. `start_time` est une date en secondes
+  Unix (ici le 1ᵉʳ novembre 2026).
+- Si une réponse indique `has_more`, il faut demander les pages suivantes ; un fichier peut
+  contenir une réponse ou une liste de réponses.
+- Le relevé d'Anthropic ne compte pas les requêtes : la colonne reste à 0.
+- Les exports CSV des consoles ne sont pas lus : leurs colonnes ne sont pas documentées.
+- Attention aux doubles comptes : un usage de Claude Code payé avec une clé d'API apparaît
+  à la fois dans le relevé et dans les mesures faites sur le poste.
 
 ## Installer en une commande (macOS, Linux)
 
@@ -341,9 +374,10 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
   puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
-- **Version équipe, suite à l'étude** : l'addition des fichiers des membres et le rapport
-  mensuel existent ; reste à l'étude la lecture des relevés d'usage des consoles
-  d'organisation. Si cela vous intéresse, dites-le dans une
+- **Version équipe** : l'addition des fichiers des membres, le rapport mensuel et la
+  lecture des relevés d'usage des API existent. Restent à faire : vérifier cette lecture
+  sur de vraies réponses, et lire les exports CSV des consoles. Si cela vous intéresse,
+  dites-le dans une
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,

@@ -421,3 +421,41 @@ test("monthly report: a standalone document in which every text is escaped", asy
   assert.ok(html.includes('<td class="text">ChatGPT</td><td class="text">gpt-4o</td><td>1 €</td>')); // two text columns
   assert.ok(!/https?:\/\//.test(html), "no external resource");
 });
+
+test("organisation usage reports: the documented answers of the Anthropic and OpenAI usage APIs", async () => {
+  const { combine, parseFileText, rowsOf } = await import("../src/parsers.js");
+  // The example of the Anthropic API reference, plus a result without "group by model" and an empty day.
+  const anthropic = {
+    data: [
+      { starting_at: "2025-08-01T00:00:00Z", ending_at: "2025-08-02T00:00:00Z", results: [
+        { model: "claude-opus-5-5", uncached_input_tokens: 1500, cache_read_input_tokens: 200, output_tokens: 500,
+          cache_creation: { ephemeral_1h_input_tokens: 10, ephemeral_5m_input_tokens: 20 }, server_tool_use: { web_search_requests: 10 } },
+        { model: null, uncached_input_tokens: 5, output_tokens: 5 },
+      ] },
+      { starting_at: "2025-08-02T00:00:00Z", ending_at: "2025-08-03T00:00:00Z", results: [] },
+    ],
+    has_more: true, next_page: "page_x",
+  };
+  const read = parseFileText(JSON.stringify(anthropic));
+  assert.deepEqual([read.source, read.conversations, read.rows.length], ["anthropicapi", 1, 2]); // one day with data
+  assert.deepEqual(read.rows[0], { day: "2025-08-01", source: "anthropicapi", model: "claude-opus-5-5", requests: 0, responses: 0,
+    inTok: 1500, outTok: 500, cw5Tok: 20, cw1Tok: 10, cacheTok: 200, searches: 10 });
+  assert.equal(read.rows[1].model, "inconnu");
+
+  // The example of the OpenAI API reference: input_tokens includes cached and cache-write tokens.
+  const result = { object: "organization.usage.completions.result", input_tokens: 1000, input_cached_tokens: 400,
+    input_cache_write_tokens: 100, input_uncached_tokens: 500, output_tokens: 500, num_model_requests: 5, model: "gpt-4o" };
+  const openai = (results) => ({ object: "page", data: [{ object: "bucket", start_time: 1730419200, end_time: 1730505600, results }], has_more: false, next_page: null });
+  const page = parseFileText(JSON.stringify(openai([result])));
+  assert.deepEqual(page.rows, [{ day: "2024-11-01", source: "openaiapi", model: "gpt-4o", requests: 5, responses: 5,
+    inTok: 500, outTok: 500, cw5Tok: 100, cacheTok: 400 }]);
+  // An older answer without input_uncached_tokens: the uncached part is what remains.
+  const { input_uncached_tokens, ...older } = result;
+  assert.equal(parseFileText(JSON.stringify(openai([older]))).rows[0].inTok, 500);
+  // Several pages in one file are added up; a day imported again replaces the previous one.
+  const pages = parseFileText(JSON.stringify([openai([result]), openai([result])]));
+  assert.equal(pages.rows[0].requests, 10);
+  const merged = combine(pages.items, page.items);
+  assert.deepEqual([Object.keys(merged.items).length, merged.updated, rowsOf("openaiapi", merged.items)[0].requests], [1, 1, 5]);
+  assert.equal(parseFileText(JSON.stringify({ data: [{ foo: 1 }] })), null);
+});

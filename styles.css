@@ -15,6 +15,8 @@
   --series-4: #eda100;
   --series-5: #8a5cd6;
   --series-6: #d6478f;
+  --series-7: #1f9ea8;
+  --series-8: #8c7a5b;
   --critical: #d03b3b;
 }
 @media (prefers-color-scheme: dark) {
@@ -35,6 +37,8 @@
     --series-4: #c98500;
     --series-5: #9b72e0;
     --series-6: #db5c9d;
+    --series-7: #2fb3bd;
+    --series-8: #a8946f;
     --critical: #e66767;
   }
 }
@@ -123,6 +127,8 @@ details ul { padding-left: 20px; }
 .swatch.cowork, .bar.cowork { background: var(--series-4); fill: var(--series-4); }
 .swatch.gemini, .bar.gemini { background: var(--series-5); fill: var(--series-5); }
 .swatch.copilot, .bar.copilot { background: var(--series-6); fill: var(--series-6); }
+.swatch.anthropicapi, .bar.anthropicapi { background: var(--series-7); fill: var(--series-7); }
+.swatch.openaiapi, .bar.openaiapi { background: var(--series-8); fill: var(--series-8); }
 
 .chart-wrap { position: relative; }
 .chart-wrap svg { display: block; width: 100%; height: auto; }
