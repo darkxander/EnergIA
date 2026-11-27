@@ -340,29 +340,38 @@ page with an old script kept in their cache. The tests fail if the number is out
 
 ## Roadmap
 
-These are intentions, with no dates and no commitment. In the planned order:
+These are intentions, with no dates and no commitment. Most of what was planned exists;
+what remains is mostly checking in real conditions.
 
-1. **Other operating systems.** The server-only mode exists and works on Linux. On
-   Windows it still has to be checked, along with its notification-area icon, which was
-   written without being able to try it.
-2. **English everywhere.** The page, the menu bar plugin, the README, the repository
-   description, the code comments and the commit messages are in English. A few internal
-   names in the code are still in French.
-3. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
+1. **Checking what could not be checked.** Several parts were written without being able
+   to try them in real conditions. If you are in one of these cases, feedback in an
+   [issue](https://github.com/darkxander/EnergIA/issues) really helps:
+   - on Windows: the server-only mode, its notification-area icon and the location of
+     Cowork sessions;
+   - real Gemini, Copilot and Claude exports (only the ChatGPT export has been read for
+     real);
+   - real answers of the Anthropic and OpenAI usage APIs;
+   - the team version with real people, and printing the report as a PDF;
+   - the one-command install on a Mac where SwiftBar has never been launched;
+   - an old browser.
+2. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
    donations from people who find the app useful fund its development. This means
    presenting the app where AI and the environment are discussed.
 
 Then, in no set order:
 
-- **Other services**: checking Gemini and Copilot parsing on real exports, then Mistral and
-  other coding tools, depending on what their exports allow.
-- **Team version**: adding up the members' files, the monthly report and reading the APIs'
-  usage reports exist. Still to do: checking that parsing on real answers, and reading the
-  consoles' CSV exports. If this interests you, say so in an
-  [issue](https://github.com/darkxander/EnergIA/issues).
+- **Other sources**: Mistral and other coding tools, depending on what their exports
+  allow, and the CSV exports of organisation consoles, whose format is not documented.
+- **Method**: documenting each assumption with its sources, so that the figures can be
+  defended in a carbon report.
+- **Prices**: updating them without intervention; it is manual today.
+- **Windows**: a one-command install, as on macOS and Linux.
+- **English**: a few internal names in the code are still in French.
 
-To consolidate alongside: reading a real Claude export, and updating prices, which is
-manual today.
+Already done, for the record: the server-only mode, English (page, plugin, README,
+comments, commit messages), the choice of country, alert thresholds, the CSV and image
+exports, imports that add up, Gemini and Copilot, the one-command install, the team
+version, the monthly report and reading the APIs' usage reports.
 
 ## Supporting the project
 

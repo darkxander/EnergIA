@@ -357,31 +357,39 @@ script gardé en mémoire. Les tests échouent si le numéro n'est plus à jour.
 
 ## Feuille de route
 
-Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
+Ce sont des intentions, sans date ni engagement. L'essentiel de ce qui était prévu existe ;
+ce qui reste est surtout de la vérification sur le terrain.
 
-1. **Autres systèmes.** Le mode « serveur seul » existe et fonctionne sous Linux. Sous
-   Windows, il reste à le vérifier, ainsi que son icône dans la zone de notification,
-   écrite sans avoir pu être essayée.
-2. **L'anglais partout.** La page, le plugin de la barre de menus, le README, la
-   description du dépôt, les commentaires du code et les messages de commit sont en
-   anglais. Restent en français quelques noms internes du code.
-3. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
+1. **Vérifier ce qui n'a pas pu l'être.** Plusieurs parties ont été écrites sans pouvoir
+   être essayées en conditions réelles. Si vous êtes dans l'un de ces cas, un retour dans
+   une [issue](https://github.com/darkxander/EnergIA/issues) aide vraiment :
+   - sous Windows : le mode « serveur seul », son icône dans la zone de notification et
+     l'emplacement des sessions Cowork ;
+   - de vrais exports Gemini, Copilot et Claude (seul l'export ChatGPT a été lu en vrai) ;
+   - de vraies réponses des API d'usage d'Anthropic et d'OpenAI ;
+   - la version équipe avec de vraies personnes, et l'impression du rapport en PDF ;
+   - l'installation en une commande sur un Mac où SwiftBar n'a jamais été lancé ;
+   - un navigateur ancien.
+2. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
    l'IA ; les dons de celles et ceux qui trouvent l'appli utile financent son
    développement. Cela passe par des présentations de l'appli là où l'on parle d'IA et
    d'environnement.
 
 Puis, sans ordre arrêté :
 
-- **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
-  puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
-- **Version équipe** : l'addition des fichiers des membres, le rapport mensuel et la
-  lecture des relevés d'usage des API existent. Restent à faire : vérifier cette lecture
-  sur de vraies réponses, et lire les exports CSV des consoles. Si cela vous intéresse,
-  dites-le dans une
-  [issue](https://github.com/darkxander/EnergIA/issues).
+- **Autres sources** : Mistral et d'autres outils de code, selon ce que permettent leurs
+  exports, et les exports CSV des consoles d'organisation, dont le format n'est pas
+  documenté.
+- **Méthode** : documenter chaque hypothèse avec ses sources, pour que les chiffres
+  puissent être défendus dans un bilan.
+- **Prix** : les mettre à jour sans intervention ; c'est manuel aujourd'hui.
+- **Windows** : une installation en une commande, comme sous macOS et Linux.
+- **Anglais** : restent en français quelques noms internes du code.
 
-À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,
-aujourd'hui manuelle.
+Déjà fait, pour mémoire : le mode « serveur seul », l'anglais (page, plugin, README,
+commentaires, messages de commit), le choix du pays, les seuils d'alerte, les exports CSV et
+image, les imports qui se cumulent, Gemini et Copilot, l'installation en une commande, la
+version équipe, le rapport mensuel et la lecture des relevés d'usage des API.
 
 ## Soutenir le projet
 
