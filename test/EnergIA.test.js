@@ -171,3 +171,31 @@ test("lecture d'une archive zip", async () => {
   }
   await assert.rejects(listZipEntries(new Blob(["pas un zip"])));
 });
+
+test("i18n : mêmes clés et mêmes variables en français et en anglais", async () => {
+  const { TEXTS, pickLang, translate } = await import("../src/i18n.js");
+  assert.deepEqual(Object.keys(TEXTS.en).sort(), Object.keys(TEXTS.fr).sort());
+  const variables = (text) => (text.match(/\{\w+\}/g) || []).sort();
+  for (const key of Object.keys(TEXTS.fr)) {
+    assert.deepEqual(variables(TEXTS.en[key]), variables(TEXTS.fr[key]), key);
+  }
+
+  // Le choix enregistré l'emporte ; sinon français pour un navigateur en français, anglais ailleurs.
+  assert.equal(pickLang("en", "fr-FR"), "en");
+  assert.equal(pickLang(null, "fr-CA"), "fr");
+  assert.equal(pickLang(null, "de-DE"), "en");
+  assert.equal(pickLang("xx", ""), "en");
+
+  assert.equal(translate("en", "tile.co2Equiv", { km: "5.74" }), "≈ 5.74 km by petrol car");
+  assert.equal(translate("fr", "euro", { amount: "54,50" }), "54,50 €");
+  assert.equal(translate("en", "euro", { amount: "54.50" }), "€54.50");
+});
+
+test("i18n : chaque texte marqué dans index.html a sa version anglaise", async () => {
+  const { PAGE_EN } = await import("../src/i18n.js");
+  const { readFileSync } = await import("node:fs");
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const keys = [...html.matchAll(/data-i18n(?:-aria)?="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(keys.length > 30);
+  for (const key of keys) assert.ok(PAGE_EN[key], key);
+});

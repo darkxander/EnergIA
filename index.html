@@ -8,51 +8,54 @@
 </head>
 <body class="viz-root">
   <header class="top">
-    <h1>EnergIA</h1>
-    <p class="tagline">Ce que représente votre usage de l'IA en énergie, CO₂, eau et euros.</p>
+    <div class="top-row">
+      <h1>EnergIA</h1>
+      <button id="lang" type="button" class="link"></button>
+    </div>
+    <p class="tagline" data-i18n="page.tagline">Ce que représente votre usage de l'IA en énergie, CO₂, eau et euros.</p>
   </header>
 
   <main>
     <section class="card" aria-labelledby="import-title">
-      <h2 id="import-title">Importer mes données</h2>
+      <h2 id="import-title" data-i18n="import.title">Importer mes données</h2>
       <div id="drop" class="drop">
-        <p><strong id="drop-title">Déposez ici votre export ChatGPT ou Claude</strong><br>
-          <span id="drop-hint" class="muted">Archive .zip ou fichier conversations.json</span></p>
+        <p><strong id="drop-title" data-i18n="import.dropTitle">Déposez ici votre export ChatGPT ou Claude</strong><br>
+          <span id="drop-hint" class="muted" data-i18n="import.dropHint">Archive .zip ou fichier conversations.json</span></p>
         <div class="actions">
-          <button id="pick" type="button" class="primary">Choisir un fichier</button>
-          <button id="sample" type="button">Voir un exemple</button>
+          <button id="pick" type="button" class="primary" data-i18n="import.pick">Choisir un fichier</button>
+          <button id="sample" type="button" data-i18n="import.sample">Voir un exemple</button>
         </div>
         <input id="file" type="file" accept=".zip,.json" multiple hidden>
       </div>
-      <p class="muted">Vos fichiers sont analysés dans votre navigateur. Rien n'est envoyé sur Internet, et le texte de vos conversations n'est pas conservé.</p>
+      <p class="muted" data-i18n="import.privacy">Vos fichiers sont analysés dans votre navigateur. Rien n'est envoyé sur Internet, et le texte de vos conversations n'est pas conservé.</p>
       <p id="status" role="status"></p>
       <div id="sources"></div>
       <details>
-        <summary>Comment obtenir mon export ?</summary>
+        <summary data-i18n="help.summary">Comment obtenir mon export ?</summary>
         <ul>
-          <li><strong>ChatGPT</strong> : Paramètres → Gestion des données → Exporter les données. Un lien de téléchargement arrive par e-mail.</li>
-          <li><strong>Claude</strong> : Paramètres → Confidentialité → Exporter les données, sur le web ou dans l'appli pour ordinateur (pas sur mobile). Un lien de téléchargement arrive par e-mail ; il expire au bout de 24 heures.</li>
+          <li data-i18n="help.chatgpt"><strong>ChatGPT</strong> : Paramètres → Gestion des données → Exporter les données. Un lien de téléchargement arrive par e-mail.</li>
+          <li data-i18n="help.claude"><strong>Claude</strong> : Paramètres → Confidentialité → Exporter les données, sur le web ou dans l'appli pour ordinateur (pas sur mobile). Un lien de téléchargement arrive par e-mail ; il expire au bout de 24 heures.</li>
         </ul>
-        <p class="muted">Pas de bouton « Exporter les données » dans Claude ? Avec un compte d'organisation (Team ou Enterprise), l'export doit d'abord être autorisé par un propriétaire de l'organisation. Sans cela, seuls Claude Code et Claude Cowork peuvent être mesurés.</p>
-        <p class="muted">Un nouvel import remplace le précédent pour le même service.</p>
+        <p class="muted" data-i18n="help.team">Pas de bouton « Exporter les données » dans Claude ? Avec un compte d'organisation (Team ou Enterprise), l'export doit d'abord être autorisé par un propriétaire de l'organisation. Sans cela, seuls Claude Code et Claude Cowork peuvent être mesurés.</p>
+        <p class="muted" data-i18n="help.replace">Un nouvel import remplace le précédent pour le même service.</p>
       </details>
     </section>
 
     <div id="results" hidden>
       <div class="filters">
-        <label>Période
+        <label><span data-i18n="filter.period">Période</span>
           <select id="period">
-            <option value="all">Tout l'historique</option>
-            <option value="365">12 derniers mois</option>
-            <option value="90">90 derniers jours</option>
-            <option value="30">30 derniers jours</option>
-            <option value="15">15 derniers jours</option>
-            <option value="1">Aujourd'hui</option>
+            <option value="all" data-i18n="filter.all">Tout l'historique</option>
+            <option value="365" data-i18n="filter.365">12 derniers mois</option>
+            <option value="90" data-i18n="filter.90">90 derniers jours</option>
+            <option value="30" data-i18n="filter.30">30 derniers jours</option>
+            <option value="15" data-i18n="filter.15">15 derniers jours</option>
+            <option value="1" data-i18n="filter.1">Aujourd'hui</option>
           </select>
         </label>
-        <label>Service
+        <label><span data-i18n="filter.service">Service</span>
           <select id="source">
-            <option value="all">Tous</option>
+            <option value="all" data-i18n="filter.allServices">Tous</option>
             <option value="chatgpt">ChatGPT (export)</option>
             <option value="claude">Claude (export)</option>
             <option value="claudecode">Claude Code</option>
@@ -62,21 +65,21 @@
         <p id="volume" class="muted"></p>
       </div>
 
-      <section id="tiles" class="tiles" aria-label="Résumé"></section>
+      <section id="tiles" class="tiles" aria-label="Résumé" data-i18n-aria="tiles.aria"></section>
 
       <section class="card" aria-labelledby="chart-title">
         <div class="card-head">
-          <h2 id="chart-title">Évolution</h2>
+          <h2 id="chart-title" data-i18n="chart.title">Évolution</h2>
           <div class="card-tools">
-            <label>Mesure
+            <label><span data-i18n="chart.metric">Mesure</span>
               <select id="metric">
-                <option value="energy">Énergie</option>
+                <option value="energy" data-i18n="metric.energy">Énergie</option>
                 <option value="co2">CO₂</option>
-                <option value="water">Eau</option>
-                <option value="cost">Coût</option>
+                <option value="water" data-i18n="metric.water">Eau</option>
+                <option value="cost" data-i18n="metric.cost">Coût</option>
               </select>
             </label>
-            <button id="toggle-table" type="button" aria-pressed="false">Voir le tableau</button>
+            <button id="toggle-table" type="button" aria-pressed="false" data-i18n="chart.showTable">Voir le tableau</button>
           </div>
         </div>
         <div id="legend" class="legend"></div>
@@ -85,7 +88,7 @@
       </section>
 
       <section class="card" aria-labelledby="models-title">
-        <h2 id="models-title">Par modèle</h2>
+        <h2 id="models-title" data-i18n="models.title">Par modèle</h2>
         <div id="models" class="table-wrap"></div>
         <p id="price-note" class="muted"></p>
       </section>
@@ -93,17 +96,17 @@
 
     <section class="card">
       <details id="hypotheses">
-        <summary><h2>Hypothèses de calcul</h2></summary>
-        <p>Les fournisseurs publient peu de chiffres : tout ce qui est affiché ici est une <strong>estimation d'ordre de grandeur</strong>. Le nombre de tokens est estimé à partir de la longueur du texte (environ 4 caractères par token), puis converti en énergie selon la catégorie du modèle. Pour Claude Code, les nombres de tokens sont mesurés et non estimés ; la conversion en énergie reste une estimation. Le paramètre le plus incertain est le poids des tokens relus du cache : ils représentent l'essentiel du volume de Claude Code, et aucun chiffre public ne dit ce qu'ils consomment.</p>
-        <p class="muted">Repères publics : OpenAI a indiqué environ 0,34 Wh pour une requête ChatGPT moyenne (juin 2025) ; Google, 0,24 Wh pour une requête texte Gemini médiane (août 2025). L'intensité carbone dépend du pays du centre de données : environ 400 g CO₂e/kWh en moyenne mondiale, bien moins en France.</p>
+        <summary><h2 data-i18n="hypotheses.title">Hypothèses de calcul</h2></summary>
+        <p data-i18n="hypotheses.intro">Les fournisseurs publient peu de chiffres : tout ce qui est affiché ici est une <strong>estimation d'ordre de grandeur</strong>. Le nombre de tokens est estimé à partir de la longueur du texte (environ 4 caractères par token), puis converti en énergie selon la catégorie du modèle. Pour Claude Code, les nombres de tokens sont mesurés et non estimés ; la conversion en énergie reste une estimation. Le paramètre le plus incertain est le poids des tokens relus du cache : ils représentent l'essentiel du volume de Claude Code, et aucun chiffre public ne dit ce qu'ils consomment.</p>
+        <p class="muted" data-i18n="hypotheses.refs">Repères publics : OpenAI a indiqué environ 0,34 Wh pour une requête ChatGPT moyenne (juin 2025) ; Google, 0,24 Wh pour une requête texte Gemini médiane (août 2025). L'intensité carbone dépend du pays du centre de données : environ 400 g CO₂e/kWh en moyenne mondiale, bien moins en France.</p>
         <form id="settings" class="settings"></form>
-        <button id="reset-settings" type="button">Rétablir les valeurs par défaut</button>
+        <button id="reset-settings" type="button" data-i18n="hypotheses.reset">Rétablir les valeurs par défaut</button>
       </details>
     </section>
     <footer class="foot">
-      <p>EnergIA est gratuite et ouverte.
-        <a href="https://github.com/sponsors/darkxander" data-link="sponsor" target="_blank" rel="noopener">♥ Soutenir le projet</a>
-        · <a href="https://github.com/darkxander/EnergIA" data-link="source" target="_blank" rel="noopener">Code source</a></p>
+      <p><span data-i18n="foot.free">EnergIA est gratuite et ouverte.</span>
+        <a href="https://github.com/sponsors/darkxander" data-link="sponsor" target="_blank" rel="noopener" data-i18n="foot.sponsor">♥ Soutenir le projet</a>
+        · <a href="https://github.com/darkxander/EnergIA" data-link="source" target="_blank" rel="noopener" data-i18n="foot.source">Code source</a></p>
     </footer>
   </main>
 

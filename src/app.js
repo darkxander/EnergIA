@@ -1,6 +1,7 @@
 import { listZipEntries, readZipEntryText } from "./zip.js";
 import { parseExport } from "./parsers.js";
-import { DEFAULT_SETTINGS, TIERS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
+import { DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
+import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
 const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur ce Mac par le plugin, sans import
@@ -20,13 +21,33 @@ for (const key of [DATA_KEY, SETTINGS_KEY, MANUAL_RATE_KEY]) {
 const DEFAULT_RATE_DATE = "2026-11-24"; // date du taux BCE inscrit dans defaults.json
 
 const METRICS = {
-  energy: { label: "Énergie", get: (m) => m.wh, units: [["Wh", 1], ["kWh", 1000]] },
-  co2: { label: "CO₂", get: (m) => m.co2g, units: [["g CO₂e", 1], ["kg CO₂e", 1000]] },
-  water: { label: "Eau", get: (m) => m.waterL * 1000, units: [["mL", 1], ["L", 1000]] },
-  cost: { label: "Coût", get: (m) => m.eur, units: [["€", 1]] },
+  energy: { label: t("metric.energy"), get: (m) => m.wh, units: [["Wh", 1], ["kWh", 1000]] },
+  co2: { label: t("metric.co2"), get: (m) => m.co2g, units: [["g CO₂e", 1], ["kg CO₂e", 1000]] },
+  water: { label: t("metric.water"), get: (m) => m.waterL * 1000, units: [["mL", 1], ["L", 1000]] },
+  cost: { label: t("metric.cost"), get: (m) => m.eur, units: [["€", 1]] },
 };
 
 const $ = (id) => document.getElementById(id);
+
+// ---------- Langue ----------
+// index.html est écrit en français ; en anglais, ses textes sont remplacés ici.
+// Changer de langue enregistre le choix et recharge la page.
+
+document.documentElement.lang = LANG;
+if (LANG === "en") {
+  document.title = PAGE_EN["page.title"];
+  for (const node of document.querySelectorAll("[data-i18n]")) node.innerHTML = PAGE_EN[node.dataset.i18n];
+  for (const node of document.querySelectorAll("[data-i18n-aria]")) node.setAttribute("aria-label", PAGE_EN[node.dataset.i18nAria]);
+}
+const langButton = $("lang"); // absent d'une ancienne page restée en cache
+if (langButton) {
+  langButton.textContent = t("lang.switch");
+  langButton.lang = LANG === "fr" ? "en" : "fr";
+  langButton.addEventListener("click", () => {
+    localStorage.setItem(LANG_KEY, LANG === "fr" ? "en" : "fr");
+    location.reload();
+  });
+}
 
 // ---------- État ----------
 
@@ -74,7 +95,7 @@ function saveData() {
   try {
     localStorage.setItem(DATA_KEY, JSON.stringify(persistable));
   } catch {
-    setStatus("Données analysées, mais trop volumineuses pour être mémorisées dans ce navigateur.", true);
+    setStatus(t("status.tooBig"), true);
   }
 }
 
@@ -97,9 +118,9 @@ function svg(tag, attrs = {}) {
   return node;
 }
 
-const number3 = new Intl.NumberFormat("fr-FR", { maximumSignificantDigits: 3 });
-const integer = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
-const compact = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumSignificantDigits: 3 });
+const number3 = new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 });
+const integer = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 });
+const compact = new Intl.NumberFormat(LANG, { notation: "compact", maximumSignificantDigits: 3 });
 const nfBig = (x) => (Math.abs(x) >= 1e6 ? compact.format(x) : nf(x));
 const nf = (x) => (Math.abs(x) >= 1000 ? integer.format(x) : number3.format(x));
 
@@ -111,9 +132,11 @@ function pickUnit(units, value) {
 
 function fmt(metricKey, value) {
   if (metricKey === "cost") {
-    return value < 100
-      ? `${value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-      : `${nf(value)} €`;
+    return t("euro", {
+      amount: value < 100
+        ? value.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : nf(value),
+    });
   }
   const [name, factor] = pickUnit(METRICS[metricKey].units, value);
   return `${nf(value / factor)} ${name}`;
@@ -132,7 +155,7 @@ async function readFile(file) {
   if (/\.zip$/i.test(file.name)) {
     const entries = await listZipEntries(file);
     const wanted = entries.filter((e) => /(^|\/)conversations[^/]*\.json$/i.test(e.name));
-    if (!wanted.length) throw new Error(`Aucun fichier de conversations trouvé dans ${file.name}.`);
+    if (!wanted.length) throw new Error(t("status.noConversations", { file: file.name }));
     for (const entry of wanted) texts.push(await readZipEntryText(file, entry));
   } else {
     texts.push(await file.text());
@@ -142,7 +165,7 @@ async function readFile(file) {
 
 async function importFiles(files) {
   if (!files.length) return;
-  setStatus("Analyse en cours…");
+  setStatus(t("status.parsing"));
   const imported = {};
   try {
     for (const file of files) {
@@ -151,10 +174,10 @@ async function importFiles(files) {
         try {
           json = JSON.parse(text);
         } catch {
-          throw new Error(`${file.name} n'est pas un fichier JSON lisible.`);
+          throw new Error(t("status.notJson", { file: file.name }));
         }
         const parsed = parseExport(json);
-        if (!parsed) throw new Error(`${file.name} : format non reconnu (export ChatGPT ou Claude attendu).`);
+        if (!parsed) throw new Error(t("status.unknownFormat", { file: file.name }));
         const target = (imported[parsed.source] ??= { rows: [], conversations: 0 });
         target.rows.push(...parsed.rows);
         target.conversations += parsed.conversations;
@@ -171,10 +194,10 @@ async function importFiles(files) {
   for (const [source, entry] of Object.entries(imported)) {
     state.data[source] = { ...entry, importedAt: new Date().toISOString() };
     const requests = entry.rows.reduce((sum, row) => sum + row.requests, 0);
-    summary.push(`${SOURCES[source]} : ${nf(entry.conversations)} conversations, ${nf(requests)} requêtes`);
+    summary.push(t("status.importedSource", { source: SOURCES[source], conversations: nf(entry.conversations), requests: nf(requests) }));
   }
   saveData();
-  setStatus(`Import terminé. ${summary.join(" · ")}.`);
+  setStatus(t("status.imported", { summary: summary.join(" · ") }));
   render();
 }
 
@@ -208,7 +231,7 @@ function loadSample() {
     }
     state.data[source] = { rows, conversations: Math.round(rows.length * 1.5), sample: true };
   }
-  setStatus("Données d'exemple affichées. Importez votre export pour voir vos propres chiffres.");
+  setStatus(t("status.sample"));
   render();
 }
 
@@ -246,10 +269,10 @@ function buckets(rows) {
   const map = new Map();
   const cursor = new Date(`${keyOf(first)}${byDay ? "" : "-01"}T00:00:00Z`);
   const end = new Date(`${keyOf(last)}${byDay ? "" : "-01"}T00:00:00Z`);
-  const shortFormat = new Intl.DateTimeFormat("fr-FR", byDay
+  const shortFormat = new Intl.DateTimeFormat(LOCALE, byDay
     ? { day: "numeric", month: "short", timeZone: "UTC" }
     : { month: "short", year: "2-digit", timeZone: "UTC" });
-  const longFormat = new Intl.DateTimeFormat("fr-FR", byDay
+  const longFormat = new Intl.DateTimeFormat(LOCALE, byDay
     ? { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }
     : { month: "long", year: "numeric", timeZone: "UTC" });
   while (cursor <= end) {
@@ -278,18 +301,19 @@ function renderSources() {
   for (const [source, entry] of Object.entries(state.data)) {
     if (entry.live) {
       box.append(el("span", {}, el("span", { class: `swatch ${source}` }),
-        entry.ready ? `${SOURCES[source]} : tokens mesurés en direct sur ce Mac`
-          : `${SOURCES[source]} : première lecture des journaux en cours…`));
+        t(entry.ready ? "source.live" : "source.reading", { source: SOURCES[source] })));
       continue;
     }
-    const when = entry.sample ? "exemple" : `importé le ${new Date(entry.importedAt).toLocaleDateString("fr-FR")}`;
+    const when = entry.sample
+      ? t("source.sample")
+      : t("source.importedOn", { date: new Date(entry.importedAt).toLocaleDateString(LOCALE) });
     box.append(el("span", {},
       el("span", { class: `swatch ${source}` }),
-      `${SOURCES[source]} : ${nf(entry.conversations)} conversations (${when}) `,
+      t("source.line", { source: SOURCES[source], conversations: nf(entry.conversations), when }),
       el("button", {
         class: "link", type: "button",
         onclick: () => { delete state.data[source]; saveData(); setStatus(""); render(); },
-      }, "Supprimer")));
+      }, t("source.remove"))));
   }
 }
 
@@ -297,27 +321,30 @@ function renderTiles(rows) {
   const s = state.settings;
   const total = summarize(rows, s);
   const range = (key, value) =>
-    `Fourchette : ${fmt(key, value * s.lowFactor)} – ${fmt(key, value * s.highFactor)}`;
+    t("tile.range", { low: fmt(key, value * s.lowFactor), high: fmt(key, value * s.highFactor) });
   const subs = subscriptionCost(rows, s);
   const tiles = [
     {
-      name: "Énergie", value: fmt("energy", total.wh), range: range("energy", total.wh),
-      equiv: `≈ ${nf(total.wh / EQUIVALENTS.smartphoneChargeWh)} charges de smartphone, ou ${nf(total.wh / EQUIVALENTS.electricCarWhPerKm)} km en voiture électrique`,
+      name: t("metric.energy"), value: fmt("energy", total.wh), range: range("energy", total.wh),
+      equiv: t("tile.energyEquiv", {
+        charges: nf(total.wh / EQUIVALENTS.smartphoneChargeWh),
+        km: nf(total.wh / EQUIVALENTS.electricCarWhPerKm),
+      }),
     },
     {
-      name: "CO₂", value: fmt("co2", total.co2g), range: range("co2", total.co2g),
-      equiv: `≈ ${nf(total.co2g / EQUIVALENTS.petrolCarGPerKm)} km en voiture thermique`,
+      name: t("metric.co2"), value: fmt("co2", total.co2g), range: range("co2", total.co2g),
+      equiv: t("tile.co2Equiv", { km: nf(total.co2g / EQUIVALENTS.petrolCarGPerKm) }),
     },
     {
-      name: "Eau", value: fmt("water", total.waterL * 1000), range: range("water", total.waterL * 1000),
+      name: t("metric.water"), value: fmt("water", total.waterL * 1000), range: range("water", total.waterL * 1000),
       equiv: total.waterL >= 2 * EQUIVALENTS.showerL
-        ? `≈ ${nf(total.waterL / EQUIVALENTS.showerL)} douches`
-        : `≈ ${nf(total.waterL / EQUIVALENTS.glassL)} verres d'eau`,
+        ? t("tile.showers", { count: nf(total.waterL / EQUIVALENTS.showerL) })
+        : t("tile.glasses", { count: nf(total.waterL / EQUIVALENTS.glassL) }),
     },
     {
-      name: "Coût (au tarif de l'API)", value: fmt("cost", total.eur),
-      range: "Ce que coûteraient ces tokens payés à l'usage, aux prix publics",
-      equiv: subs > 0 ? `Abonnements sur la période : ${fmt("cost", subs)}` : "",
+      name: t("tile.costName"), value: fmt("cost", total.eur),
+      range: t("tile.costNote"),
+      equiv: subs > 0 ? t("tile.subs", { amount: fmt("cost", subs) }) : "",
     },
   ];
   $("tiles").replaceChildren(...tiles.map((t) =>
@@ -326,8 +353,7 @@ function renderTiles(rows) {
       el("div", { class: "value" }, t.value),
       el("p", { class: "range" }, t.range),
       t.equiv ? el("p", { class: "equiv" }, t.equiv) : null)));
-  $("volume").textContent =
-    `${nf(total.requests)} requêtes · ${nfBig(total.tokens)} de tokens lus et générés`;
+  $("volume").textContent = t("volume", { requests: nf(total.requests), tokens: nfBig(total.tokens) });
 }
 
 function niceStep(raw) {
@@ -344,7 +370,7 @@ function renderChart(data) {
     ? active.map((source) => el("span", {}, el("span", { class: `swatch ${source}` }), SOURCES[source]))
     : []));
   if (!data.length) {
-    wrap.append(el("p", { class: "muted" }, "Aucune donnée sur cette période."));
+    wrap.append(el("p", { class: "muted" }, t("chart.empty")));
     return;
   }
 
@@ -356,7 +382,7 @@ function renderChart(data) {
   const yMax = Math.ceil(max / step) * step;
   const y = (value) => top + plotH - (value / yMax) * plotH;
 
-  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${METRICS[state.metric].label} par période, en ${unitName}` });
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t("chart.aria", { metric: METRICS[state.metric].label, unit: unitName }) });
   for (let tick = 0; tick <= yMax + step / 2; tick += step) {
     root.append(svg("line", { class: tick === 0 ? "baseline" : "gridline", x1: left, x2: W - right, y1: y(tick), y2: y(tick) }));
     const label = svg("text", { x: left - 6, y: y(tick) + 4, "text-anchor": "end" });
@@ -406,7 +432,7 @@ function renderChart(data) {
           el("span", {}, el("span", { class: `swatch ${source}` }), SOURCES[source]),
           el("b", {}, fmt(state.metric, bucket.values[source])))),
         present.length > 1
-          ? el("div", { class: "line" }, el("span", {}, "Total"), el("b", {}, fmt(state.metric, bucket.total)))
+          ? el("div", { class: "line" }, el("span", {}, t("chart.total")), el("b", {}, fmt(state.metric, bucket.total)))
           : null);
       const percent = Math.min(85, Math.max(15, (cx / W) * 100));
       tooltip.style.left = `${percent}%`;
@@ -429,7 +455,7 @@ function table(headers, lines) {
 function renderChartTable(data) {
   const sources = Object.keys(SOURCES);
   $("chart-table").replaceChildren(table(
-    [{ label: "Période", text: true }, ...sources.map((s) => ({ label: SOURCES[s] })), { label: "Total" }],
+    [{ label: t("chart.period"), text: true }, ...sources.map((s) => ({ label: SOURCES[s] })), { label: t("chart.total") }],
     data.map((b) => [b.full, ...sources.map((s) => fmt(state.metric, b.values[s])), fmt(state.metric, b.total)])));
 }
 
@@ -448,8 +474,8 @@ function renderModels(rows) {
     .sort((a, b) => b.total.wh - a.total.wh)
     .map(({ source, model, total }) => [
       SOURCES[source],
-      source === "claude" ? "non précisé dans l'export" : model,
-      TIERS[classifyModel(model)],
+      source === "claude" ? t("models.unknown") : model,
+      t(`tier.${classifyModel(model)}`),
       nf(total.requests),
       nfBig(total.outTok),
       fmt("energy", total.wh),
@@ -458,16 +484,17 @@ function renderModels(rows) {
       fmt("cost", total.eur) + (priceFor(model) ? "" : " *"),
     ]);
   $("models").replaceChildren(table(
-    [{ label: "Service", text: true }, { label: "Modèle", text: true }, { label: "Catégorie", text: true },
-      { label: "Requêtes" }, { label: "Tokens générés" }, { label: "Énergie" }, { label: "CO₂" }, { label: "Eau" }, { label: "Coût" }],
+    [{ label: t("models.service"), text: true }, { label: t("models.model"), text: true }, { label: t("models.tier"), text: true },
+      { label: t("models.requests") }, { label: t("models.outTokens") }, { label: t("metric.energy") }, { label: t("metric.co2") },
+      { label: t("metric.water") }, { label: t("metric.cost") }],
     lines));
-  const checked = new Date(PRICE_SOURCE.checked).toLocaleDateString("fr-FR");
-  const rate = state.settings.eurPerUsd.toLocaleString("fr-FR", { maximumFractionDigits: 4 });
+  const checked = new Date(PRICE_SOURCE.checked).toLocaleDateString(LOCALE);
+  const rate = state.settings.eurPerUsd.toLocaleString(LOCALE, { maximumFractionDigits: 4 });
   const origin = state.rateDate
-    ? `taux de référence de la BCE du ${new Date(state.rateDate).toLocaleDateString("fr-FR")}`
-    : "taux saisi dans les hypothèses";
-  $("price-note").textContent = `Coût : prix publics des API Anthropic et OpenAI par modèle (relevés le ${checked}), convertis à ${rate} € pour 1 $ (${origin}).`
-    + (lines.some((line) => line[8].endsWith("*")) ? " * Modèle sans prix public connu : tarif indicatif de sa catégorie." : "");
+    ? t("price.ecb", { date: new Date(state.rateDate).toLocaleDateString(LOCALE) })
+    : t("price.manual");
+  $("price-note").textContent = t("price.note", { checked, rate, origin })
+    + (lines.some((line) => line[8].endsWith("*")) ? t("price.asterisk") : "");
 }
 
 function render() {
@@ -489,32 +516,32 @@ function render() {
 // ---------- Hypothèses ----------
 
 const SETTING_GROUPS = [
-  ["Énergie pour 1 000 tokens générés (Wh)", [
-    ["Modèles légers", "tiers.leger.whOut"],
-    ["Modèles standard", "tiers.standard.whOut"],
-    ["Grands modèles", "tiers.grand.whOut"],
-    ["Modèles à raisonnement", "tiers.raisonnement.whOut"],
-    ["Poids d'un token lu (contexte)", "inputRatio"],
-    ["Poids d'un token relu du cache", "cacheReadRatio"],
+  [t("settings.energy"), [
+    [t("settings.light"), "tiers.leger.whOut"],
+    [t("settings.standard"), "tiers.standard.whOut"],
+    [t("settings.large"), "tiers.grand.whOut"],
+    [t("settings.reasoning"), "tiers.raisonnement.whOut"],
+    [t("settings.inputRatio"), "inputRatio"],
+    [t("settings.cacheRatio"), "cacheReadRatio"],
   ]],
-  ["Fourchette et conversions", [
-    ["Fourchette basse (×)", "lowFactor"],
-    ["Fourchette haute (×)", "highFactor"],
-    ["Intensité carbone (g CO₂e/kWh)", "gCO2PerKWh"],
-    ["Eau (L/kWh)", "waterLPerKWh"],
-    ["Taux de change (€ pour 1 $)", "eurPerUsd"],
+  [t("settings.conversions"), [
+    [t("settings.low"), "lowFactor"],
+    [t("settings.high"), "highFactor"],
+    [t("settings.carbon"), "gCO2PerKWh"],
+    [t("settings.water"), "waterLPerKWh"],
+    [t("settings.rate"), "eurPerUsd"],
   ]],
-  ["Modèles sans prix connu (€ par million de tokens)", [
-    ["Légers, lus", "tiers.leger.eurIn"],
-    ["Légers, générés", "tiers.leger.eurOut"],
-    ["Standard, lus", "tiers.standard.eurIn"],
-    ["Standard, générés", "tiers.standard.eurOut"],
-    ["Grands, lus", "tiers.grand.eurIn"],
-    ["Grands, générés", "tiers.grand.eurOut"],
-    ["Raisonnement, lus", "tiers.raisonnement.eurIn"],
-    ["Raisonnement, générés", "tiers.raisonnement.eurOut"],
+  [t("settings.unpriced"), [
+    [t("settings.lightIn"), "tiers.leger.eurIn"],
+    [t("settings.lightOut"), "tiers.leger.eurOut"],
+    [t("settings.standardIn"), "tiers.standard.eurIn"],
+    [t("settings.standardOut"), "tiers.standard.eurOut"],
+    [t("settings.largeIn"), "tiers.grand.eurIn"],
+    [t("settings.largeOut"), "tiers.grand.eurOut"],
+    [t("settings.reasoningIn"), "tiers.raisonnement.eurIn"],
+    [t("settings.reasoningOut"), "tiers.raisonnement.eurOut"],
   ]],
-  ["Abonnements (€ par mois)", [
+  [t("settings.subs"), [
     ["ChatGPT", "subs.chatgpt"],
     ["Claude", "subs.claude"],
   ]],
@@ -556,7 +583,7 @@ $("pick").addEventListener("click", () => (menubar ? pickWithPlugin() : $("file"
 // La fenêtre de la barre de menus n'ouvre pas le sélecteur de fichier du
 // navigateur : le plugin ouvre celui de macOS et renvoie le fichier choisi.
 async function pickWithPlugin() {
-  setStatus("Choisissez votre fichier dans la fenêtre de sélection qui s'ouvre…");
+  setStatus(t("status.picking"));
   try {
     const response = await fetch("/api/pick", { method: "POST", headers: API_HEADERS });
     if (response.status === 204) return setStatus(""); // annulé
@@ -564,7 +591,7 @@ async function pickWithPlugin() {
     const name = decodeURIComponent(response.headers.get("X-Filename") || "export.zip");
     await importFiles([new File([await response.blob()], name)]);
   } catch {
-    setStatus("Le fichier n'a pas pu être lu. Réessayez, ou ouvrez la page dans un navigateur.", true);
+    setStatus(t("status.pickFailed"), true);
   }
 }
 $("file").addEventListener("change", (event) => {
@@ -599,7 +626,7 @@ for (const key of ["period", "source", "metric"]) {
 }
 $("toggle-table").addEventListener("click", (event) => {
   state.showTable = !state.showTable;
-  event.target.textContent = state.showTable ? "Voir le graphique" : "Voir le tableau";
+  event.target.textContent = t(state.showTable ? "chart.showChart" : "chart.showTable");
   event.target.setAttribute("aria-pressed", String(state.showTable));
   render();
 });
@@ -667,8 +694,8 @@ async function startMenubar() {
   menubar = true;
   // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
   // ici, l'import passe par le bouton.
-  $("drop-title").textContent = "Importez votre export ChatGPT ou Claude";
-  $("drop-hint").textContent = "Archive .zip ou fichier conversations.json, avec le bouton ci-dessous";
+  $("drop-title").textContent = t("menubar.dropTitle");
+  $("drop-hint").textContent = t("menubar.dropHint");
   // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
   // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
   for (const link of document.querySelectorAll("a[data-link]")) {

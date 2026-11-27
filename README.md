@@ -12,8 +12,8 @@ Claude Cowork. It comes in two forms that share the same page:
 - a **macOS menu bar item** ([SwiftBar](https://github.com/swiftbar/SwiftBar) plugin) that
   shows today's estimated energy for Claude Code and opens the dashboard on click.
 
-The app's interface is in French for now; this page gives the French labels with their
-meaning.
+The app is in English and French. It follows your browser's language (French for a French
+browser, English otherwise), and the link at the top right of the page switches language.
 
 ![EnergIA dashboard with the sample data: energy, CO₂, water and cost tiles, then the monthly chart for ChatGPT and Claude](docs/capture.jpg)
 
@@ -32,7 +32,7 @@ consumption of their models. See [Limitations](#limitations).
   (smartphone charges, kilometres by car, glasses of water).
 - A chart by day or by month, by service, with a table view.
 - A table by model.
-- A period filter (from "Aujourd'hui", today, to the whole history) and a service filter.
+- A period filter (from "Today" to the whole history) and a service filter.
 - Calculation assumptions that can all be changed.
 
 ## Using the web page
@@ -48,8 +48,8 @@ python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
 Then open <http://localhost:8791> and import your export (`.zip` or `conversations.json`):
-drop it anywhere on the page, or click "Choisir un fichier" (choose a file). "Voir un
-exemple" (see an example) shows made-up data.
+drop it anywhere on the page, or click "Choose a file". "See an example" shows made-up
+data.
 
 To get an export:
 
@@ -91,7 +91,7 @@ The plugin:
 - fetches the ECB's euro/dollar reference rate once a day. This is its only Internet
   connection; it sends no data.
 
-To import an export from the menu bar window, use the "Choisir un fichier" button: the
+To import an export from the menu bar window, use the "Choose a file" button: the
 plugin opens the macOS file picker and passes the chosen file to the page. Drag and drop is
 not possible there, because SwiftBar closes its window as soon as you start dragging a
 file. The footer links (donation, source code) open in your default browser.
@@ -113,7 +113,7 @@ SwiftBar.
    Anthropic and OpenAI APIs ([src/prices.json](src/prices.json)), converted to euros.
 
 The default values are in [src/defaults.json](src/defaults.json) and can be changed under
-"Hypothèses de calcul" (calculation assumptions).
+"Calculation assumptions".
 
 ## Limitations
 
@@ -151,6 +151,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 |---|---|
 | `index.html`, `styles.css`, `src/app.js` | The page and its interface |
 | `src/parsers.js`, `src/zip.js` | Reading ChatGPT and Claude exports |
+| `src/i18n.js` | Interface texts in French and English |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json` | Default assumptions and model prices |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin: Claude Code logs, local server, exchange rate |
@@ -171,11 +172,10 @@ These are intentions, with no dates and no commitment. In the planned order:
 
 1. **Other operating systems.** First a "server only" mode, to open the dashboard with live
    Claude Code data on Windows and Linux; then an icon in the notification area.
-2. **App in English and French**, following the browser's language. For now, only the
-   README is translated.
-3. **GitHub repository in English too.** The README and the repository description are
-   done; the code comments and the commit messages are still in French.
-4. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
+2. **English everywhere.** The page, the README and the repository description are
+   translated. Still in French: the menu bar plugin's own texts (decimal comma in the
+   title, file picker prompt), the code comments and the commit messages.
+3. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
    donations from people who find the app useful fund its development. This means
    presenting the app where AI and the environment are discussed.
 

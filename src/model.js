@@ -29,13 +29,6 @@ export function priceFor(model) {
 
 export const DEFAULT_SETTINGS = DEFAULTS;
 
-export const TIERS = {
-  leger: "Léger",
-  standard: "Standard",
-  grand: "Grand modèle",
-  raisonnement: "Raisonnement",
-};
-
 // Même règle que menubar/estimate.py : garder les deux en accord.
 export function classifyModel(model) {
   const m = String(model || "").toLowerCase();

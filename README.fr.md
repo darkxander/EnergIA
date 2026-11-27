@@ -32,6 +32,10 @@ publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites)
 - Un filtre de période (de « Aujourd'hui » à tout l'historique) et de service.
 - Des hypothèses de calcul toutes modifiables.
 
+L'appli existe en français et en anglais. Elle suit la langue du navigateur (français pour
+un navigateur en français, anglais sinon), et le lien en haut à droite de la page change
+de langue.
+
 ## Utiliser la page web
 
 Le plus simple est la version en ligne : <https://darkxander.github.io/EnergIA/>. C'est la même page, hébergée par
@@ -156,6 +160,7 @@ dans « Hypothèses de calcul ».
 |---|---|
 | `index.html`, `styles.css`, `src/app.js` | La page et son interface |
 | `src/parsers.js`, `src/zip.js` | Lecture des exports ChatGPT et Claude |
+| `src/i18n.js` | Textes de l'interface en français et en anglais |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json` | Hypothèses par défaut et prix des modèles |
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar : journaux Claude Code, serveur local, taux de change |
@@ -178,11 +183,11 @@ Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 1. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
    avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
    zone de notification.
-2. **Appli en anglais et en français**, selon la langue du navigateur. Pour l'instant,
-   seul le README est traduit.
-3. **Dépôt GitHub en anglais aussi.** Le README et la description du dépôt sont faits ;
-   les commentaires du code et les messages de commit sont encore en français.
-4. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
+2. **L'anglais partout.** La page, le README et la description du dépôt sont traduits.
+   Restent en français : les textes propres au plugin de la barre de menus (virgule
+   décimale du titre, invite du sélecteur de fichier), les commentaires du code et les
+   messages de commit.
+3. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
    l'IA ; les dons de celles et ceux qui trouvent l'appli utile financent son
    développement. Cela passe par des présentations de l'appli là où l'on parle d'IA et
    d'environnement.

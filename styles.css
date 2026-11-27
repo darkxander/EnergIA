@@ -47,6 +47,7 @@ body {
 .top, main { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 .top { padding-top: 28px; padding-bottom: 8px; }
 h1 { margin: 0; font-size: 28px; }
+.top-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 h2 { margin: 0 0 12px; font-size: 17px; }
 .tagline { margin: 4px 0 0; color: var(--text-secondary); }
 .muted { color: var(--text-secondary); font-size: 13px; }
