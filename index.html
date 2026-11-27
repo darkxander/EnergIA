@@ -26,8 +26,8 @@
         <p><strong id="drop-title" data-i18n="import.dropTitle">Déposez ici votre export ChatGPT ou Claude</strong><br>
           <span id="drop-hint" class="muted" data-i18n="import.dropHint">Archive .zip ou fichier conversations.json</span></p>
         <div class="actions">
-          <button id="pick" type="button" class="primary" data-i18n="import.pick">Choisir un fichier</button>
-          <button id="sample" type="button" data-i18n="import.sample">Voir un exemple</button>
+          <button id="pick" type="button" class="primary" data-i18n="import.pick" disabled>Choisir un fichier</button>
+          <button id="sample" type="button" data-i18n="import.sample" disabled>Voir un exemple</button>
         </div>
         <input id="file" type="file" accept=".zip,.json" multiple hidden>
       </div>
@@ -125,6 +125,13 @@
       window.addEventListener("error", warn);
       window.addEventListener("unhandledrejection", warn);
       window.addEventListener("load", function () { setTimeout(warn, 4000); });
+      // Tant que la page n'a pas démarré, un fichier déposé ferait quitter la page
+      // au navigateur, qui l'ouvrirait à sa place : on l'en empêche.
+      function hold(event) {
+        if (!window.EnergIAReady) event.preventDefault();
+      }
+      window.addEventListener("dragover", hold);
+      window.addEventListener("drop", hold);
     })();
   </script>
   <script type="module" src="src/app.js"></script>

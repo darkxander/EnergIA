@@ -720,5 +720,7 @@ render();
 // La page a démarré : le message de secours d'index.html n'a plus lieu d'être
 // (il a pu s'afficher si le chargement a été très lent).
 window.EnergIAReady = true;
+// Les boutons d'import sont inactifs dans index.html : avant ce point, un clic n'aurait rien fait.
+for (const id of ["pick", "sample"]) $(id).disabled = false;
 if ($("unsupported")) $("unsupported").hidden = true;
 startMenubar();

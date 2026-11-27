@@ -72,6 +72,7 @@ button, select, input {
 }
 button { cursor: pointer; }
 button:hover { background: var(--wash); }
+button:disabled { opacity: 0.5; cursor: default; }
 button.primary { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
 button.primary:hover { opacity: 0.85; }
 button.link { border: 0; padding: 0; text-decoration: underline; background: none; font-size: 13px; }
