@@ -108,7 +108,7 @@ export function subscriptionCost(rows, settings) {
 export const EQUIVALENTS = {
   smartphoneChargeWh: 15,
   electricCarWhPerKm: 170,
-  petrolCarGPerKm: 200,
+  petrolCarGPerKm: 170, // average petrol car, manufacturing included (ADEME, impactco2.fr)
   glassL: 0.25,
   showerL: 60,
 };

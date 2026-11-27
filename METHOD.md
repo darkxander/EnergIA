@@ -210,7 +210,7 @@ here is what the sources say.
 |---|---|---|
 | One smartphone charge | 15 Wh | Battery capacity of a recent phone: 4,000 mAh for a [Galaxy S25](https://www.samsung.com/nz/smartphones/galaxy-s25/specs/), about 15 Wh at 3.85 V (EnergIA's conversion). The [US EPA](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references) counts 19 Wh at the socket, charger losses included. |
 | One kilometre by electric car | 170 Wh | US label of a [2026 Tesla Model Y Long Range](https://www.fueleconomy.gov/feg/PowerSearch.do?action=noform&path=1&year1=2025&year2=2026&make=Tesla&baseModel=Model%20Y&srchtyp=ymm): 27 kWh per 100 miles, about 168 Wh/km. The [IEA](https://www.iea.org/reports/global-ev-outlook-2025/electric-vehicle-charging) uses 200 Wh/km in real use. |
-| One kilometre by petrol car | 200 g CO₂e | **Rather high.** [ADEME](https://impactco2.fr/outils/transport/voiturethermique) gives 170 g CO₂e/km for an average petrol car, manufacturing included, 189 g for a saloon and 246 g for an SUV. |
+| One kilometre by petrol car | 170 g CO₂e | [ADEME](https://impactco2.fr/outils/transport/voiturethermique)'s value for an average petrol car, manufacturing included; 189 g for a saloon and 246 g for an SUV. |
 | One shower | 60 L | [Eaufrance](https://www.services.eaufrance.fr/economie-d-eau): 35 to 60 L for a quick shower. [French Ministry of Ecology](https://archive-2017-2022.ecologie.gouv.fr/actualites/22-mars-cest-journee-mondiale-leau-0) (2018): 60 to 80 L. |
 | One glass of water | 0.25 L | A convention: 250 mL is the metric cup. |
 
@@ -226,7 +226,6 @@ In order of importance for the results:
 4. **The tokens of Claude exports**: underestimated by the 4-character rule.
 5. **The scope of water**: cooling only, not electricity generation.
 6. **The country**: unknown, hence the world average by default.
-7. **The "petrol car" equivalent**: higher than ADEME's average.
 
 None of these values is hidden: all can be changed in the page, and the monthly report
 lists those that were used for the calculation.

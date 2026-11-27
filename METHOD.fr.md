@@ -215,7 +215,7 @@ voici ce que disent les sources.
 |---|---|---|
 | Une charge de smartphone | 15 Wh | Capacité de batterie d'un téléphone récent : 4 000 mAh pour un [Galaxy S25](https://www.samsung.com/nz/smartphones/galaxy-s25/specs/), soit environ 15 Wh à 3,85 V (conversion d'EnergIA). L'[EPA américaine](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references) compte 19 Wh à la prise, pertes du chargeur comprises. |
 | Un kilomètre en voiture électrique | 170 Wh | Étiquette américaine d'une [Tesla Model Y Long Range 2026](https://www.fueleconomy.gov/feg/PowerSearch.do?action=noform&path=1&year1=2025&year2=2026&make=Tesla&baseModel=Model%20Y&srchtyp=ymm) : 27 kWh pour 100 miles, soit environ 168 Wh/km. L'[AIE](https://www.iea.org/reports/global-ev-outlook-2025/electric-vehicle-charging) retient 200 Wh/km en usage réel. |
-| Un kilomètre en voiture thermique | 200 g CO₂e | **Plutôt haut.** L'[ADEME](https://impactco2.fr/outils/transport/voiturethermique) donne 170 g CO₂e/km pour une voiture essence moyenne, fabrication comprise, 189 g pour une berline et 246 g pour un SUV. |
+| Un kilomètre en voiture thermique | 170 g CO₂e | La valeur de l'[ADEME](https://impactco2.fr/outils/transport/voiturethermique) pour une voiture essence moyenne, fabrication comprise ; 189 g pour une berline et 246 g pour un SUV. |
 | Une douche | 60 L | [Eaufrance](https://www.services.eaufrance.fr/economie-d-eau) : 35 à 60 L pour une douche rapide. [Ministère de l'Écologie](https://archive-2017-2022.ecologie.gouv.fr/actualites/22-mars-cest-journee-mondiale-leau-0) (2018) : 60 à 80 L. |
 | Un verre d'eau | 0,25 L | Une convention : 250 mL est la tasse métrique. |
 
@@ -232,7 +232,6 @@ Dans l'ordre d'importance pour les résultats :
 5. **Le périmètre de l'eau** : le refroidissement seulement, pas la production
    d'électricité.
 6. **Le pays** : inconnu, donc moyenne mondiale par défaut.
-7. **L'équivalent « voiture thermique »** : plus haut que la moyenne de l'ADEME.
 
 Aucune de ces valeurs n'est cachée : toutes se modifient dans la page, et le rapport
 mensuel liste celles qui ont servi au calcul.

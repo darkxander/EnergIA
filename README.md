@@ -19,7 +19,7 @@ browser, English otherwise), and the link at the top right of the page switches 
 
 *The dashboard, here with the built-in sample data.*
 
-![The four summary tiles in dark theme: 191 kWh, 87.5 kg CO₂e, 191 L and €17,279 at API prices](docs/tuiles.png)
+![The four summary tiles in dark theme: 191 kWh, 87.6 kg CO₂e, 191 L and €17,291 at API prices](docs/tuiles.png)
 
 *The summary tiles, here for eight months of real Claude Code usage, with the world average
 for CO₂.*
@@ -368,7 +368,7 @@ Then, in no set order:
   allow, and the CSV exports of organisation consoles, whose format is not documented.
 - **Method**: it is now [documented with its sources](METHOD.md). Still to decide: whether
   to adjust the default values that differ from them: water, the weight of tokens re-read
-  from the cache, the tokens of Claude exports and the "petrol car" equivalent.
+  from the cache and the tokens of Claude exports.
 - **Prices**: updating them without intervention; it is manual today.
 - **Windows**: a one-command install, as on macOS and Linux.
 - **English**: a few internal names in the code are still in French.

@@ -16,7 +16,7 @@ Claude Code et Claude Cowork. Elle existe sous deux formes, qui partagent la mê
 
 *Le tableau de bord, ici avec les données d'exemple intégrées.*
 
-![Les quatre tuiles de résumé en thème sombre : 191 kWh, 87,5 kg CO₂e, 191 L et 17 279 € au tarif de l'API](docs/tuiles.png)
+![Les quatre tuiles de résumé en thème sombre : 191 kWh, 87,6 kg CO₂e, 191 L et 17 291 € au tarif de l'API](docs/tuiles.png)
 
 *Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois, avec la moyenne
 mondiale pour le CO₂.*
@@ -386,8 +386,7 @@ Puis, sans ordre arrêté :
   documenté.
 - **Méthode** : elle est maintenant [documentée avec ses sources](METHOD.fr.md). Reste à
   décider s'il faut ajuster les valeurs par défaut qui s'en écartent : l'eau, le poids des
-  tokens relus du cache, les tokens des exports Claude et l'équivalent « voiture
-  thermique ».
+  tokens relus du cache et les tokens des exports Claude.
 - **Prix** : les mettre à jour sans intervention ; c'est manuel aujourd'hui.
 - **Windows** : une installation en une commande, comme sous macOS et Linux.
 - **Anglais** : restent en français quelques noms internes du code.
