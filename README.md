@@ -19,7 +19,7 @@ browser, English otherwise), and the link at the top right of the page switches 
 
 *The dashboard, here with the built-in sample data.*
 
-![The four summary tiles in dark theme: 191 kWh, 87.6 kg CO₂e, 191 L and €17,291 at API prices](docs/tuiles.png)
+![The four summary tiles in dark theme: 191 kWh, 87.6 kg CO₂e, 860 L and €17,295 at API prices](docs/tuiles.png)
 
 *The summary tiles, here for eight months of real Claude Code usage, with the world average
 for CO₂.*
@@ -248,14 +248,15 @@ sessions on Windows, in particular, is a guess.
 
 ## How the estimates are made
 
-1. **Tokens.** For ChatGPT and Claude exports, the number of tokens is estimated from the
-   length of the text (about 4 characters per token), and the context re-read at each reply
-   is counted. For Claude Code, tokens are measured, not estimated.
+1. **Tokens.** For conversation exports, the number of tokens is estimated from the length
+   of the text (about 4 characters per token, 3.5 for a Claude export), and the context
+   re-read at each reply is counted. For Claude Code, tokens are measured, not estimated.
 2. **Energy.** Each model is placed in a category (light, standard, large, reasoning) that
    sets an energy per thousand generated tokens. A token read weighs a fraction of a token
    generated, and a token re-read from the cache a smaller fraction still.
 3. **CO₂ and water.** Energy is multiplied by a carbon intensity (g CO₂e/kWh) and by a
-   water consumption (L/kWh). The carbon intensity is that of the chosen country, the world
+   water consumption (4.5 L/kWh by default, counting both the cooling of the data centre
+   and the generation of its electricity). The carbon intensity is that of the chosen country, the world
    average by default (458 g CO₂e/kWh in 2025). The values per country
    ([src/carbon.json](src/carbon.json)) are lifecycle emissions, collected on 27 November
    2026: Ember (2026), with processing by [Our World in Data](https://ourworldindata.org/grapher/carbon-intensity-electricity).
@@ -366,9 +367,9 @@ Then, in no set order:
 
 - **Other sources**: Mistral and other coding tools, depending on what their exports
   allow, and the CSV exports of organisation consoles, whose format is not documented.
-- **Method**: it is now [documented with its sources](METHOD.md). Still to decide: whether
-  to adjust the default values that differ from them: water, the weight of tokens re-read
-  from the cache and the tokens of Claude exports.
+- **Method**: it is now [documented with its sources](METHOD.md). One default value still
+  has no source: the weight of tokens re-read from the cache, which matters most for Claude
+  Code.
 - **Prices**: updating them without intervention; it is manual today.
 - **Windows**: a one-command install, as on macOS and Linux.
 - **English**: a few internal names in the code are still in French.

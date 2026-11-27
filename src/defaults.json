@@ -10,7 +10,7 @@
   "lowFactor": 0.5,
   "highFactor": 2,
   "gCO2PerKWh": 458.3,
-  "waterLPerKWh": 1,
+  "waterLPerKWh": 4.5,
   "eurPerUsd": 0.9122,
   "dailyBudgetWh": 0,
   "monthlyBudgetKWh": 0,

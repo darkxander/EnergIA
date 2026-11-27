@@ -16,7 +16,7 @@ Claude Code et Claude Cowork. Elle existe sous deux formes, qui partagent la mê
 
 *Le tableau de bord, ici avec les données d'exemple intégrées.*
 
-![Les quatre tuiles de résumé en thème sombre : 191 kWh, 87,6 kg CO₂e, 191 L et 17 291 € au tarif de l'API](docs/tuiles.png)
+![Les quatre tuiles de résumé en thème sombre : 191 kWh, 87,6 kg CO₂e, 860 L et 17 295 € au tarif de l'API](docs/tuiles.png)
 
 *Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois, avec la moyenne
 mondiale pour le CO₂.*
@@ -257,15 +257,17 @@ L'emplacement des sessions Cowork sous Windows, en particulier, est une supposit
 
 ## Comment sont faites les estimations
 
-1. **Tokens.** Pour les exports ChatGPT et Claude, le nombre de tokens est estimé à partir
-   de la longueur du texte (environ 4 caractères par token), et le contexte relu à chaque
-   réponse est compté. Pour Claude Code, les tokens sont mesurés, pas estimés.
+1. **Tokens.** Pour les exports de conversations, le nombre de tokens est estimé à partir
+   de la longueur du texte (environ 4 caractères par token, 3,5 pour un export Claude), et
+   le contexte relu à chaque réponse est compté. Pour Claude Code, les tokens sont mesurés,
+   pas estimés.
 2. **Énergie.** Chaque modèle est rangé dans une catégorie (léger, standard, grand,
    raisonnement) qui fixe une énergie par millier de tokens générés. Un token lu pèse une
    fraction d'un token généré, et un token relu depuis le cache une fraction plus petite
    encore.
 3. **CO₂ et eau.** L'énergie est multipliée par une intensité carbone (g CO₂e/kWh) et par
-   une consommation d'eau (L/kWh). L'intensité carbone est celle du pays choisi, par défaut
+   une consommation d'eau (4,5 L/kWh par défaut, en comptant le refroidissement du centre
+   de données et la production de son électricité). L'intensité carbone est celle du pays choisi, par défaut
    la moyenne mondiale (458 g CO₂e/kWh en 2025). Les valeurs par pays
    ([src/carbon.json](src/carbon.json)) sont des émissions sur le cycle de vie, relevées le
    27 novembre 2026 : Ember (2026), avec le traitement d'[Our World in Data](https://ourworldindata.org/grapher/carbon-intensity-electricity).
@@ -384,9 +386,9 @@ Puis, sans ordre arrêté :
 - **Autres sources** : Mistral et d'autres outils de code, selon ce que permettent leurs
   exports, et les exports CSV des consoles d'organisation, dont le format n'est pas
   documenté.
-- **Méthode** : elle est maintenant [documentée avec ses sources](METHOD.fr.md). Reste à
-  décider s'il faut ajuster les valeurs par défaut qui s'en écartent : l'eau, le poids des
-  tokens relus du cache et les tokens des exports Claude.
+- **Méthode** : elle est maintenant [documentée avec ses sources](METHOD.fr.md). Une valeur
+  par défaut reste sans source : le poids des tokens relus du cache, qui compte surtout
+  pour Claude Code.
 - **Prix** : les mettre à jour sans intervention ; c'est manuel aujourd'hui.
 - **Windows** : une installation en une commande, comme sous macOS et Linux.
 - **Anglais** : restent en français quelques noms internes du code.

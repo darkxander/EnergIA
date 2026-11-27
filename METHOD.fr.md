@@ -17,14 +17,14 @@ calcul ».
 
 | Étape | Valeur par défaut | Niveau |
 |---|---|---|
-| Tokens des exports de conversations | 4 caractères par token | sourcé pour OpenAI, biaisé pour Claude |
+| Tokens des exports de conversations | 4 caractères par token ; 3,5 pour Claude | sourcé |
 | Tokens de Claude Code, de Cowork et des relevés d'API | mesurés | sourcé |
 | Énergie pour 1 000 tokens générés | 0,2 / 0,6 / 1,2 / 2,5 Wh selon la catégorie | calé |
 | Poids d'un token lu | 10 % d'un token généré | calé |
 | Poids d'un token relu du cache | 2 % d'un token lu | hypothèse |
 | Fourchette | × 0,5 à × 2 | hypothèse |
 | Intensité carbone | 458,3 g CO₂e/kWh (moyenne mondiale 2025) | sourcé |
-| Eau | 1 L/kWh | calé |
+| Eau | 4,5 L/kWh | sourcé (États-Unis) |
 | Coût | prix publics des API | sourcé |
 
 Ce que les chiffres couvrent : l'électricité de l'inférence, centre de données compris. Ce
@@ -39,18 +39,18 @@ générés. Ils sont mesurés, pas estimés.
 
 **Exports de conversations (ChatGPT, Claude, Gemini, Copilot).** Les exports ne donnent pas
 les tokens. EnergIA les estime à partir de la longueur du texte, à raison de 4 caractères
-par token, et compte le contexte relu à chaque réponse.
+par token (3,5 pour un export Claude), et compte le contexte relu à chaque réponse.
 
 - OpenAI indique qu'un token représente environ 4 caractères de texte anglais, en précisant
   qu'il s'agit d'une estimation
   ([OpenAI, « What are tokens and how to count them? »](https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them)).
-- Pour Claude, la règle sous-estime : Anthropic indique environ 3,5 caractères par token
-  pour les modèles antérieurs à Claude 4.7, et environ 30 % de tokens en plus pour le même
-  texte à partir de Claude 4.7
-  ([Anthropic, glossaire](https://platform.claude.com/docs/en/about-claude/glossary)). Les
-  tokens d'un export Claude sont donc sous-estimés d'environ 12 % pour les anciens modèles,
-  et davantage pour les récents. Ce biais ne touche pas Claude Code, dont les tokens sont
-  mesurés.
+- Pour Claude, Anthropic indique environ 3,5 caractères par token pour les modèles
+  antérieurs à Claude 4.7, et environ 30 % de tokens en plus pour le même texte à partir
+  de Claude 4.7
+  ([Anthropic, glossaire](https://platform.claude.com/docs/en/about-claude/glossary)).
+  EnergIA retient 3,5 pour un export Claude. L'export ne dit pas quel modèle a répondu :
+  pour une conversation avec un modèle récent, les tokens restent sous-estimés d'environ
+  30 %. Cela ne touche pas Claude Code, dont les tokens sont mesurés.
 - La règle vaut pour l'anglais ; d'autres langues donnent d'autres rapports.
 - Ce qui n'apparaît pas dans un export n'est pas compté : la réflexion cachée des modèles à
   raisonnement, les images, et les réponses que l'export Gemini omet parfois.
@@ -177,7 +177,9 @@ CO₂ = énergie × intensité carbone de l'électricité du pays choisi.
 
 ## 4. De l'énergie à l'eau
 
-Eau = énergie × 1 L/kWh. Cette valeur ronde se situe entre deux périmètres :
+Eau = énergie × 4,5 L/kWh. C'est le périmètre large : l'eau évaporée pour refroidir le
+centre de données et l'eau consommée pour produire son électricité. Le CO₂ est compté de
+la même façon, production d'électricité comprise.
 
 | Périmètre | Valeur | Source |
 |---|---|---|
@@ -187,10 +189,19 @@ Eau = énergie × 1 L/kWh. Cette valeur ronde se situe entre deux périmètres :
 | Production de l'électricité, États-Unis | 4,35 à 4,52 L/kWh | LBNL, même rapport |
 | Fourchette sur site selon le lieu et la saison | 1 à 9 L/kWh | [Li et al., « Making AI Less Thirsty »](https://arxiv.org/abs/2304.03271) |
 
-Avec 1 L/kWh, EnergIA compte à peu près l'eau évaporée pour le refroidissement, plutôt du
-côté haut. Elle ne compte pas l'eau consommée pour produire l'électricité : en l'ajoutant,
-on arriverait à 4 ou 5 L/kWh aux États-Unis. Si vous voulez ce périmètre large, mettez
-4,5 dans les hypothèses.
+La valeur retenue arrondit la somme des deux chiffres du rapport du LBNL pour les
+États-Unis en 2023 : 0,36 L/kWh sur site et 4,52 L/kWh pour l'électricité des centres de
+données, soit 4,9 L/kWh ; avec la moyenne du réseau américain (4,35), on obtient 4,7.
+EnergIA retient 4,5, un peu en dessous, pour ne pas surestimer.
+
+Deux limites :
+
+- **Ce sont des chiffres américains**, appliqués partout. L'eau consommée pour produire
+  l'électricité dépend beaucoup du pays et de ses centrales ; EnergIA ne fait pas varier
+  l'eau avec le pays choisi pour le CO₂.
+- **Les fournisseurs publient le périmètre étroit**, refroidissement seul. Google annonce
+  ainsi 0,26 mL par requête, là où EnergIA compterait environ 1 mL pour la même énergie.
+  Pour retrouver ce périmètre, mettez 0,4 dans les hypothèses.
 
 ## 5. Le coût
 
@@ -228,9 +239,9 @@ Dans l'ordre d'importance pour les résultats :
 2. **L'énergie par token** : EnergIA est du côté bas des estimations publiques ; une étude
    donne 1,5 à 3,5 fois plus.
 3. **Les très longs contextes** : probablement sous-estimés.
-4. **Les tokens des exports Claude** : sous-estimés par la règle des 4 caractères.
-5. **Le périmètre de l'eau** : le refroidissement seulement, pas la production
-   d'électricité.
+4. **L'eau** : un chiffre américain, appliqué quel que soit le pays.
+5. **Les tokens des exports Claude** : encore sous-estimés d'environ 30 % pour les modèles
+   récents.
 6. **Le pays** : inconnu, donc moyenne mondiale par défaut.
 
 Aucune de ces valeurs n'est cachée : toutes se modifient dans la page, et le rapport

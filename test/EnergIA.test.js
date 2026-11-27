@@ -38,6 +38,8 @@ const claudeExport = [{
 test("token estimation", () => {
   assert.equal(estimateTokens(""), 0);
   assert.equal(estimateTokens("abcde"), 2);
+  assert.equal(estimateTokens("a".repeat(400)), 100);        // 4 characters per token by default
+  assert.equal(estimateTokens("a".repeat(400), 3.5), 115);   // Claude: 3.5 characters per token
 });
 
 test("ChatGPT export", () => {
@@ -86,8 +88,9 @@ test("Claude export", () => {
   assert.equal(out.source, "claude");
   assert.equal(out.rows.length, 2);
   const [d1, d2] = out.rows.sort((a, b) => a.day.localeCompare(b.day));
-  assert.deepEqual([d1.day, d1.requests, d1.inTok, d1.outTok], ["2026-03-01", 1, 100, 200]);
-  assert.deepEqual([d2.day, d2.requests, d2.inTok, d2.outTok], ["2026-03-02", 1, 310, 100]);
+  // 3.5 characters per token: 400, 800, 40 and 400 characters give 115, 229, 12 and 115 tokens.
+  assert.deepEqual([d1.day, d1.requests, d1.inTok, d1.outTok], ["2026-03-01", 1, 115, 229]);
+  assert.deepEqual([d2.day, d2.requests, d2.inTok, d2.outTok], ["2026-03-02", 1, 115 + 229 + 12, 115]);
 });
 
 test("unknown format", () => {
@@ -112,7 +115,7 @@ test("estimation model", () => {
   const m = rowMetrics(row, DEFAULT_SETTINGS);
   assert.ok(Math.abs(m.wh - 0.3) < 1e-9); // (300 + 2000 × 0.1) / 1000 × 0.6
   assert.ok(Math.abs(m.co2g - 0.13749) < 1e-9); // 0.0003 kWh × 458.3 g (2025 world average)
-  assert.ok(Math.abs(m.waterL - 0.0003) < 1e-12);
+  assert.ok(Math.abs(m.waterL - 0.00135) < 1e-12); // 0.0003 kWh × 4.5 L (cooling and electricity generation)
   assert.ok(Math.abs(m.eur - 0.008) < 1e-12);
   const total = summarize([row, row], DEFAULT_SETTINGS);
   assert.ok(Math.abs(total.wh - 0.6) < 1e-9);
@@ -470,6 +473,6 @@ test("method document: both languages, the same structure, and the default value
   // The values quoted are the ones the code uses: update the document when a default changes.
   const s = DEFAULT_SETTINGS;
   assert.deepEqual([s.tiers.leger.whOut, s.tiers.standard.whOut, s.tiers.grand.whOut, s.tiers.raisonnement.whOut], [0.2, 0.6, 1.2, 2.5]);
-  assert.deepEqual([s.inputRatio, s.cacheReadRatio, s.lowFactor, s.highFactor, s.gCO2PerKWh, s.waterLPerKWh], [0.1, 0.02, 0.5, 2, 458.3, 1]);
-  for (const text of ["0.2 / 0.6 / 1.2 / 2.5 Wh", "458.3 g CO₂e/kWh", "1 L/kWh", "× 0.5 to × 2"]) assert.ok(en.includes(text), text);
+  assert.deepEqual([s.inputRatio, s.cacheReadRatio, s.lowFactor, s.highFactor, s.gCO2PerKWh, s.waterLPerKWh], [0.1, 0.02, 0.5, 2, 458.3, 4.5]);
+  for (const text of ["0.2 / 0.6 / 1.2 / 2.5 Wh", "458.3 g CO₂e/kWh", "4.5 L/kWh", "× 0.5 to × 2", "3.5 characters per token"]) assert.ok(en.includes(text), text);
 });

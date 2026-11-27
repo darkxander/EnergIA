@@ -3,8 +3,12 @@
 // model come out of here, stored per conversation under an anonymous key. That key is used
 // to avoid counting twice a conversation present in two imports.
 
-// Rough estimate: about 4 characters per token.
-export const estimateTokens = (text) => (text ? Math.ceil(text.length / 4) : 0);
+// Rough estimate from the length of the text. About 4 characters per token is OpenAI's
+// own rule of thumb for English, and the default here. Anthropic gives about 3.5 for
+// Claude models before 4.7 (and about 30% more tokens from 4.7 onwards, which an export
+// does not let us tell apart): the Claude export uses 3.5. See METHOD.md.
+export const CLAUDE_CHARS_PER_TOKEN = 3.5;
+export const estimateTokens = (text, charsPerToken = 4) => (text ? Math.ceil(text.length / charsPerToken) : 0);
 
 const dayOf = (date) => (Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10));
 
@@ -244,7 +248,7 @@ function parseClaude(conversations) {
     let context = 0;
     let pendingRequests = 0;
     for (const message of conv.chat_messages) {
-      const count = estimateTokens(claudeText(message));
+      const count = estimateTokens(claudeText(message), CLAUDE_CHARS_PER_TOKEN);
       if (message.sender === "human") {
         if (count > 0) pendingRequests += 1;
       } else if (message.sender === "assistant" && count > 0) {

@@ -82,6 +82,8 @@ function mergeSettings(saved) {
   if (saved.eurPerUsd === 0.9) delete saved.eurPerUsd;
   // 400 was the approximate world average before the country list: the sourced value is used again.
   if (saved.gCO2PerKWh === 400) delete saved.gCO2PerKWh;
+  // 1 L/kWh was the default before water also counted electricity generation (4.5 L/kWh).
+  if (saved.waterLPerKWh === 1) delete saved.waterLPerKWh;
   for (const key of Object.keys(s)) {
     if (key === "tiers") {
       for (const tier of Object.keys(s.tiers)) Object.assign(s.tiers[tier], saved.tiers?.[tier]);
