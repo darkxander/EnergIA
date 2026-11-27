@@ -12,6 +12,7 @@ import estimate  # noqa: E402
 import paths  # noqa: E402
 import server  # noqa: E402
 import rate  # noqa: E402
+import tray  # noqa: E402
 from claudecode import UsageStore, local_day  # noqa: E402
 
 
@@ -447,6 +448,182 @@ class ServerTest(unittest.TestCase):
         for path in ("/EnergIA.py", "/menubar/server.py", "/src/../EnergIA.py", "/src/%2e%2e/EnergIA.py",
                      "/test/EnergIA.test.js", "/.claude/launch.json", "/src/absent.js"):
             self.assertEqual(self.get(path)[0], 404, path)
+
+
+class FakeWin32:
+    """Stands in for Windows: records what the icon asks for, and delivers posted
+    messages to the window procedure the way a message loop would."""
+
+    taskbar_created = 0xC123
+
+    def __init__(self, add_works=True):
+        import queue
+        self.calls, self.queue, self.handler, self.menu_choice, self.add_works = [], queue.Queue(), None, 0, add_works
+
+    def load_icon(self, path):
+        return os.path.basename(path)
+
+    def create_window(self, handler):
+        self.handler = handler
+        return 42
+
+    def notify(self, action, hwnd, icon, tip):
+        self.calls.append((action, icon, tip))
+        return self.add_works or action != tray.NIM_ADD
+
+    def popup_menu(self, hwnd, items):
+        self.calls.append(("menu", [text for _, text in items]))
+        return self.menu_choice
+
+    def post(self, hwnd, message):
+        self.queue.put(message)
+
+    def destroy(self, hwnd):
+        self.handler(hwnd, tray.WM_DESTROY, 0, 0)
+
+    def default(self, hwnd, message, wparam, lparam):
+        if message == tray.WM_CLOSE:
+            self.destroy(hwnd)
+        return 0
+
+    def quit_loop(self):
+        self.queue.put(None)
+
+    def loop(self):
+        while True:
+            message = self.queue.get()
+            if message is None:
+                return
+            self.handler(42, message, 0, 0)
+
+
+class TrayTest(unittest.TestCase):
+    def test_structure_layout(self):
+        import ctypes
+        data = tray.notify_struct()
+        # 976 bytes on 64-bit Windows, where a character takes 2 bytes; elsewhere only
+        # the 448 characters of the three text fields change the size.
+        if ctypes.sizeof(ctypes.c_void_p) == 8:
+            self.assertEqual(ctypes.sizeof(data), 976 + 448 * (ctypes.sizeof(ctypes.c_wchar) - 2))
+        self.assertEqual(data.szTip.size, 128 * ctypes.sizeof(ctypes.c_wchar))
+
+    def test_icon_files(self):
+        import struct
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tools"))
+        import make_icons
+        files = []
+        for over, path in tray.ICONS.items():
+            with open(path, "rb") as f:
+                data = f.read()
+            files.append(data)
+            self.assertEqual(struct.unpack("<HHH", data[:6]), (0, 1, len(make_icons.SIZES)))
+            # The committed files are the ones the generator draws.
+            self.assertEqual(data, make_icons.icon(make_icons.ICONS[os.path.basename(path)]), path)
+        self.assertNotEqual(*files)
+
+    def test_icon_follows_the_readings_and_the_clicks(self):
+        api, opened, now = FakeWin32(), [], [100.0]
+        icon = tray.Tray("fr", lambda: opened.append(1), api=api, clock=lambda: now[0])
+        self.assertTrue(icon.start())
+        self.assertEqual(api.calls, [(tray.NIM_ADD, "energia.ico", "EnergIA – … aujourd'hui")])
+
+        def settle():  # lets the fake message loop deliver what was posted
+            import time
+            deadline = time.time() + 2
+            while not api.queue.empty() and time.time() < deadline:
+                time.sleep(0.01)
+            time.sleep(0.02)
+
+        icon.update("523 Wh", False)
+        settle()
+        self.assertEqual(api.calls[-1], (tray.NIM_MODIFY, "energia.ico", "EnergIA – 523 Wh aujourd'hui"))
+        count = len(api.calls)
+        icon.update("523 Wh", False)   # nothing new: Windows is not asked again
+        settle()
+        self.assertEqual(len(api.calls), count)
+        icon.update("1,2 kWh", True)   # above a threshold: the red icon
+        settle()
+        self.assertEqual(api.calls[-1], (tray.NIM_MODIFY, "energia-over.ico", "EnergIA – 1,2 kWh aujourd'hui (seuil dépassé)"))
+
+        # A click opens the dashboard; the second click of a double click does not open it twice.
+        api.handler(42, tray.TRAY_EVENT, 0, tray.WM_LBUTTONUP)
+        api.handler(42, tray.TRAY_EVENT, 0, tray.WM_LBUTTONUP)
+        self.assertEqual(len(opened), 1)
+        now[0] += 5
+        api.handler(42, tray.TRAY_EVENT, 0, tray.WM_LBUTTONUP)
+        self.assertEqual(len(opened), 2)
+
+        # Explorer restarted: the icon is added again, in its current state.
+        api.handler(42, api.taskbar_created, 0, 0)
+        self.assertEqual(api.calls[-1][:2], (tray.NIM_ADD, "energia-over.ico"))
+
+        # Right click: the menu; "Open" opens, "Quit" removes the icon and ends the loop.
+        now[0] += 5
+        api.menu_choice = tray.MENU_OPEN
+        api.handler(42, tray.TRAY_EVENT, 0, tray.WM_RBUTTONUP)
+        self.assertEqual((api.calls[-1], len(opened)), (("menu", ["Ouvrir le tableau de bord", "Quitter EnergIA"]), 3))
+        self.assertFalse(icon.closed.is_set())
+        api.menu_choice = tray.MENU_QUIT
+        api.handler(42, tray.TRAY_EVENT, 0, tray.WM_RBUTTONUP)
+        self.assertTrue(icon.closed.wait(2))
+        self.assertEqual(api.calls[-1][0], tray.NIM_DELETE)
+        icon.update("2 kWh", False)    # after the end: no error, nothing sent
+        icon.close()
+
+    def test_close_from_another_thread_and_english(self):
+        api = FakeWin32()
+        icon = tray.Tray("en", lambda: None, api=api)
+        self.assertTrue(icon.start())
+        self.assertEqual(api.calls[0][2], "EnergIA – … today")
+        icon.close()                   # what Ctrl+C does
+        self.assertTrue(icon.closed.wait(2))
+        self.assertEqual(api.calls[-1][0], tray.NIM_DELETE)
+
+    def test_failed_icon_does_not_stop_the_dashboard(self):
+        icon = tray.Tray("fr", lambda: None, api=FakeWin32(add_works=False))
+        self.assertFalse(icon.start())
+        self.assertTrue(icon.closed.is_set())
+        self.assertIsInstance(icon.error, OSError)
+
+        # In the "server only" mode: a message, then the program keeps serving.
+        import io
+
+        class Broken:
+            error = "raison"
+            def __init__(self, lang, on_open): pass
+            def start(self): return False
+
+        out, waited = io.StringIO(), []
+        self.assertEqual(server.serve_only(0, browser=False, out=out, wait=lambda: waited.append(1), tray=Broken), 0)
+        self.assertEqual(waited, [1])
+        self.assertIn("raison", out.getvalue())
+
+    def test_server_only_mode_feeds_the_icon(self):
+        import io
+        import threading
+        seen = []
+
+        class Icon:
+            def __init__(self, lang, on_open):
+                self.closed = threading.Event()
+            def start(self): return True
+            def update(self, energy, over):
+                seen.append((energy, over))
+                self.closed.set()      # as if "Quit" had been chosen
+            def close(self): pass
+
+        old, server.TRAY_REFRESH = server.TRAY_REFRESH, 0.01
+        try:
+            self.assertEqual(server.serve_only(0, browser=False, out=io.StringIO(), tray=Icon), 0)
+        finally:
+            server.TRAY_REFRESH = old
+        self.assertEqual(len(seen), 1)
+        self.assertIsInstance(seen[0][0], str)
+        self.assertIn(seen[0][1], (True, False))
+        self.assertTrue(server.parse_args(["--serve", "--no-tray"]).no_tray)
+        self.assertFalse(server.parse_args(["--serve"]).no_tray)
+        if sys.platform != "win32":
+            self.assertIsNone(server.windows_tray("fr", lambda: None))
 
 
 if __name__ == "__main__":

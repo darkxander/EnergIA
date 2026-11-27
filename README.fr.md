@@ -179,6 +179,14 @@ Sous Windows, la commande est en général `py EnergIA.py --serve`. Le tableau d
 sur `http://127.0.0.1:18791/` ; arrêtez le programme avec Ctrl+C. Deux options : `--port`
 pour changer de port, `--no-browser` pour ne pas ouvrir le navigateur.
 
+Sous Windows, une icône s'ajoute dans la zone de notification, près de l'horloge : un
+éclair, dont l'infobulle donne l'énergie estimée du jour. Un clic ouvre le tableau de bord,
+un clic droit propose « Ouvrir » et « Quitter ». L'éclair passe au rouge quand un seuil
+d'alerte est dépassé. L'option `--no-tray` lance le programme sans cette icône, et
+`pyw EnergIA.py --serve` le lance sans fenêtre de console. **Cette icône n'a pas encore été
+essayée sur un vrai Windows** : seule sa logique est testée, avec un faux Windows. Si elle
+ne peut pas être créée, le programme le dit et le tableau de bord reste ouvert.
+
 Dans ce mode, l'import d'un export et les liens fonctionnent comme dans la version en
 ligne. Les compteurs et réglages sont gardés dans les dossiers habituels du système
 (`%LOCALAPPDATA%` et `%APPDATA%` sous Windows, `~/.cache` et `~/.config` sous Linux).
@@ -267,7 +275,8 @@ dans « Hypothèses de calcul ».
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
 | `install.sh` | Installation en une commande |
-| `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change |
+| `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change, icône Windows |
+| `tools/make_icons.py` | Dessine les deux icônes Windows |
 | `tools/stamp.mjs` | Numérote les fichiers de la page à chaque version |
 | `test/` | Tests |
 
@@ -290,8 +299,9 @@ script gardé en mémoire. Les tests échouent si le numéro n'est plus à jour.
 
 Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
-1. **Autres systèmes.** Le mode « serveur seul » existe et fonctionne sous Linux ; il
-   reste à le vérifier sous Windows, puis à ajouter une icône dans la zone de notification.
+1. **Autres systèmes.** Le mode « serveur seul » existe et fonctionne sous Linux. Sous
+   Windows, il reste à le vérifier, ainsi que son icône dans la zone de notification,
+   écrite sans avoir pu être essayée.
 2. **L'anglais partout.** La page, le plugin de la barre de menus, le README, la
    description du dépôt et les commentaires du code sont en anglais. Restent en français :
    les messages de commit, et quelques noms internes du code.

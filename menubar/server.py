@@ -30,6 +30,7 @@ from rate import RateStore
 PORT = 18791
 POLL = 60                 # seconds between two readings of the logs
 WIDTH, HEIGHT = 860, 680  # size of the window, in pixels
+TRAY_REFRESH = 2.0        # seconds between two updates of the Windows notification-area icon
 BEAT_TIMEOUT = 4.0        # no heartbeat for this long: window closed
 LABEL = "⚡"
 OVER_COLOR = "#ff453a"  # compact title above the threshold: red text, for lack of room for an icon
@@ -153,6 +154,20 @@ class Dashboard:
             text = estimate.format_energy(total, lang, compact=True)
             return f"{text}\tcolor={OVER_COLOR}" if label == OVER_LABEL else text
         return f"{label} {estimate.format_energy(total, lang)}"
+
+    def today_status(self):
+        """For the Windows notification-area icon: the day's energy as text ("…" until
+        the first reading, "⚠️" after a failed one) and whether a threshold is exceeded."""
+        with self._lock:
+            if self._error:
+                return "⚠️", False
+            if self._updated_at is None:
+                return "…", False
+        settings = estimate.load_settings(self.settings_path)
+        today = self.today()
+        rows = self.store.rows()
+        total = sum(estimate.wh(row, settings) for row in rows if row["day"] == today)
+        return estimate.format_energy(total, estimate.lang_of(settings)), estimate.over_budget(rows, settings, today)
 
     def pick(self):
         """The file chosen in the macOS picker, displayed in the page's language."""
@@ -332,9 +347,18 @@ def emit(title, port=PORT, out=None):
           f"webvieww={WIDTH} webviewh={HEIGHT}{' ' + extra if extra else ''}", file=out, flush=True)
 
 
-def serve_only(port=PORT, browser=True, out=None, wait=None):
+def windows_tray(lang, on_open):
+    """The notification-area icon, on Windows only; None elsewhere."""
+    if sys.platform != "win32":
+        return None
+    import tray
+    return tray.Tray(lang, on_open)
+
+
+def serve_only(port=PORT, browser=True, out=None, wait=None, tray=windows_tray):
     """The "server only" mode: no menu bar, the dashboard opens in the default
-    browser. Returns the program's exit code."""
+    browser. On Windows, an icon in the notification area shows the day's energy.
+    Returns the program's exit code."""
     out = out or sys.stdout
     if hasattr(out, "reconfigure"):
         out.reconfigure(errors="replace")  # Windows consoles without UTF-8
@@ -351,11 +375,24 @@ def serve_only(port=PORT, browser=True, out=None, wait=None):
     print(SERVING[lang].format(url=url), file=out, flush=True)
     if browser:
         webbrowser.open(url)
+    icon = tray(lang, lambda: webbrowser.open(url)) if tray else None
+    if icon and not icon.start():
+        import tray as tray_texts
+        print(tray_texts.TEXTS[lang]["failed"].format(reason=icon.error), file=out, flush=True)
+        icon = None
     try:
-        (wait or (lambda: threading.Event().wait()))()
+        if icon:
+            # The icon follows the readings; "Quit" in its menu ends the program.
+            while not icon.closed.wait(TRAY_REFRESH):
+                icon.update(*dash.today_status())
+        else:
+            (wait or (lambda: threading.Event().wait()))()
     except KeyboardInterrupt:
-        pass
+        if icon:
+            icon.close()
+            icon.closed.wait(2)
     server.shutdown()
+    server.server_close()
     return 0
 
 
@@ -366,13 +403,15 @@ def parse_args(argv=None):
     parser.add_argument("--port", type=int, default=PORT, help=f"port local / local port ({PORT})")
     parser.add_argument("--no-browser", action="store_true",
                         help="ne pas ouvrir le navigateur / do not open the browser")
+    parser.add_argument("--no-tray", action="store_true",
+                        help="Windows : sans icône dans la zone de notification / Windows: no notification-area icon")
     return parser.parse_known_args(argv)[0]  # SwiftBar can add its own arguments
 
 
 def main(argv=None):
     args = parse_args(argv)
     if args.serve:
-        sys.exit(serve_only(args.port, browser=not args.no_browser))
+        sys.exit(serve_only(args.port, browser=not args.no_browser, tray=None if args.no_tray else windows_tray))
     dash = Dashboard()
     try:
         serve(dash)

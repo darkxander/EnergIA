@@ -172,6 +172,14 @@ On Windows, the command is usually `py EnergIA.py --serve`. The dashboard opens 
 `http://127.0.0.1:18791/`; stop the program with Ctrl+C. Two options: `--port` to change the
 port, `--no-browser` to leave the browser closed.
 
+On Windows, an icon is added in the notification area, next to the clock: a lightning bolt
+whose tooltip gives the day's estimated energy. A click opens the dashboard, a right click
+offers "Open" and "Quit". The bolt turns red when an alert threshold is exceeded. The
+`--no-tray` option runs the program without this icon, and `pyw EnergIA.py --serve` runs it
+without a console window. **This icon has not yet been tried on a real Windows machine**:
+only its logic is tested, against a fake Windows. If it cannot be created, the program says
+so and the dashboard stays open.
+
 In this mode, importing an export and the links work as in the online version. Counters and
 settings are kept in the system's usual folders (`%LOCALAPPDATA%` and `%APPDATA%` on
 Windows, `~/.cache` and `~/.config` on Linux).
@@ -254,7 +262,8 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
 | `install.sh` | One-command install |
-| `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate |
+| `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate, Windows icon |
+| `tools/make_icons.py` | Draws the two Windows icons |
 | `tools/stamp.mjs` | Stamps the page's files with a version number |
 | `test/` | Tests |
 
@@ -275,8 +284,9 @@ page with an old script kept in their cache. The tests fail if the number is out
 
 These are intentions, with no dates and no commitment. In the planned order:
 
-1. **Other operating systems.** The server-only mode exists and works on Linux; it still
-   has to be checked on Windows, then an icon added in the notification area.
+1. **Other operating systems.** The server-only mode exists and works on Linux. On
+   Windows it still has to be checked, along with its notification-area icon, which was
+   written without being able to try it.
 2. **English everywhere.** The page, the menu bar plugin, the README, the repository
    description and the code comments are in English. Still in French: the commit
    messages, and a few internal names in the code.
