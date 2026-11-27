@@ -288,8 +288,8 @@ These are intentions, with no dates and no commitment. In the planned order:
    Windows it still has to be checked, along with its notification-area icon, which was
    written without being able to try it.
 2. **English everywhere.** The page, the menu bar plugin, the README, the repository
-   description and the code comments are in English. Still in French: the commit
-   messages, and a few internal names in the code.
+   description, the code comments and the commit messages are in English. A few internal
+   names in the code are still in French.
 3. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
    donations from people who find the app useful fund its development. This means
    presenting the app where AI and the environment are discussed.
