@@ -2,6 +2,7 @@ import { listZipEntries, readZipEntryText } from "./zip.js";
 import { parseExport } from "./parsers.js";
 import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
+import { csvText } from "./csv.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
 const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur cet ordinateur par le plugin, sans import
@@ -702,6 +703,47 @@ async function pickWithPlugin() {
     setStatus(t("status.pickFailed"), true);
   }
 }
+// Export CSV : les lignes de la période et du service affichés, par jour et par modèle.
+function exportLines() {
+  const rows = filteredRows().slice().sort((a, b) =>
+    a.day.localeCompare(b.day) || a.source.localeCompare(b.source) || String(a.model).localeCompare(String(b.model)));
+  return rows.map((row) => {
+    const m = rowMetrics(row, state.settings);
+    return [
+      row.day, SOURCES[row.source], row.source === "claude" ? t("models.unknown") : row.model,
+      t(`tier.${classifyModel(row.model)}`), row.requests,
+      row.inTok + (row.cw5Tok || 0) + (row.cw1Tok || 0), row.cacheTok || 0, row.outTok,
+      m.wh, m.co2g, m.waterL, m.eur, t(priceFor(row.model) ? "export.no" : "export.yes"),
+    ];
+  });
+}
+
+async function exportCSV() {
+  const lines = exportLines();
+  if (!lines.length) return setStatus(t("export.empty"), true);
+  const text = csvText([t("export.columns").split("|"), ...lines], LANG);
+  const name = `EnergIA-${localDay(0)}.csv`;
+  if (pluginWindow) {
+    // La fenêtre de la barre de menus ne sait pas télécharger : le plugin écrit le
+    // fichier dans le dossier Téléchargements et le montre dans le Finder.
+    try {
+      const saved = await api("/api/export", { method: "POST", body: text, headers: { "Content-Type": "text/csv" } });
+      setStatus(t("export.saved", { path: saved.path }));
+    } catch {
+      setStatus(t("export.failed"), true);
+    }
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const link = el("a", { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$("export-csv").addEventListener("click", exportCSV);
+$("export-csv").title = t("export.title");
+
 $("file").addEventListener("change", (event) => {
   importFiles([...event.target.files]);
   event.target.value = "";

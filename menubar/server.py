@@ -35,6 +35,8 @@ LABEL = "⚡"
 OVER_COLOR = "#ff453a"  # titre compact au-dessus du seuil : texte rouge, faute de place pour un pictogramme
 OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
 MAX_BODY = 20_000
+MAX_EXPORT = 50_000_000  # un export CSV de plusieurs années reste très en dessous
+DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 # Seuls liens que la page peut faire ouvrir dans le navigateur par défaut.
 LINKS = {"sponsor": "https://github.com/sponsors/darkxander",
@@ -63,6 +65,11 @@ def pick_file(lang="fr"):
          "-e", f'POSIX path of (choose file with prompt "{PICK_PROMPT[lang]}" of type {PICK_TYPES})'],
         capture_output=True, text=True, timeout=900, check=False)
     return done.stdout.strip() or None
+
+
+def reveal(path):
+    """Montre le fichier dans le Finder."""
+    subprocess.run(["/usr/bin/open", "-R", path], check=False, timeout=10)
 
 
 def open_in_browser(url):
@@ -96,7 +103,8 @@ class TitleGate:
 
 class Dashboard:
     def __init__(self, store=None, settings_path=estimate.SETTINGS, today=lambda: date.today().isoformat(),
-                 rates=None, opener=open_in_browser, picker=pick_file, window=True):
+                 rates=None, opener=open_in_browser, picker=pick_file, window=True,
+                 downloads=DOWNLOADS, revealer=reveal):
         self.store = store or UsageStore()
         # True : page affichée dans la fenêtre de SwiftBar, qui ne sait ni ouvrir un
         # sélecteur de fichier ni suivre un lien externe. False : vrai navigateur.
@@ -104,6 +112,7 @@ class Dashboard:
         self.rates = rates or RateStore()
         self.opener = opener
         self.picker = picker
+        self.downloads, self.revealer = downloads, revealer
         self.settings_path, self.today = settings_path, today
         self.gate = TitleGate()
         self._lock = threading.Lock()
@@ -148,6 +157,22 @@ class Dashboard:
     def pick(self):
         """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
         return self.picker(estimate.lang_of(estimate.load_settings(self.settings_path)))
+
+    def export(self, data):
+        """Écrit l'export CSV de la page dans le dossier Téléchargements, sans jamais
+        remplacer un fichier existant, et le montre. Le nom est choisi ici, pas par la page."""
+        os.makedirs(self.downloads, exist_ok=True)
+        for n in range(1, 1000):
+            name = f"EnergIA-{self.today()}{'' if n == 1 else f'-{n}'}.csv"
+            path = os.path.join(self.downloads, name)
+            try:
+                with open(path, "xb") as f:
+                    f.write(data)
+            except FileExistsError:
+                continue
+            self.revealer(path)
+            return path
+        raise OSError("trop de fichiers du même nom")
 
     def payload(self):
         with self._lock:
@@ -243,12 +268,34 @@ class Handler(BaseHTTPRequestHandler):
             shutil.copyfileobj(f, self.wfile)
         return None
 
+    def _export(self):
+        """Enregistre le CSV envoyé par la page. Seulement dans la fenêtre de SwiftBar,
+        qui ne sait pas télécharger ; un vrai navigateur télécharge lui-même."""
+        dash = self.server.dash
+        if not dash.window:
+            return self.send_error(404)
+        try:
+            length = int(self.headers.get("Content-Length", ""))
+            if not 0 < length <= MAX_EXPORT:
+                raise ValueError
+            data = self.rfile.read(length)
+            data.decode("utf-8")  # du texte, rien d'autre
+        except ValueError:
+            return self.send_error(400)
+        try:
+            path = dash.export(data)
+        except OSError:
+            return self.send_error(500)
+        return self._json({"ok": True, "path": path})
+
     def do_POST(self):
         path = urlsplit(self.path).path
         if not self._allowed(path):
             return self.send_error(403)
         if path == "/api/pick":
             return self._pick()
+        if path == "/api/export":
+            return self._export()
         if path != "/api/settings":
             return self.send_error(404)
         try:

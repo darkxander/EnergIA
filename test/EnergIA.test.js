@@ -249,3 +249,16 @@ test("coût : mêmes chiffres que le plugin", async () => {
   close({ model: "gpt-5-thinking", inTok: 2000, outTok: 300 }, 0.0050171);
   close({ model: "modele-inconnu", inTok: 2000, cacheTok: 1000, outTok: 300 }, 0.00805);
 });
+
+test("CSV : séparateur et décimales selon la langue, cellules protégées", async () => {
+  const { csvText } = await import("../src/csv.js");
+  const lines = [["Jour", "Modèle", "Énergie (Wh)"], ["2026-11-25", "gpt-4o", 0.607], ["2026-11-26", 'a;b "c"', 1234.5678912]];
+  assert.equal(csvText(lines, "fr"),
+    '\uFEFFJour;Modèle;Énergie (Wh)\r\n2026-11-25;gpt-4o;0,607\r\n2026-11-26;"a;b ""c""";1234,57\r\n');
+  assert.equal(csvText(lines, "en"),
+    '\uFEFFJour,Modèle,Énergie (Wh)\r\n2026-11-25,gpt-4o,0.607\r\n2026-11-26,"a;b ""c""",1234.57\r\n');
+  // Six chiffres significatifs ; entiers entiers, petits nombres sans notation scientifique.
+  assert.equal(csvText([[1200, 1234567, 0, 0.00035964, 0.0000004, 1e-14]], "en"), "\uFEFF1200,1234567,0,0.00035964,0.0000004,0\r\n");
+  // Un texte qui commence comme une formule ne doit pas être exécuté par le tableur.
+  assert.equal(csvText([["=SOMME(A1)", "-1", "@x", "a,b"]], "en"), "\uFEFF'=SOMME(A1),'-1,'@x,\"a,b\"\r\n");
+});

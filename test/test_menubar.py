@@ -270,7 +270,9 @@ class ServerTest(unittest.TestCase):
         self.opened = []
         self.dash = server.Dashboard(store, self.settings, today=lambda: local_day("2026-11-25T12:00:00Z"),
                                      rates=rates, opener=self.opened.append,
-                                     picker=self.pick)
+                                     picker=self.pick, downloads=os.path.join(self.dir.name, "Downloads"),
+                                     revealer=lambda path: self.revealed.append(path))
+        self.revealed = []
         self.picked = None
         self.pick_langs = []
         estimate._system_lang = "fr"  # indépendant de la langue de la machine de test
@@ -401,6 +403,27 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.post("/api/pick", api)[0], 400)   # fichier introuvable
         self.picked = export
         self.assertEqual(self.post("/api/pick")[0], 403)        # sans en-tête
+
+    def test_export_saves_the_csv(self):
+        api = {"X-EnergIA": "1", "Content-Type": "text/csv"}
+        text = "\ufeffJour;Énergie (Wh)\r\n2026-11-25;0,61\r\n".encode()
+        folder = os.path.join(self.dir.name, "Downloads")
+        status, _, body = self.get("/api/export", api, text)
+        first = os.path.join(folder, "EnergIA-2026-11-25.csv")
+        self.assertEqual((status, json.loads(body)["path"]), (200, first))
+        with open(first, "rb") as f:
+            self.assertEqual(f.read(), text)
+        # Un deuxième export le même jour ne remplace pas le premier.
+        second = os.path.join(folder, "EnergIA-2026-11-25-2.csv")
+        self.assertEqual(json.loads(self.get("/api/export", api, b"a;b\r\n")[2])["path"], second)
+        with open(first, "rb") as f:
+            self.assertEqual(f.read(), text)
+        self.assertEqual(self.revealed, [first, second])     # montrés dans le Finder
+        self.assertEqual(self.get("/api/export", {"Content-Type": "text/csv"}, text)[0], 403)  # sans en-tête
+        self.assertEqual(self.get("/api/export", api, b"\xff\xfe\x00")[0], 400)                 # pas du texte
+        self.assertEqual(sorted(os.listdir(folder)), ["EnergIA-2026-11-25-2.csv", "EnergIA-2026-11-25.csv"])
+        self.dash.window = False  # mode serveur seul : le navigateur télécharge lui-même
+        self.assertEqual(self.get("/api/export", api, text)[0], 404)
 
     def test_guards_and_static(self):
         self.assertEqual(self.get("/api/claudecode")[0], 403)                      # sans en-tête
