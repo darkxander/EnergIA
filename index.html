@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EnergIA – ce que représente votre usage de l'IA</title>
-  <link rel="stylesheet" href="styles.css?v=c565a71a">
+  <link rel="stylesheet" href="styles.css?v=d2e5c4c9">
 </head>
 <body class="viz-root">
   <header class="top">
@@ -20,7 +20,8 @@
       EnergIA n'a pas pu démarrer. Votre navigateur est probablement trop ancien : mettez-le à jour, ou ouvrez cette page dans un navigateur récent.<br>
       <span lang="en">EnergIA could not start. Your browser is probably too old: update it, or open this page in a recent browser.</span>
     </p>
-    <section class="card" aria-labelledby="import-title">
+    <p id="status" role="status"></p>
+    <section id="import-card" class="card" aria-labelledby="import-title">
       <h2 id="import-title" data-i18n="import.title">Importer mes données</h2>
       <div id="drop" class="drop">
         <p><strong id="drop-title" data-i18n="import.dropTitle">Déposez ici votre export ChatGPT, Claude, Gemini ou Copilot</strong><br>
@@ -32,7 +33,6 @@
         <input id="file" type="file" accept=".zip,.json,.csv" multiple hidden>
       </div>
       <p class="muted" data-i18n="import.privacy">Vos fichiers sont analysés dans votre navigateur. Rien n'est envoyé sur Internet, et le texte de vos conversations n'est pas conservé.</p>
-      <p id="status" role="status"></p>
       <div id="sources"></div>
       <details>
         <summary data-i18n="help.summary">Comment obtenir mon export ?</summary>
@@ -49,7 +49,7 @@
       </details>
     </section>
 
-    <section class="card">
+    <section id="team-card" class="card">
       <details id="team">
         <summary><h2 data-i18n="team.title">Équipe</h2></summary>
         <p data-i18n="team.intro">Pour additionner l'usage de plusieurs personnes sans rien centraliser : chaque membre exporte ici un fichier de compteurs (par jour, par service et par modèle, sans aucun texte de conversation) et l'envoie à la personne qui fait le total. Celle-ci importe les fichiers reçus comme n'importe quel export : une vue « Équipe » apparaît alors, avec un tableau par membre.</p>
@@ -142,7 +142,7 @@
       </section>
     </div>
 
-    <section class="card">
+    <section id="hypotheses-card" class="card">
       <details id="hypotheses">
         <summary><h2 data-i18n="hypotheses.title">Hypothèses de calcul</h2></summary>
         <p data-i18n="hypotheses.intro">Les fournisseurs publient peu de chiffres : tout ce qui est affiché ici est une <strong>estimation d'ordre de grandeur</strong>. Le nombre de tokens est estimé à partir de la longueur du texte (environ 4 caractères par token), puis converti en énergie selon la catégorie du modèle. Pour Claude Code, les nombres de tokens sont mesurés et non estimés ; la conversion en énergie reste une estimation. Le paramètre le plus incertain est le poids des tokens relus du cache : ils représentent l'essentiel du volume de Claude Code, et aucun chiffre public ne dit ce qu'ils consomment.</p>
@@ -182,16 +182,16 @@
   <script type="importmap">
   {
     "imports": {
-      "./src/card.js": "./src/card.js?v=c565a71a",
-      "./src/csv.js": "./src/csv.js?v=c565a71a",
-      "./src/i18n.js": "./src/i18n.js?v=c565a71a",
-      "./src/model.js": "./src/model.js?v=c565a71a",
-      "./src/parsers.js": "./src/parsers.js?v=c565a71a",
-      "./src/report.js": "./src/report.js?v=c565a71a",
-      "./src/zip.js": "./src/zip.js?v=c565a71a"
+      "./src/card.js": "./src/card.js?v=d2e5c4c9",
+      "./src/csv.js": "./src/csv.js?v=d2e5c4c9",
+      "./src/i18n.js": "./src/i18n.js?v=d2e5c4c9",
+      "./src/model.js": "./src/model.js?v=d2e5c4c9",
+      "./src/parsers.js": "./src/parsers.js?v=d2e5c4c9",
+      "./src/report.js": "./src/report.js?v=d2e5c4c9",
+      "./src/zip.js": "./src/zip.js?v=d2e5c4c9"
     }
   }
   </script>
-  <script type="module" src="src/app.js?v=c565a71a"></script>
+  <script type="module" src="src/app.js?v=d2e5c4c9"></script>
 </body>
 </html>

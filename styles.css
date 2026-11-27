@@ -95,7 +95,8 @@ label { font-size: 13px; color: var(--text-secondary); display: inline-flex; gap
 .drop.over { background: var(--wash); border-color: var(--text-primary); }
 .drop p { margin: 0 0 12px; }
 .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-#status { margin: 8px 0; min-height: 1.5em; }
+#status { margin: 16px 0 0; }
+#status:empty { display: none; }
 #status.error { color: var(--critical); }
 #sources { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; margin-bottom: 8px; }
 details summary { cursor: pointer; }

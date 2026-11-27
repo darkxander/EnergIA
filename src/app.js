@@ -167,6 +167,20 @@ function setStatus(message, isError = false) {
   const status = $("status");
   status.textContent = message;
   status.className = isError ? "error" : "";
+  // The message sits at the top of the page; the import block may be at the bottom.
+  if (message) status.scrollIntoView({ block: "nearest" });
+}
+
+// With nothing to show, the import and team blocks come first: they are what to do.
+// Once there are figures, the figures come first and these blocks move down, just
+// before the assumptions. They are moved in the document, so that reading order and
+// keyboard order follow what is seen.
+let blocksBelow = null;
+function placeBlocks(hasData) {
+  if (blocksBelow === hasData) return;
+  blocksBelow = hasData;
+  const before = hasData ? $("hypotheses-card") : $("results");
+  before.before($("import-card"), $("team-card"));
 }
 
 // ---------- Import ----------
@@ -717,6 +731,7 @@ function render() {
   renderSources();
   renderCarbon();
   const hasData = Object.keys(state.data).length > 0 || teamView();
+  placeBlocks(hasData);
   $("results").hidden = !hasData;
   if (!hasData) return;
   const rows = filteredRows();
