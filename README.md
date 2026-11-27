@@ -1,60 +1,64 @@
 # EnergIA
 
-Ce que représente votre usage de l'IA, en énergie, CO₂, eau et euros.
+**English** · [Français](README.fr.md)
 
-EnergIA estime l'empreinte de vos conversations avec ChatGPT, Claude, Claude Code et Claude Cowork. Elle
-existe sous deux formes, qui partagent la même page :
+What your AI usage amounts to, in energy, CO₂, water and euros.
 
-- une **page web** où l'on importe son export ChatGPT ou Claude ;
-- un **élément de barre de menus macOS** (plugin [SwiftBar](https://github.com/swiftbar/SwiftBar))
-  qui affiche l'énergie estimée du jour pour Claude Code, et ouvre le tableau de bord au clic.
+EnergIA estimates the footprint of your conversations with ChatGPT, Claude, Claude Code and
+Claude Cowork. It comes in two forms that share the same page:
 
-![Tableau de bord EnergIA avec les données d'exemple : tuiles énergie, CO₂, eau et coût, puis le graphique d'évolution par mois pour ChatGPT et Claude](docs/capture.jpg)
+- a **web page** where you import your ChatGPT or Claude export;
+- a **macOS menu bar item** ([SwiftBar](https://github.com/swiftbar/SwiftBar) plugin) that
+  shows today's estimated energy for Claude Code and opens the dashboard on click.
 
-*Le tableau de bord, ici avec les données d'exemple intégrées.*
+The app's interface is in French for now; this page gives the French labels with their
+meaning.
 
-![Les quatre tuiles de résumé en thème sombre : 188 kWh, 75,3 kg CO₂e, 188 L et 17 160 € au tarif de l'API](docs/tuiles.png)
+![EnergIA dashboard with the sample data: energy, CO₂, water and cost tiles, then the monthly chart for ChatGPT and Claude](docs/capture.jpg)
 
-*Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois.*
+*The dashboard, here with the built-in sample data.*
 
-Tous les chiffres sont des **estimations d'ordre de grandeur** : les fournisseurs ne
-publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites).
+![The four summary tiles in dark theme: 188 kWh, 75.3 kg CO₂e, 188 L and €17,160 at API prices](docs/tuiles.png)
 
-## Ce qu'elle affiche
+*The summary tiles, here for eight months of real Claude Code usage.*
 
-- Quatre tuiles : énergie, CO₂, eau et coût, avec une fourchette basse et haute et des
-  équivalents (charges de smartphone, kilomètres en voiture, verres d'eau).
-- Un graphique par jour ou par mois, par service, avec une vue tableau.
-- Un tableau par modèle.
-- Un filtre de période (de « Aujourd'hui » à tout l'historique) et de service.
-- Des hypothèses de calcul toutes modifiables.
+All figures are **order-of-magnitude estimates**: providers do not publish the actual
+consumption of their models. See [Limitations](#limitations).
 
-## Utiliser la page web
+## What it shows
 
-Il faut un serveur local, la page chargeant des modules JavaScript :
+- Four tiles: energy, CO₂, water and cost, each with a low and high range and equivalents
+  (smartphone charges, kilometres by car, glasses of water).
+- A chart by day or by month, by service, with a table view.
+- A table by model.
+- A period filter (from "Aujourd'hui", today, to the whole history) and a service filter.
+- Calculation assumptions that can all be changed.
+
+## Using the web page
+
+The page loads JavaScript modules, so it needs a local server:
 
 ```sh
 python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
-Ouvrez ensuite <http://localhost:8791>, puis importez votre export (`.zip` ou
-`conversations.json`) : déposez-le n'importe où sur la page, ou cliquez sur « Choisir un
-fichier ». « Voir un exemple » affiche des données fictives.
+Then open <http://localhost:8791> and import your export (`.zip` or `conversations.json`):
+drop it anywhere on the page, or click "Choisir un fichier" (choose a file). "Voir un
+exemple" (see an example) shows made-up data.
 
-Pour obtenir un export :
+To get an export:
 
-- **ChatGPT** : Paramètres → Gestion des données → Exporter les données.
-- **Claude** : Paramètres → Confidentialité → Exporter les données, sur le web ou dans
-  l'appli pour ordinateur (pas sur mobile). Le lien reçu par e-mail expire au bout de
-  24 heures.
+- **ChatGPT**: Settings → Data controls → Export data.
+- **Claude**: Settings → Privacy → Export data, on the web or in the desktop app (not on
+  mobile). The link sent by email expires after 24 hours.
 
-Les fichiers sont analysés dans le navigateur. Rien n'est envoyé sur Internet, et le
-texte des conversations n'est pas conservé : seuls des compteurs par jour et par modèle
-sont gardés dans le stockage local du navigateur.
+Files are analysed in the browser. Nothing is sent over the Internet, and the text of your
+conversations is not kept: only counters per day and per model are stored in the browser's
+local storage.
 
-## Installer dans la barre de menus (macOS)
+## Installing in the menu bar (macOS)
 
-Prérequis : macOS, Python 3.9 ou plus récent, et SwiftBar.
+Requirements: macOS, Python 3.9 or later, and SwiftBar.
 
 ```sh
 brew install --cask swiftbar
@@ -62,99 +66,92 @@ chmod +x EnergIA.py
 ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 ```
 
-Remplacez `~/.config/swiftbar` par votre dossier de plugins SwiftBar s'il est différent.
-Le titre affiche par exemple `⚡ 1,02 kWh` ; un clic ouvre le tableau de bord.
+Replace `~/.config/swiftbar` with your SwiftBar plugin folder if it is different. The title
+shows, for example, `⚡ 1,02 kWh`; a click opens the dashboard.
 
-![Capture de la partie droite de la barre de menus : l'élément EnergIA, un éclair suivi de 137 Wh, parmi les autres icônes](docs/barre-de-menus.png)
+![Screenshot of the right-hand side of the menu bar: the EnergIA item, a lightning bolt followed by 137 Wh, among the other icons](docs/barre-de-menus.png)
 
-*L'élément dans la barre de menus, ici avec 137 Wh estimés pour la journée en cours.*
+*The item in the menu bar, here with an estimated 137 Wh for the current day.*
 
-Le plugin :
+The plugin:
 
-- lit les journaux locaux de Claude Code (`~/.claude/projects`), où chaque réponse est
-  enregistrée avec son modèle et ses nombres de tokens réels, et les relit chaque minute ;
-- lit de la même façon les sessions Cowork de l'appli Claude
-  (`~/Library/Application Support/Claude/local-agent-mode-sessions`), affichées comme un
-  service à part ;
-- n'en garde que des compteurs par jour et par modèle, dans `~/Library/Caches/EnergIA` ;
-  ces compteurs survivent au nettoyage des anciens journaux par Claude Code ;
-- sert la page sur `127.0.0.1:18791`, accessible uniquement depuis votre Mac ;
-- relève une fois par jour le taux de change euro/dollar de référence de la BCE. C'est sa
-  seule connexion à Internet ; elle n'envoie aucune donnée.
+- reads Claude Code's local logs (`~/.claude/projects`), where each reply is recorded with
+  its model and its real token counts, and re-reads them every minute;
+- reads the Claude app's Cowork sessions the same way
+  (`~/Library/Application Support/Claude/local-agent-mode-sessions`), shown as a separate
+  service;
+- keeps only counters per day and per model, in `~/Library/Caches/EnergIA`; these counters
+  outlive Claude Code's clean-up of old logs;
+- serves the page on `127.0.0.1:18791`, reachable only from your Mac;
+- fetches the ECB's euro/dollar reference rate once a day. This is its only Internet
+  connection; it sends no data.
 
-Pour importer un export depuis la fenêtre de la barre de menus, utilisez le bouton
-« Choisir un fichier » : le plugin ouvre le sélecteur de fichier de macOS et transmet à la
-page le fichier choisi. Le glisser-déposer n'y est pas possible, car SwiftBar referme sa
-fenêtre dès qu'on commence à faire glisser un fichier. Les liens du pied de page (don,
-code source) s'ouvrent dans votre navigateur par défaut.
+To import an export from the menu bar window, use the "Choisir un fichier" button: the
+plugin opens the macOS file picker and passes the chosen file to the page. Drag and drop is
+not possible there, because SwiftBar closes its window as soon as you start dragging a
+file. The footer links (donation, source code) open in your default browser.
 
-Pour désinstaller, supprimez le lien `~/.config/swiftbar/EnergIA.py`, puis quittez et
-relancez SwiftBar.
+To uninstall, delete the `~/.config/swiftbar/EnergIA.py` link, then quit and relaunch
+SwiftBar.
 
-## Comment sont faites les estimations
+## How the estimates are made
 
-1. **Tokens.** Pour les exports ChatGPT et Claude, le nombre de tokens est estimé à partir
-   de la longueur du texte (environ 4 caractères par token), et le contexte relu à chaque
-   réponse est compté. Pour Claude Code, les tokens sont mesurés, pas estimés.
-2. **Énergie.** Chaque modèle est rangé dans une catégorie (léger, standard, grand,
-   raisonnement) qui fixe une énergie par millier de tokens générés. Un token lu pèse une
-   fraction d'un token généré, et un token relu depuis le cache une fraction plus petite
-   encore.
-3. **CO₂ et eau.** L'énergie est multipliée par une intensité carbone (g CO₂e/kWh) et par
-   une consommation d'eau (L/kWh).
-4. **Coût.** Ce que coûteraient ces tokens payés à l'usage, aux prix publics des API
-   Anthropic et OpenAI ([src/prices.json](src/prices.json)), convertis en euros.
+1. **Tokens.** For ChatGPT and Claude exports, the number of tokens is estimated from the
+   length of the text (about 4 characters per token), and the context re-read at each reply
+   is counted. For Claude Code, tokens are measured, not estimated.
+2. **Energy.** Each model is placed in a category (light, standard, large, reasoning) that
+   sets an energy per thousand generated tokens. A token read weighs a fraction of a token
+   generated, and a token re-read from the cache a smaller fraction still.
+3. **CO₂ and water.** Energy is multiplied by a carbon intensity (g CO₂e/kWh) and by a
+   water consumption (L/kWh).
+4. **Cost.** What these tokens would cost if paid by usage, at the public prices of the
+   Anthropic and OpenAI APIs ([src/prices.json](src/prices.json)), converted to euros.
 
-Les valeurs par défaut sont dans [src/defaults.json](src/defaults.json) et se modifient
-dans « Hypothèses de calcul ».
+The default values are in [src/defaults.json](src/defaults.json) and can be changed under
+"Hypothèses de calcul" (calculation assumptions).
 
-## Limites
+## Limitations
 
-- **L'énergie par token n'est pas publiée.** Les facteurs par défaut sont des choix
-  d'ordre de grandeur, calés sur les rares chiffres publics (environ 0,3 Wh pour une
-  requête de chat typique).
-- **Le poids des tokens relus du cache est l'hypothèse la plus incertaine.** Ils
-  représentent l'essentiel du volume de Claude Code, et leur poids (2 % d'un token lu par
-  défaut) change fortement le total.
-- **Le coût n'est pas votre facture.** Avec un abonnement, vous payez le forfait, pas les
-  tokens. Les prix actuels sont appliqués à tout l'historique.
-- **Prix à maintenir.** Les prix de [src/prices.json](src/prices.json) ont été relevés le
-  25 novembre 2026 et ne se mettent pas à jour seuls. Pour les anciens modèles retirés de
-  l'API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, recherche
-  approfondie), c'est le dernier prix publié par OpenAI, relevé le 26 novembre 2026. Les
-  modèles absents de la liste gardent un tarif indicatif par catégorie, signalé par un
-  astérisque.
-- **Les noms de modèles de ChatGPT ne sont pas ceux de l'API.** L'export ChatGPT désigne
-  les modèles par des noms internes. Quand la correspondance est connue (par exemple
-  `text-davinci-002-render-sha` pour GPT-3.5, ou `o3-mini-high` pour o3-mini), le prix réel
-  est appliqué. OpenAI ne publie pas de correspondance pour les noms récents (`gpt-6`,
-  `gpt-5-6`, `gpt-5-3`, leurs variantes mini, `research`, `auto`) : ils gardent le tarif
-  indicatif.
-- **Les conversations de claude.ai et de ChatGPT ne sont pas lues automatiquement.** Elles
-  ne sont pas enregistrées sur le Mac sous une forme exploitable : il faut importer un
-  export, à refaire pour mettre les chiffres à jour.
-- **L'export Claude n'est pas toujours disponible.** Avec un compte d'organisation (Team ou
-  Enterprise), le bouton d'export n'apparaît que si un propriétaire de l'organisation a
-  autorisé les membres à exporter leurs données. Sans cela, les conversations de claude.ai
-  ne peuvent pas être comptées.
-- **Exports.** L'export Claude n'indique pas le modèle utilisé. La réflexion cachée des
-  modèles à raisonnement n'apparaît pas dans les exports, et les images ne sont pas comptées.
-  La lecture a été vérifiée sur un vrai export ChatGPT ; celle de l'export Claude ne l'a
-  été que sur des fichiers de test.
+- **Energy per token is not published.** The default factors are order-of-magnitude
+  choices, anchored on the few public figures (about 0.3 Wh for a typical chat request).
+- **The weight of tokens re-read from the cache is the most uncertain assumption.** They
+  make up most of Claude Code's volume, and their weight (2% of a token read by default)
+  changes the total a great deal.
+- **The cost is not your bill.** With a subscription, you pay the plan, not the tokens.
+  Current prices are applied to the whole history.
+- **Prices need maintaining.** The prices in [src/prices.json](src/prices.json) were
+  collected on 25 November 2026 and do not update themselves. For older models withdrawn
+  from the API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, deep
+  research), it is the last price published by OpenAI, collected on 26 November 2026.
+  Models missing from the list keep an indicative price per category, marked with an
+  asterisk.
+- **ChatGPT's model names are not the API's.** The ChatGPT export refers to models by
+  internal names. When the correspondence is known (for example
+  `text-davinci-002-render-sha` for GPT-3.5, or `o3-mini-high` for o3-mini), the real price
+  is applied. OpenAI publishes no correspondence for recent names (`gpt-6`, `gpt-5-6`,
+  `gpt-5-3`, their mini variants, `research`, `auto`): they keep the indicative price.
+- **claude.ai and ChatGPT conversations are not read automatically.** They are not stored
+  on the Mac in a usable form: you have to import an export, and import a new one to
+  update the figures.
+- **The Claude export is not always available.** With an organisation account (Team or
+  Enterprise), the export button only appears if an owner of the organisation has allowed
+  members to export their data. Without that, claude.ai conversations cannot be counted.
+- **Exports.** The Claude export does not say which model was used. The hidden reasoning of
+  reasoning models does not appear in exports, and images are not counted. Parsing has
+  been checked on a real ChatGPT export; for the Claude export, only on test files.
 
-## Organisation du code
+## Code layout
 
-| Chemin | Rôle |
+| Path | Role |
 |---|---|
-| `index.html`, `styles.css`, `src/app.js` | La page et son interface |
-| `src/parsers.js`, `src/zip.js` | Lecture des exports ChatGPT et Claude |
-| `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
-| `src/defaults.json`, `src/prices.json` | Hypothèses par défaut et prix des modèles |
-| `EnergIA.py`, `menubar/` | Plugin SwiftBar : journaux Claude Code, serveur local, taux de change |
+| `index.html`, `styles.css`, `src/app.js` | The page and its interface |
+| `src/parsers.js`, `src/zip.js` | Reading ChatGPT and Claude exports |
+| `src/model.js` | Computing energy, CO₂, water and cost |
+| `src/defaults.json`, `src/prices.json` | Default assumptions and model prices |
+| `EnergIA.py`, `menubar/` | SwiftBar plugin: Claude Code logs, local server, exchange rate |
 | `test/` | Tests |
 
-Aucune dépendance : JavaScript sans étape de construction, Python avec la bibliothèque
-standard seule.
+No dependencies: JavaScript with no build step, Python with the standard library only.
 
 ## Tests
 
@@ -163,40 +160,45 @@ node --test test/
 python3 test/test_menubar.py
 ```
 
-## Feuille de route
+## Roadmap
 
-Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
+These are intentions, with no dates and no commitment. In the planned order:
 
-1. **README en anglais.**
-2. **Version en ligne**, pour essayer la page sans rien installer. Les fichiers resteront
-   analysés dans le navigateur.
-3. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
-   avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
-   zone de notification.
-4. **Appli en anglais et en français**, selon la langue du navigateur.
+1. **Online version**, to try the page without installing anything. Files will still be
+   analysed in the browser.
+2. **Other operating systems.** First a "server only" mode, to open the dashboard with live
+   Claude Code data on Windows and Linux; then an icon in the notification area.
+3. **App in English and French**, following the browser's language. For now, only the
+   README is translated.
+4. **GitHub repository in English too.** The README is done; the repository description,
+   the code comments and the commit messages are still in French.
+5. **Making EnergIA known.** The aim is to raise awareness of what AI usage amounts to;
+   donations from people who find the app useful fund its development. This means
+   presenting the app where AI and the environment are discussed, once the online version
+   is available.
 
-Puis, sans ordre arrêté :
+Then, in no set order:
 
-- **Choix du pays pour le CO₂**, dans une liste, au lieu d'un chiffre à saisir.
-- **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
-  permettent leurs exports.
-- **Seuil et alerte** : un budget en kWh ou en euros, signalé dans la barre de menus quand
-  il est dépassé, et une comparaison avec la période précédente.
-- **Export des résultats** : fichier CSV et image de résumé à partager.
-- **Imports qui se cumulent**, au lieu de remplacer le précédent.
-- **Installation en une commande.**
+- **Choice of country for CO₂**, from a list, instead of a figure to type in.
+- **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
+  their exports allow.
+- **Threshold and alert**: a budget in kWh or euros, flagged in the menu bar when it is
+  exceeded, and a comparison with the previous period.
+- **Exporting results**: a CSV file and a summary image to share.
+- **Imports that add up**, instead of replacing the previous one.
+- **One-command installation.**
 
-À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,
-aujourd'hui manuelle.
+To consolidate alongside: reading a real Claude export, and updating prices, which is
+manual today.
 
-## Soutenir le projet
+## Supporting the project
 
-EnergIA est gratuite et ouverte. Si elle vous est utile, vous pouvez soutenir son
-développement par un don sur [GitHub Sponsors](https://github.com/sponsors/darkxander).
+EnergIA is free and open. If you find it useful, you can support its development with a
+donation on [GitHub Sponsors](https://github.com/sponsors/darkxander).
 
 ## Licence
 
-EnergIA est distribuée sous la licence publique générale GNU, version 3 (GPL-3.0). Voir
+EnergIA is distributed under the GNU General Public License, version 3 (GPL-3.0). See
 [LICENSE](LICENSE).
 
 Copyright © 2026 Alexandre MATHIEU
