@@ -5,8 +5,10 @@
 # <bitbar.dependencies>python3</bitbar.dependencies>
 # <swiftbar.type>streamable</swiftbar.type>
 # <swiftbar.persistentWebView>true</swiftbar.persistentWebView>
-"""Point d'entrée SwiftBar. SwiftBar lance ce fichier par un lien symbolique :
-le vrai dossier est retrouvé à partir du chemin résolu."""
+"""Point d'entrée. Sans argument : plugin SwiftBar (macOS), lancé par SwiftBar
+par un lien symbolique, d'où le vrai dossier retrouvé à partir du chemin résolu.
+Avec --serve : serveur seul, sur n'importe quel système, qui ouvre le tableau
+de bord dans le navigateur (python3 EnergIA.py --serve)."""
 
 import os
 import sys

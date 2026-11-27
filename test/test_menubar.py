@@ -9,6 +9,7 @@ import urllib.request
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "menubar"))
 
 import estimate  # noqa: E402
+import paths  # noqa: E402
 import server  # noqa: E402
 import rate  # noqa: E402
 from claudecode import UsageStore, local_day  # noqa: E402
@@ -109,6 +110,29 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(store.rows(), [])
 
 
+class PathsTest(unittest.TestCase):
+    def test_folders_per_system(self):
+        j = os.path.join
+        mac = paths.locate("darwin", {}, "/Users/a")
+        self.assertEqual(mac["claudecode"], j("/Users/a", ".claude", "projects"))
+        self.assertEqual(mac["cache"], j("/Users/a", "Library", "Caches", "EnergIA"))
+        self.assertEqual(mac["config"], j("/Users/a", "Library", "Application Support", "EnergIA"))
+        self.assertEqual(mac["cowork"], j("/Users/a", "Library", "Application Support", "Claude",
+                                          "local-agent-mode-sessions"))
+        win = paths.locate("win32", {"APPDATA": "R", "LOCALAPPDATA": "L"}, "H")
+        self.assertEqual(win, {"claudecode": j("H", ".claude", "projects"),
+                               "cowork": j("R", "Claude", "local-agent-mode-sessions"),
+                               "cache": j("L", "EnergIA", "Cache"), "config": j("R", "EnergIA")})
+        self.assertEqual(paths.locate("win32", {}, "H")["config"], j("H", "AppData", "Roaming", "EnergIA"))
+        linux = paths.locate("linux", {}, "/home/a")
+        self.assertEqual(linux["cache"], j("/home/a", ".cache", "EnergIA"))
+        self.assertEqual(linux["config"], j("/home/a", ".config", "EnergIA"))
+        xdg = paths.locate("linux", {"XDG_CACHE_HOME": "/c", "XDG_CONFIG_HOME": "/k"}, "/home/a")
+        self.assertEqual((xdg["cache"], xdg["config"]), (j("/c", "EnergIA"), j("/k", "EnergIA")))
+        # Claude Code déplacé par sa variable d'environnement.
+        self.assertEqual(paths.locate("linux", {"CLAUDE_CONFIG_DIR": "/x"}, "/home/a")["claudecode"], j("/x", "projects"))
+
+
 class EstimateTest(unittest.TestCase):
     def test_same_numbers_as_model_js(self):
         settings = estimate.load_settings("/nonexistent")
@@ -136,6 +160,11 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual(estimate.system_lang(lambda: '(\n    "fr-FR",\n    "en-FR"\n)'), "fr")
         self.assertEqual(estimate.system_lang(lambda: '(\n    "en-GB",\n    "fr-FR"\n)'), "en")
         self.assertEqual(estimate.system_lang(lambda: ""), "en")
+        # Linux (variable LANG) et Windows (nom de locale).
+        self.assertEqual(estimate.system_lang(lambda: "fr_FR.UTF-8"), "fr")
+        self.assertEqual(estimate.system_lang(lambda: "en_US.UTF-8"), "en")
+        self.assertEqual(estimate.system_lang(lambda: "French_France"), "fr")
+        self.assertEqual(estimate.system_lang(lambda: "C"), "en")
         # La langue choisie dans la page l'emporte sur celle du système.
         self.assertEqual(estimate.lang_of({"lang": "en"}), "en")
         self.assertEqual(estimate.lang_of({"lang": "fr"}), "fr")
@@ -263,6 +292,25 @@ class ServerTest(unittest.TestCase):
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}, "lang": "en"}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6.07 Wh")
+
+    def test_server_only_mode(self):
+        api = {"X-EnergIA": "1"}
+        # Fenêtre de SwiftBar par défaut ; le mode « serveur seul » dit à la page qu'elle
+        # est dans un vrai navigateur (sélecteur de fichier et liens ordinaires).
+        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": True})
+        self.dash.window = False
+        self.assertEqual(json.loads(self.get("/api/beat", api)[2]), {"ok": True, "window": False})
+
+        args = server.parse_args(["--serve", "--port", "1234", "--no-browser"])
+        self.assertEqual((args.serve, args.port, args.no_browser), (True, 1234, True))
+        self.assertFalse(server.parse_args([]).serve)                 # SwiftBar : aucun argument
+        self.assertFalse(server.parse_args(["argument-inconnu"]).serve)
+
+        # Port déjà pris : message clair et code de sortie 1, sans lever d'exception.
+        import io
+        out = io.StringIO()
+        self.assertEqual(server.serve_only(self.port, browser=False, out=out), 1)
+        self.assertIn(str(self.port), out.getvalue())
 
     def test_open_only_known_links(self):
         api = {"X-EnergIA": "1"}

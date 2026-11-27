@@ -5,14 +5,20 @@ de la barre de menus (l'énergie estimée du jour).
 Chaque `~~~` fait reconstruire l'élément par SwiftBar, ce qui vide une page
 ouverte. Un titre inchangé n'est donc jamais renvoyé, et un titre modifié
 attend que la page cesse d'envoyer ses battements (fenêtre refermée).
+
+Avec --serve, le même serveur tourne sans SwiftBar, sur n'importe quel
+système : il ouvre le tableau de bord dans le navigateur par défaut.
 """
 
+import argparse
 import json
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
+import webbrowser
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlsplit
@@ -38,6 +44,10 @@ STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8"
 PICK_PROMPT = {"fr": "Choisissez votre export ChatGPT ou Claude (.zip ou conversations.json)",
                "en": "Choose your ChatGPT or Claude export (.zip or conversations.json)"}
 PORT_ERROR = {"fr": "port {port} indisponible : {reason}", "en": "port {port} unavailable: {reason}"}
+SERVING = {"fr": "EnergIA : tableau de bord sur {url} (Ctrl+C pour arrêter)",
+           "en": "EnergIA: dashboard at {url} (Ctrl+C to stop)"}
+PORT_HINT = {"fr": "EnergIA tourne peut-être déjà (barre de menus ou autre fenêtre). Essayez --port avec un autre numéro.",
+             "en": "EnergIA may already be running (menu bar or another window). Try --port with another number."}
 PICK_TYPES = '{"public.zip-archive", "public.json", "zip", "json"}'
 PICK_EXTENSIONS = (".zip", ".json")
 
@@ -84,8 +94,11 @@ class TitleGate:
 
 class Dashboard:
     def __init__(self, store=None, settings_path=estimate.SETTINGS, today=lambda: date.today().isoformat(),
-                 rates=None, opener=open_in_browser, picker=pick_file):
+                 rates=None, opener=open_in_browser, picker=pick_file, window=True):
         self.store = store or UsageStore()
+        # True : page affichée dans la fenêtre de SwiftBar, qui ne sait ni ouvrir un
+        # sélecteur de fichier ni suivre un lien externe. False : vrai navigateur.
+        self.window = window
         self.rates = rates or RateStore()
         self.opener = opener
         self.picker = picker
@@ -189,7 +202,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": True})
         if path == "/api/beat":
             dash.gate.beat()
-            return self._json({"ok": True})
+            return self._json({"ok": True, "window": dash.window})
         if path.startswith("/api/"):
             return self.send_error(404)
         return self._static(path)
@@ -250,7 +263,47 @@ def emit(title, port=PORT):
           f"webvieww={WIDTH} webviewh={HEIGHT}", flush=True)
 
 
-def main():
+def serve_only(port=PORT, browser=True, out=None, wait=None):
+    """Mode « serveur seul » : pas de barre de menus, le tableau de bord s'ouvre
+    dans le navigateur par défaut. Renvoie le code de sortie du programme."""
+    out = out or sys.stdout
+    if hasattr(out, "reconfigure"):
+        out.reconfigure(errors="replace")  # consoles Windows sans UTF-8
+    lang = estimate.lang_of(estimate.load_settings())
+    dash = Dashboard(window=False)
+    try:
+        server = serve(dash, port)
+    except OSError as e:
+        print(PORT_ERROR[lang].format(port=port, reason=e.strerror), file=out, flush=True)
+        print(PORT_HINT[lang], file=out, flush=True)
+        return 1
+    threading.Thread(target=dash.poller, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_address[1]}/"
+    print(SERVING[lang].format(url=url), file=out, flush=True)
+    if browser:
+        webbrowser.open(url)
+    try:
+        (wait or (lambda: threading.Event().wait()))()
+    except KeyboardInterrupt:
+        pass
+    server.shutdown()
+    return 0
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(prog="EnergIA.py", description="EnergIA")
+    parser.add_argument("--serve", action="store_true",
+                        help="serveur seul, sans barre de menus (Windows, Linux, macOS) / server only, no menu bar")
+    parser.add_argument("--port", type=int, default=PORT, help=f"port local / local port ({PORT})")
+    parser.add_argument("--no-browser", action="store_true",
+                        help="ne pas ouvrir le navigateur / do not open the browser")
+    return parser.parse_known_args(argv)[0]  # SwiftBar peut ajouter ses propres arguments
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    if args.serve:
+        sys.exit(serve_only(args.port, browser=not args.no_browser))
     dash = Dashboard()
     try:
         serve(dash)

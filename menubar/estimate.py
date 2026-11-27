@@ -9,10 +9,13 @@ import json
 import os
 import re
 import subprocess
+import sys
+
+from paths import PATHS
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 DEFAULTS = os.path.join(HERE, "..", "src", "defaults.json")
-SETTINGS = os.path.expanduser("~/Library/Application Support/EnergIA/settings.json")
+SETTINGS = os.path.join(PATHS["config"], "settings.json")
 
 LANGS = ("fr", "en")
 
@@ -62,24 +65,34 @@ def merge(defaults, saved):
     return out
 
 
+def _system_languages():
+    """Texte dont le début donne la langue du système."""
+    if sys.platform == "darwin":
+        return subprocess.run(["/usr/bin/defaults", "read", "-g", "AppleLanguages"],
+                              capture_output=True, text=True, timeout=5, check=False).stdout
+    for name in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        if os.environ.get(name):
+            return os.environ[name]
+    import locale
+    return locale.getlocale()[0] or ""  # sous Windows : « French_France », « fr_FR »…
+
+
 def system_lang(read=None):
-    """Langue de macOS : français si c'est la première langue préférée, anglais sinon
+    """Langue du système : français si c'est la première langue préférée, anglais sinon
     (même règle que la page avec la langue du navigateur)."""
     try:
-        text = read() if read else subprocess.run(
-            ["/usr/bin/defaults", "read", "-g", "AppleLanguages"],
-            capture_output=True, text=True, timeout=5, check=False).stdout
-    except (OSError, subprocess.SubprocessError):
+        text = (read or _system_languages)()
+    except (OSError, ValueError, subprocess.SubprocessError):
         return "en"
-    first = re.search(r"[A-Za-z]{2,3}", text or "")
-    return "fr" if first and first.group(0).lower() == "fr" else "en"
+    first = re.search(r"[A-Za-z]{2,}", text or "")
+    return "fr" if first and first.group(0).lower() in ("fr", "french", "fra", "fre") else "en"
 
 
 _system_lang = None
 
 
 def lang_of(settings):
-    """La langue choisie dans la page, sinon celle de macOS (lue une seule fois)."""
+    """La langue choisie dans la page, sinon celle du système (lue une seule fois)."""
     global _system_lang
     if settings.get("lang") in LANGS:
         return settings["lang"]

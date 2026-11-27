@@ -109,6 +109,29 @@ code source) s'ouvrent dans votre navigateur par défaut.
 Pour désinstaller, supprimez le lien `~/.config/swiftbar/EnergIA.py`, puis quittez et
 relancez SwiftBar.
 
+## Mode « serveur seul » (Windows, Linux, macOS)
+
+Sans SwiftBar, le même programme peut tourner seul et ouvrir le tableau de bord dans votre
+navigateur, avec les mesures de Claude Code en direct. Il suffit de Python 3.9 ou plus
+récent :
+
+```sh
+python3 EnergIA.py --serve
+```
+
+Sous Windows, la commande est en général `py EnergIA.py --serve`. Le tableau de bord s'ouvre
+sur `http://127.0.0.1:18791/` ; arrêtez le programme avec Ctrl+C. Deux options : `--port`
+pour changer de port, `--no-browser` pour ne pas ouvrir le navigateur.
+
+Dans ce mode, l'import d'un export et les liens fonctionnent comme dans la version en
+ligne. Les compteurs et réglages sont gardés dans les dossiers habituels du système
+(`%LOCALAPPDATA%` et `%APPDATA%` sous Windows, `~/.cache` et `~/.config` sous Linux).
+
+Ce mode a été vérifié sous macOS. Il n'a pas encore été essayé sur un vrai Windows ni un
+vrai Linux : si vous l'y lancez, un retour dans une
+[issue](https://github.com/darkxander/EnergIA/issues) est bienvenu. L'emplacement des
+sessions Cowork sous Windows, en particulier, est une supposition.
+
 ## Comment sont faites les estimations
 
 1. **Tokens.** Pour les exports ChatGPT et Claude, le nombre de tokens est estimé à partir
@@ -175,7 +198,7 @@ dans « Hypothèses de calcul ».
 | `src/i18n.js` | Textes de l'interface en français et en anglais |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
-| `EnergIA.py`, `menubar/` | Plugin SwiftBar : journaux Claude Code, serveur local, taux de change |
+| `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change |
 | `tools/stamp.mjs` | Numérote les fichiers de la page à chaque version |
 | `test/` | Tests |
 
@@ -198,9 +221,8 @@ script gardé en mémoire. Les tests échouent si le numéro n'est plus à jour.
 
 Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
-1. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
-   avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
-   zone de notification.
+1. **Autres systèmes.** Le mode « serveur seul » existe ; il reste à le vérifier sur de
+   vrais Windows et Linux, puis à ajouter une icône dans la zone de notification.
 2. **L'anglais partout.** La page, le plugin de la barre de menus, le README et la
    description du dépôt sont traduits. Restent en français : les commentaires du code et
    les messages de commit.

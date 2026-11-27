@@ -2,8 +2,9 @@
 par jour. C'est la seule connexion à Internet du plugin ; elle télécharge un
 fichier public et n'envoie aucune donnée.
 
-Le téléchargement passe par /usr/bin/curl, qui utilise les certificats du
-système (le Python lancé par SwiftBar n'a pas toujours les siens).
+Sous macOS, le téléchargement passe par /usr/bin/curl, qui utilise les
+certificats du système (le Python lancé par SwiftBar n'a pas toujours les
+siens). Ailleurs, Python le fait lui-même.
 """
 
 import json
@@ -12,9 +13,13 @@ import re
 import subprocess
 import threading
 import time
+import urllib.request
+
+from paths import PATHS
 
 URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
-CACHE = os.path.expanduser("~/Library/Caches/EnergIA/rate.json")
+CACHE = os.path.join(PATHS["cache"], "rate.json")
+CURL = "/usr/bin/curl"
 MAX_AGE = 12 * 3600  # un relevé plus récent n'est pas refait
 RETRY = 3600         # délai avant de retenter après un échec
 
@@ -34,7 +39,12 @@ def parse(xml):
 
 
 def download(url=URL):
-    done = subprocess.run(["/usr/bin/curl", "-sS", "--fail", "--max-time", "20", "--proto", "=https", url],
+    if not url.startswith("https://"):
+        raise ValueError("adresse non sécurisée")
+    if not os.path.exists(CURL):
+        with urllib.request.urlopen(url, timeout=20) as response:
+            return response.read(1_000_000).decode("utf-8")
+    done = subprocess.run([CURL, "-sS", "--fail", "--max-time", "20", "--proto", "=https", url],
                           capture_output=True, text=True, timeout=30, check=True)
     return done.stdout
 

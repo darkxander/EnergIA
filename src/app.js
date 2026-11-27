@@ -4,7 +4,7 @@ import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, pri
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
-const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur ce Mac par le plugin, sans import
+const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur cet ordinateur par le plugin, sans import
 const API_HEADERS = { "X-EnergIA": "1" };
 const DATA_KEY = "EnergIA.data.v1";
 const SETTINGS_KEY = "EnergIA.settings.v1";
@@ -605,7 +605,7 @@ function renderSettings() {
 
 // ---------- Événements ----------
 
-$("pick").addEventListener("click", () => (menubar ? pickWithPlugin() : $("file").click()));
+$("pick").addEventListener("click", () => (pluginWindow ? pickWithPlugin() : $("file").click()));
 
 // La fenêtre de la barre de menus n'ouvre pas le sélecteur de fichier du
 // navigateur : le plugin ouvre celui de macOS et renvoie le fichier choisi.
@@ -677,10 +677,12 @@ $("reset-settings").addEventListener("click", () => {
 });
 
 // ---------- Barre de menus ----------
-// Servie par le plugin SwiftBar, la page reçoit en plus l'usage de Claude Code
-// mesuré sur ce Mac. Ouverte autrement, /api n'existe pas et rien ne change.
+// Servie par le plugin (barre de menus ou mode « serveur seul »), la page reçoit en
+// plus l'usage de Claude Code mesuré sur cet ordinateur. Ouverte autrement, /api
+// n'existe pas et rien ne change.
 
-let menubar = false;
+let menubar = false;      // servie par le plugin : mesures en direct
+let pluginWindow = false; // affichée dans la fenêtre de SwiftBar, pas dans un navigateur
 
 async function api(path, options = {}) {
   const response = await fetch(path, { cache: "no-store", ...options, headers: { ...API_HEADERS, ...options.headers } });
@@ -722,23 +724,27 @@ async function startMenubar() {
   // Le plugin ne sert la page que sur 127.0.0.1 : ailleurs (version en ligne,
   // serveur local), inutile d'interroger une API qui n'existe pas.
   if (location.hostname !== "127.0.0.1") return;
+  let beat;
   try {
-    await api("/api/beat");
+    beat = await api("/api/beat");
   } catch {
-    return; // page ouverte hors de la barre de menus
+    return; // page ouverte hors du plugin
   }
   menubar = true;
-  // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
-  // ici, l'import passe par le bouton.
-  $("drop-title").textContent = t("menubar.dropTitle");
-  $("drop-hint").textContent = t("menubar.dropHint");
-  // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
-  // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
-  for (const link of document.querySelectorAll("a[data-link]")) {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      api(`/api/open?link=${link.dataset.link}`).catch(() => {});
-    });
+  pluginWindow = beat.window !== false; // le mode « serveur seul » répond window: false
+  if (pluginWindow) {
+    // SwiftBar referme sa fenêtre dès qu'on commence à faire glisser un fichier :
+    // ici, l'import passe par le bouton.
+    $("drop-title").textContent = t("menubar.dropTitle");
+    $("drop-hint").textContent = t("menubar.dropHint");
+    // La fenêtre de la barre de menus n'ouvre pas les liens externes : le plugin
+    // les ouvre dans le navigateur par défaut (liens connus de lui seulement).
+    for (const link of document.querySelectorAll("a[data-link]")) {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        api(`/api/open?link=${link.dataset.link}`).catch(() => {});
+      });
+    }
   }
   // Tant que la page est visible, le plugin retient ses changements de titre.
   setInterval(() => {

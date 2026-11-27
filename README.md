@@ -105,6 +105,28 @@ file. The footer links (donation, source code) open in your default browser.
 To uninstall, delete the `~/.config/swiftbar/EnergIA.py` link, then quit and relaunch
 SwiftBar.
 
+## Server-only mode (Windows, Linux, macOS)
+
+Without SwiftBar, the same program can run on its own and open the dashboard in your
+browser, with live Claude Code measurements. All it needs is Python 3.9 or later:
+
+```sh
+python3 EnergIA.py --serve
+```
+
+On Windows, the command is usually `py EnergIA.py --serve`. The dashboard opens at
+`http://127.0.0.1:18791/`; stop the program with Ctrl+C. Two options: `--port` to change the
+port, `--no-browser` to leave the browser closed.
+
+In this mode, importing an export and the links work as in the online version. Counters and
+settings are kept in the system's usual folders (`%LOCALAPPDATA%` and `%APPDATA%` on
+Windows, `~/.cache` and `~/.config` on Linux).
+
+This mode has been checked on macOS. It has not yet been tried on a real Windows or Linux
+machine: if you run it there, feedback in an
+[issue](https://github.com/darkxander/EnergIA/issues) is welcome. The location of Cowork
+sessions on Windows, in particular, is a guess.
+
 ## How the estimates are made
 
 1. **Tokens.** For ChatGPT and Claude exports, the number of tokens is estimated from the
@@ -166,7 +188,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/i18n.js` | Interface texts in French and English |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
-| `EnergIA.py`, `menubar/` | SwiftBar plugin: Claude Code logs, local server, exchange rate |
+| `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate |
 | `tools/stamp.mjs` | Stamps the page's files with a version number |
 | `test/` | Tests |
 
@@ -187,8 +209,8 @@ page with an old script kept in their cache. The tests fail if the number is out
 
 These are intentions, with no dates and no commitment. In the planned order:
 
-1. **Other operating systems.** First a "server only" mode, to open the dashboard with live
-   Claude Code data on Windows and Linux; then an icon in the notification area.
+1. **Other operating systems.** The server-only mode exists; it still has to be checked on
+   real Windows and Linux machines, then an icon added in the notification area.
 2. **English everywhere.** The page, the menu bar plugin, the README and the repository
    description are translated. Still in French: the code comments and the commit
    messages.

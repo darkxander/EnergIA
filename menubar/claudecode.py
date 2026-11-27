@@ -17,12 +17,14 @@ import tempfile
 import threading
 from datetime import datetime
 
-ROOT = os.path.expanduser("~/.claude/projects")
+from paths import PATHS
+
+ROOT = PATHS["claudecode"]
 # Les sessions Cowork de l'appli Claude tiennent leurs journaux, au même format,
 # dans un dossier .claude/projects propre à chaque session.
-COWORK_ROOT = os.path.expanduser("~/Library/Application Support/Claude/local-agent-mode-sessions")
+COWORK_ROOT = PATHS["cowork"]
 ROOTS = {"claudecode": ROOT, "cowork": COWORK_ROOT}
-CACHE = os.path.expanduser("~/Library/Caches/EnergIA/claudecode.json")
+CACHE = os.path.join(PATHS["cache"], "claudecode.json")
 CACHE_VERSION = 3
 MAX_PROMPT_LINE = 200_000  # au-delà, une ligne "user" est un résultat d'outil, pas une requête
 # inTok : tokens lus non mis en cache ; cw5Tok / cw1Tok : écrits dans le cache
