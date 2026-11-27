@@ -101,8 +101,13 @@ A more recent file from the same member replaces the previous one. The calculati
 assumptions of the person who does the total, not those of each member. Alert thresholds
 stay personal and are not shown in the team view.
 
-This is a first step: reading the usage reports of organisation consoles and a monthly
-report are still under consideration.
+The "Monthly report" button, next to the exports, produces a report for the chosen month: a
+standalone HTML file, to read in a browser or to print as a PDF. It gives the month's four
+figures with their range and the change from the previous month, the tables per member, per
+service and per model, the change over six months, then the method and the assumptions
+used. It follows the view and service shown, so it also exists for your own data alone.
+
+Still under consideration: reading the usage reports of organisation consoles.
 
 ## One-command install (macOS, Linux)
 
@@ -278,6 +283,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/i18n.js` | Interface texts in French and English |
 | `src/csv.js` | Writing the CSV export |
 | `src/card.js` | Drawing the summary image |
+| `src/report.js` | The monthly report document |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
 | `install.sh` | One-command install |
@@ -317,9 +323,9 @@ Then, in no set order:
 
 - **Other services**: checking Gemini and Copilot parsing on real exports, then Mistral and
   other coding tools, depending on what their exports allow.
-- **Team version, next steps under consideration**: adding up the members' files exists;
-  still under consideration are reading the usage reports of organisation consoles and a
-  monthly report. If this interests you, say so in an
+- **Team version, next steps under consideration**: adding up the members' files and the
+  monthly report exist; still under consideration is reading the usage reports of
+  organisation consoles. If this interests you, say so in an
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 To consolidate alongside: reading a real Claude export, and updating prices, which is

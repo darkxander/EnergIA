@@ -299,6 +299,9 @@ class Handler(BaseHTTPRequestHandler):
                 extension = "png"
                 if not data.startswith(PNG_SIGNATURE):
                     raise ValueError
+            elif kind == "text/html":  # the monthly report
+                extension = "html"
+                data.decode("utf-8")
             elif kind == "application/json":  # the team file
                 extension = "json"
                 json.loads(data)

@@ -107,8 +107,14 @@ Un fichier plus récent du même membre remplace le précédent. Les calculs uti
 hypothèses de la personne qui fait le total, pas celles de chaque membre. Les seuils
 d'alerte restent personnels et ne s'affichent pas dans la vue d'équipe.
 
-C'est une première étape : la lecture des relevés d'usage des consoles d'organisation et
-un rapport mensuel restent à l'étude.
+Le bouton « Rapport mensuel », à côté des exports, produit un rapport pour le mois choisi :
+un fichier HTML autonome, à lire dans un navigateur ou à imprimer en PDF. Il donne les
+quatre chiffres du mois avec leur fourchette et l'écart avec le mois précédent, les
+tableaux par membre, par service et par modèle, l'évolution sur six mois, puis la méthode
+et les hypothèses utilisées. Il suit la vue et le service affichés : il existe donc aussi
+pour vos seules données.
+
+Reste à l'étude : la lecture des relevés d'usage des consoles d'organisation.
 
 ## Installer en une commande (macOS, Linux)
 
@@ -292,6 +298,7 @@ dans « Hypothèses de calcul ».
 | `src/i18n.js` | Textes de l'interface en français et en anglais |
 | `src/csv.js` | Écriture de l'export CSV |
 | `src/card.js` | Dessin de l'image de résumé |
+| `src/report.js` | Document du rapport mensuel |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
 | `install.sh` | Installation en une commande |
@@ -334,9 +341,9 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : vérifier la lecture de Gemini et de Copilot sur de vrais exports,
   puis Mistral et d'autres outils de code, selon ce que permettent leurs exports.
-- **Version équipe, suite à l'étude** : l'addition des fichiers des membres existe ;
-  restent à l'étude la lecture des relevés d'usage des consoles d'organisation et un
-  rapport mensuel. Si cela vous intéresse, dites-le dans une
+- **Version équipe, suite à l'étude** : l'addition des fichiers des membres et le rapport
+  mensuel existent ; reste à l'étude la lecture des relevés d'usage des consoles
+  d'organisation. Si cela vous intéresse, dites-le dans une
   [issue](https://github.com/darkxander/EnergIA/issues).
 
 À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,

@@ -398,3 +398,26 @@ test("team file: counters only, and a file received is read with caution", async
   assert.equal(parseFileText(JSON.stringify({ format: "energia-team", member: "", rows: [] })), null); // no name
   assert.equal(parseFileText(JSON.stringify({ format: "autre", rows: [] })), null);
 });
+
+test("monthly report: a standalone document in which every text is escaped", async () => {
+  const { escapeHtml, reportHtml, shiftMonth } = await import("../src/report.js");
+  assert.equal(escapeHtml(`<b a="1">&'`), "&lt;b a=&quot;1&quot;&gt;&amp;&#39;");
+  assert.deepEqual([shiftMonth("2026-11", 1), shiftMonth("2026-12", 1), shiftMonth("2026-01", -1), shiftMonth("2026-03", -5)],
+    ["2026-12", "2027-01", "2025-12", "2025-10"]);
+  const evil = '<img src=x onerror=alert(1)>';
+  const html = reportHtml({
+    lang: "fr", title: `Rapport ${evil}`, subtitle: evil,
+    figures: [{ name: "Énergie", value: "1,1 kWh", detail: evil }],
+    sections: [
+      { heading: evil, paragraphs: [evil], note: evil, table: { headers: ["Membre", "Requêtes"], rows: [[evil, "12"], ["Bob & Co", "3"]] } },
+      { heading: "Modèles", table: { headers: ["Service", "Modèle", "Coût"], textColumns: 2, rows: [["ChatGPT", "gpt-4o", "1 €"]] } },
+    ],
+    footer: evil,
+  });
+  assert.ok(html.startsWith("<!doctype html>"));
+  assert.ok(!html.includes("<img") && !/<script/i.test(html), "nothing from the data becomes markup");
+  assert.equal(html.split("&lt;img src=x onerror=alert(1)&gt;").length - 1, 9); // the title twice, and seven other places
+  assert.ok(html.includes('<td class="text">Bob &amp; Co</td><td>3</td>'));
+  assert.ok(html.includes('<td class="text">ChatGPT</td><td class="text">gpt-4o</td><td>1 €</td>')); // two text columns
+  assert.ok(!/https?:\/\//.test(html), "no external resource");
+});

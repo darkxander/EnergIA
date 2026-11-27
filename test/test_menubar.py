@@ -437,6 +437,12 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(json.loads(self.get("/api/export", team, b'{"format": "energia-team"}')[2])["path"], saved)
         self.assertEqual(self.get("/api/export", team, b"{pas du json")[0], 400)
         os.remove(saved)
+        # The monthly report: an HTML document.
+        report = {"X-EnergIA": "1", "Content-Type": "text/html"}
+        saved = os.path.join(folder, "EnergIA-2026-11-25.html")
+        self.assertEqual(json.loads(self.get("/api/export", report, "<!doctype html><p>é</p>".encode())[2])["path"], saved)
+        self.assertEqual(self.get("/api/export", report, b"\xff\xfe")[0], 400)
+        os.remove(saved)
         self.assertEqual(len(os.listdir(folder)), 3)
         self.dash.window = False  # server-only mode: the browser downloads by itself
         self.assertEqual(self.get("/api/export", api, text)[0], 404)

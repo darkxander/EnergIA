@@ -4,6 +4,7 @@ import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, pri
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 import { csvText } from "./csv.js";
 import { drawCard } from "./card.js";
+import { reportHtml, shiftMonth } from "./report.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", copilot: "Copilot", claudecode: "Claude Code", cowork: "Claude Cowork" };
 const NO_MODEL = ["claude", "gemini", "copilot"]; // exports that do not say which model answered
@@ -681,6 +682,16 @@ function renderMembers(rows) {
     ])));
 }
 
+// The months that have data in the current view, most recent first, for the report.
+function renderReportMonths() {
+  const select = $("report-month");
+  const months = [...new Set(rowsBetween("", "", true).map((row) => row.day.slice(0, 7)))].sort().reverse();
+  const chosen = months.includes(select.value) ? select.value : months[0];
+  const label = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric", timeZone: "UTC" });
+  select.replaceChildren(...months.map((month) => el("option", { value: month }, label.format(new Date(`${month}-01T00:00:00Z`)))));
+  if (chosen) select.value = chosen;
+}
+
 function renderView() {
   const count = Object.keys(state.team).length;
   const hasOwn = Object.keys(state.data).length > 0;
@@ -700,6 +711,7 @@ function render() {
   if (!hasData) return;
   const rows = filteredRows();
   const data = buckets(rows);
+  renderReportMonths();
   renderMembers(rows);
   renderBudget();
   renderTiles(rows);
@@ -832,7 +844,7 @@ function exportLines() {
 // Delivers a file produced by the page: a download in a browser; in the
 // menu bar window, which cannot download, the plugin writes it to the
 // Downloads folder and shows it in the Finder.
-async function deliver(blob, extension, stem = "EnergIA") {
+async function deliver(blob, extension, stem = `EnergIA-${localDay(0)}`) {
   if (pluginWindow) {
     try {
       const saved = await api("/api/export", { method: "POST", body: blob, headers: { "Content-Type": blob.type } });
@@ -843,7 +855,7 @@ async function deliver(blob, extension, stem = "EnergIA") {
     return;
   }
   const url = URL.createObjectURL(blob);
-  const link = el("a", { href: url, download: `${stem}-${localDay(0)}.${extension}` });
+  const link = el("a", { href: url, download: `${stem}.${extension}` });
   document.body.append(link);
   link.click();
   link.remove();
@@ -914,9 +926,115 @@ $("team-export").addEventListener("click", () => {
   }
   if (!rows.length) return setStatus(t("team.needData"), true);
   const file = teamFile(name, rows, new Date().toISOString());
-  return deliver(new Blob([JSON.stringify(file)], { type: "application/json" }), "json", "EnergIA-team");
+  return deliver(new Blob([JSON.stringify(file)], { type: "application/json" }), "json", `EnergIA-team-${localDay(0)}`);
 });
 $("view").addEventListener("change", (event) => { state.view = event.target.value; render(); });
+
+// Monthly report for the current view (one's own data or the team) and the chosen service.
+function monthlyReport(month) {
+  const s = state.settings;
+  const rows = rowsBetween(`${month}-01`, `${shiftMonth(month, 1)}-01`);
+  if (!rows.length) return null;
+  const total = summarize(rows, s);
+  const before = summarize(rowsBetween(`${shiftMonth(month, -1)}-01`, `${month}-01`), s);
+  const monthName = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric", timeZone: "UTC" });
+  const nameOf = (value) => monthName.format(new Date(`${value}-01T00:00:00Z`));
+  const change = (now, then) => (then > 0 ? t("report.change", { change: signedPercent.format(now / then - 1) }) : t("report.noChange"));
+  const range = (key, value) => t("tile.range", { low: fmt(key, value * s.lowFactor), high: fmt(key, value * s.highFactor) });
+  const share = (value) => (total.wh > 0 ? percent.format(value / total.wh) : "–");
+  const grouped = (keyOf) => {
+    const groups = new Map();
+    for (const row of rows) groups.set(keyOf(row), [...(groups.get(keyOf(row)) || []), row]);
+    return [...groups.entries()].map(([key, group]) => ({ key, group, total: summarize(group, s) }))
+      .sort((a, b) => b.total.wh - a.total.wh);
+  };
+  const figuresOf = (sum) => [nf(sum.requests), fmt("energy", sum.wh), fmt("co2", sum.co2g), fmt("water", sum.waterL * 1000), fmt("cost", sum.eur)];
+  const columns = t("report.columns").split("|"); // Requests|Energy|CO₂|Water|Cost|Share of energy
+  const team = teamView();
+  const members = team ? new Set(rows.map((row) => row.member)).size : 0;
+  const sample = !team && Object.values(state.data).some((entry) => entry.sample);
+
+  const sections = [];
+  if (team) {
+    sections.push({ heading: t("report.byMember"), table: {
+      headers: [t("team.columns").split("|")[0], ...columns],
+      rows: grouped((row) => row.member).map(({ key, total: sum }) => [key, ...figuresOf(sum), share(sum.wh)]),
+    } });
+  }
+  sections.push({ heading: t("report.byService"), table: {
+    headers: [t("models.service"), ...columns],
+    rows: grouped((row) => row.source).map(({ key, total: sum }) => [SOURCES[key], ...figuresOf(sum), share(sum.wh)]),
+  } });
+  const unpriced = rows.some((row) => !priceFor(row.model));
+  sections.push({ heading: t("report.byModel"), note: unpriced ? t("report.indicative") : "", table: {
+    headers: [t("models.service"), t("models.model"), t("models.tier"), ...columns], textColumns: 3,
+    rows: grouped((row) => `${row.source}|${row.model}`).map(({ group, total: sum }) => {
+      const { source, model } = group[0];
+      const figures = figuresOf(sum);
+      if (!priceFor(model)) figures[4] += " *";
+      return [SOURCES[source], NO_MODEL.includes(source) ? t("models.unknown") : model, t(`tier.${classifyModel(model)}`), ...figures, share(sum.wh)];
+    }),
+  } });
+  const history = [];
+  for (let back = 5; back >= 0; back--) {
+    const start = shiftMonth(month, -back);
+    const sum = summarize(rowsBetween(`${start}-01`, `${shiftMonth(start, 1)}-01`), s);
+    if (sum.requests || history.length) history.push([nameOf(start), ...figuresOf(sum)]);
+  }
+  sections.push({ heading: t("report.history"), table: { headers: [t("report.month"), ...columns.slice(0, 5)], rows: history } });
+
+  const country = CARBON.countries.find((item) => item.g === s.gCO2PerKWh);
+  const number = (value) => value.toLocaleString(LOCALE, { maximumFractionDigits: 4 });
+  const assumptions = [
+    [`${t("settings.energy")} – ${t("settings.light")}`, number(s.tiers.leger.whOut)],
+    [`${t("settings.energy")} – ${t("settings.standard")}`, number(s.tiers.standard.whOut)],
+    [`${t("settings.energy")} – ${t("settings.large")}`, number(s.tiers.grand.whOut)],
+    [`${t("settings.energy")} – ${t("settings.reasoning")}`, number(s.tiers.raisonnement.whOut)],
+    [t("settings.inputRatio"), number(s.inputRatio)],
+    [t("settings.cacheRatio"), number(s.cacheReadRatio)],
+    [t("settings.low"), number(s.lowFactor)],
+    [t("settings.high"), number(s.highFactor)],
+    [t("settings.carbon"), country ? `${number(s.gCO2PerKWh)} (${country[LANG]}, ${CARBON.year})` : number(s.gCO2PerKWh)],
+    [t("settings.water"), number(s.waterLPerKWh)],
+    [t("settings.rate"), number(s.eurPerUsd)],
+  ];
+  sections.push({
+    heading: t("report.method"),
+    paragraphs: [t("report.methodIntro"), ...(team ? [t("report.methodTeam")] : []),
+      t("report.methodCost", { checked: new Date(PRICE_SOURCE.checked).toLocaleDateString(LOCALE) }),
+      t("report.methodCarbon", { source: CARBON.citation })],
+    table: { headers: [t("report.assumption"), t("report.value")], rows: assumptions },
+  });
+
+  const subtitle = [
+    team ? t("card.members", { count: members }) : t("report.personal"),
+    state.source === "all" ? t("card.allServices") : SOURCES[state.source],
+    ...(sample ? [t("card.sample")] : []),
+    // The current month is not over: its figures are partial, and so is the comparison.
+    ...(month === localDay(0).slice(0, 7) ? [t("report.inProgress")] : []),
+  ].join(" · ");
+  return {
+    lang: LANG,
+    title: t(team ? "report.teamTitle" : "report.title", { month: nameOf(month) }),
+    subtitle,
+    figures: [
+      { name: t("metric.energy"), value: fmt("energy", total.wh), detail: `${range("energy", total.wh)} · ${change(total.wh, before.wh)}` },
+      { name: t("metric.co2"), value: fmt("co2", total.co2g), detail: `${range("co2", total.co2g)} · ${change(total.co2g, before.co2g)}` },
+      { name: t("metric.water"), value: fmt("water", total.waterL * 1000), detail: `${range("water", total.waterL * 1000)} · ${change(total.waterL, before.waterL)}` },
+      { name: t("tile.costName"), value: fmt("cost", total.eur), detail: change(total.eur, before.eur) },
+    ],
+    sections,
+    footer: t("report.footer", { date: new Date().toLocaleDateString(LOCALE), requests: nf(total.requests), tokens: nfBig(total.tokens) }),
+  };
+}
+
+$("report").addEventListener("click", () => {
+  const month = $("report-month").value;
+  const report = month && monthlyReport(month);
+  if (!report) return setStatus(t("export.empty"), true);
+  return deliver(new Blob([reportHtml(report)], { type: "text/html" }), "html", `EnergIA-report-${month}`);
+});
+$("report").title = t("report.buttonTitle");
 $("share-image").title = t("share.title");
 
 $("file").addEventListener("change", (event) => {
