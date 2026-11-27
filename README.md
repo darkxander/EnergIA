@@ -19,10 +19,10 @@ browser, English otherwise), and the link at the top right of the page switches 
 
 *The dashboard, here with the built-in sample data.*
 
-![The four summary tiles in dark theme: 188 kWh, 75.3 kg CO₂e, 188 L and €17,160 at API prices](docs/tuiles.png)
+![The four summary tiles in dark theme: 190 kWh, 87 kg CO₂e, 190 L and €17,223 at API prices](docs/tuiles.png)
 
-*The summary tiles, here for eight months of real Claude Code usage. The screenshot predates
-the country list: its CO₂ figure is computed at 400 g/kWh.*
+*The summary tiles, here for eight months of real Claude Code usage, with the world average
+for CO₂.*
 
 All figures are **order-of-magnitude estimates**: providers do not publish the actual
 consumption of their models. See [Limitations](#limitations).

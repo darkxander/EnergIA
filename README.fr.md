@@ -16,10 +16,10 @@ existe sous deux formes, qui partagent la même page :
 
 *Le tableau de bord, ici avec les données d'exemple intégrées.*
 
-![Les quatre tuiles de résumé en thème sombre : 188 kWh, 75,3 kg CO₂e, 188 L et 17 160 € au tarif de l'API](docs/tuiles.png)
+![Les quatre tuiles de résumé en thème sombre : 190 kWh, 87 kg CO₂e, 190 L et 17 223 € au tarif de l'API](docs/tuiles.png)
 
-*Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois. La capture date
-d'avant la liste de pays : le CO₂ y est calculé à 400 g/kWh.*
+*Les tuiles de résumé, ici pour un usage réel de Claude Code sur huit mois, avec la moyenne
+mondiale pour le CO₂.*
 
 Tous les chiffres sont des **estimations d'ordre de grandeur** : les fournisseurs ne
 publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites).
