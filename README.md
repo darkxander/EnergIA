@@ -122,8 +122,8 @@ In this mode, importing an export and the links work as in the online version. C
 settings are kept in the system's usual folders (`%LOCALAPPDATA%` and `%APPDATA%` on
 Windows, `~/.cache` and `~/.config` on Linux).
 
-This mode has been checked on macOS. It has not yet been tried on a real Windows or Linux
-machine: if you run it there, feedback in an
+This mode has been checked on macOS and on Linux (Debian, in a container, with Python 3.12
+and 3.13). It has not yet been tried on Windows: if you run it there, feedback in an
 [issue](https://github.com/darkxander/EnergIA/issues) is welcome. The location of Cowork
 sessions on Windows, in particular, is a guess.
 
@@ -209,8 +209,8 @@ page with an old script kept in their cache. The tests fail if the number is out
 
 These are intentions, with no dates and no commitment. In the planned order:
 
-1. **Other operating systems.** The server-only mode exists; it still has to be checked on
-   real Windows and Linux machines, then an icon added in the notification area.
+1. **Other operating systems.** The server-only mode exists and works on Linux; it still
+   has to be checked on Windows, then an icon added in the notification area.
 2. **English everywhere.** The page, the menu bar plugin, the README and the repository
    description are translated. Still in French: the code comments and the commit
    messages.

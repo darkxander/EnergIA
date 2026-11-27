@@ -127,10 +127,10 @@ Dans ce mode, l'import d'un export et les liens fonctionnent comme dans la versi
 ligne. Les compteurs et réglages sont gardés dans les dossiers habituels du système
 (`%LOCALAPPDATA%` et `%APPDATA%` sous Windows, `~/.cache` et `~/.config` sous Linux).
 
-Ce mode a été vérifié sous macOS. Il n'a pas encore été essayé sur un vrai Windows ni un
-vrai Linux : si vous l'y lancez, un retour dans une
-[issue](https://github.com/darkxander/EnergIA/issues) est bienvenu. L'emplacement des
-sessions Cowork sous Windows, en particulier, est une supposition.
+Ce mode a été vérifié sous macOS et sous Linux (Debian, dans un conteneur, avec
+Python 3.12 et 3.13). Il n'a pas encore été essayé sous Windows : si vous l'y lancez, un
+retour dans une [issue](https://github.com/darkxander/EnergIA/issues) est bienvenu.
+L'emplacement des sessions Cowork sous Windows, en particulier, est une supposition.
 
 ## Comment sont faites les estimations
 
@@ -221,8 +221,8 @@ script gardé en mémoire. Les tests échouent si le numéro n'est plus à jour.
 
 Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 
-1. **Autres systèmes.** Le mode « serveur seul » existe ; il reste à le vérifier sur de
-   vrais Windows et Linux, puis à ajouter une icône dans la zone de notification.
+1. **Autres systèmes.** Le mode « serveur seul » existe et fonctionne sous Linux ; il
+   reste à le vérifier sous Windows, puis à ajouter une icône dans la zone de notification.
 2. **L'anglais partout.** La page, le plugin de la barre de menus, le README et la
    description du dépôt sont traduits. Restent en français : les commentaires du code et
    les messages de commit.
