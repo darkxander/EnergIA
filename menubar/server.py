@@ -42,7 +42,9 @@ DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 # The only links the page can have opened in the default browser.
 LINKS = {"sponsor": "https://github.com/sponsors/darkxander",
-         "source": "https://github.com/darkxander/EnergIA"}
+         "source": "https://github.com/darkxander/EnergIA",
+         "method": "https://github.com/darkxander/EnergIA/blob/main/METHOD.md",
+         "method-fr": "https://github.com/darkxander/EnergIA/blob/main/METHOD.fr.md"}
 STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
           ".js": "text/javascript; charset=utf-8", ".json": "application/json"}
 

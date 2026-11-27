@@ -459,3 +459,17 @@ test("organisation usage reports: the documented answers of the Anthropic and Op
   assert.deepEqual([Object.keys(merged.items).length, merged.updated, rowsOf("openaiapi", merged.items)[0].requests], [1, 1, 5]);
   assert.equal(parseFileText(JSON.stringify({ data: [{ foo: 1 }] })), null);
 });
+
+test("method document: both languages, the same structure, and the default values it quotes", () => {
+  const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
+  const [en, fr] = [read("METHOD.md"), read("METHOD.fr.md")];
+  const headings = (text) => text.split("\n").filter((line) => /^#{1,3} /.test(line)).length;
+  const links = (text) => [...text.matchAll(/\]\((https?:[^)]+)\)/g)].map((m) => m[1]).sort();
+  assert.equal(headings(en), headings(fr));
+  assert.deepEqual(links(en), links(fr)); // the same sources on both sides
+  // The values quoted are the ones the code uses: update the document when a default changes.
+  const s = DEFAULT_SETTINGS;
+  assert.deepEqual([s.tiers.leger.whOut, s.tiers.standard.whOut, s.tiers.grand.whOut, s.tiers.raisonnement.whOut], [0.2, 0.6, 1.2, 2.5]);
+  assert.deepEqual([s.inputRatio, s.cacheReadRatio, s.lowFactor, s.highFactor, s.gCO2PerKWh, s.waterLPerKWh], [0.1, 0.02, 0.5, 2, 458.3, 1]);
+  for (const text of ["0.2 / 0.6 / 1.2 / 2.5 Wh", "458.3 g CO₂e/kWh", "1 L/kWh", "× 0.5 to × 2"]) assert.ok(en.includes(text), text);
+});

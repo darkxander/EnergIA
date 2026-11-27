@@ -265,6 +265,9 @@ sessions on Windows, in particular, is a guess.
 The default values are in [src/defaults.json](src/defaults.json) and can be changed under
 "Calculation assumptions".
 
+The detail, assumption by assumption, with the sources and what remains fragile, is in
+[Method and sources](METHOD.md).
+
 ## Limitations
 
 - **Energy per token is not published.** The default factors are order-of-magnitude
@@ -319,6 +322,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/report.js` | The monthly report document |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
+| `METHOD.md`, `METHOD.fr.md` | Method and sources |
 | `install.sh` | One-command install |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate, Windows icon |
 | `tools/make_icons.py` | Draws the two Windows icons |
@@ -362,8 +366,9 @@ Then, in no set order:
 
 - **Other sources**: Mistral and other coding tools, depending on what their exports
   allow, and the CSV exports of organisation consoles, whose format is not documented.
-- **Method**: documenting each assumption with its sources, so that the figures can be
-  defended in a carbon report.
+- **Method**: it is now [documented with its sources](METHOD.md). Still to decide: whether
+  to adjust the default values that differ from them: water, the weight of tokens re-read
+  from the cache, the tokens of Claude exports and the "petrol car" equivalent.
 - **Prices**: updating them without intervention; it is manual today.
 - **Windows**: a one-command install, as on macOS and Linux.
 - **English**: a few internal names in the code are still in French.

@@ -376,6 +376,8 @@ class ServerTest(unittest.TestCase):
         api = {"X-EnergIA": "1"}
         self.assertEqual(self.get("/api/open?link=sponsor", api)[0], 200)
         self.assertEqual(self.opened, ["https://github.com/sponsors/darkxander"])
+        self.assertEqual(self.get("/api/open?link=method-fr", api)[0], 200)   # the method document
+        self.assertEqual(self.opened.pop(), "https://github.com/darkxander/EnergIA/blob/main/METHOD.fr.md")
         for bad in ("/api/open", "/api/open?link=autre", "/api/open?link=https://example.com"):
             self.assertEqual(self.get(bad, api)[0], 404, bad)
         self.assertEqual(self.get("/api/open?link=source")[0], 403)  # without the header

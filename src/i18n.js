@@ -337,6 +337,7 @@ export const PAGE_EN = {
   "filter.anthropicapi": "Anthropic API (usage report)",
   "filter.openaiapi": "OpenAI API (usage report)",
   "help.usage": "<strong>Organisation usage reports</strong>: an administrator can download the JSON answer of Anthropic's usage API (<code>/v1/organizations/usage_report/messages</code>) or OpenAI's (<code>/v1/organization/usage/completions</code>), per day and grouped by model, then import it here. These are real tokens for the whole organisation; the commands are in the README.",
+  "hypotheses.method": "Method and sources: the detail of each assumption",
   "help.unverified": "Reading Gemini and Copilot exports relies on public descriptions of their format and has not yet been checked on real exports. These exports do not say which model answered.",
   "help.claude": "<strong>Claude</strong>: Settings → Privacy → Export data, on the web or in the desktop app (not on mobile). A download link arrives by email; it expires after 24 hours.",
   "help.team": "No “Export data” button in Claude? With an organisation account (Team or Enterprise), an owner of the organisation must first allow the export. Without that, only Claude Code and Claude Cowork can be measured.",

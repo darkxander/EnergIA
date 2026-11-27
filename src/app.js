@@ -49,6 +49,12 @@ if (LANG === "en") {
   for (const node of document.querySelectorAll("[data-i18n]")) node.innerHTML = PAGE_EN[node.dataset.i18n];
   for (const node of document.querySelectorAll("[data-i18n-aria]")) node.setAttribute("aria-label", PAGE_EN[node.dataset.i18nAria]);
 }
+// The method document exists in both languages.
+const methodLink = $("method-link"); // absent from an old page still in the cache
+if (methodLink && LANG === "en") {
+  methodLink.href = "https://github.com/darkxander/EnergIA/blob/main/METHOD.md";
+  methodLink.dataset.link = "method";
+}
 const langButton = $("lang"); // missing from an old page still in the cache
 if (langButton) {
   langButton.textContent = t("lang.switch");

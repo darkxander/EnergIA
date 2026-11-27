@@ -275,6 +275,9 @@ L'emplacement des sessions Cowork sous Windows, en particulier, est une supposit
 Les valeurs par défaut sont dans [src/defaults.json](src/defaults.json) et se modifient
 dans « Hypothèses de calcul ».
 
+Le détail, hypothèse par hypothèse, avec les sources et ce qui reste fragile, est dans
+[Méthode et sources](METHOD.fr.md).
+
 ## Limites
 
 - **L'énergie par token n'est pas publiée.** Les facteurs par défaut sont des choix
@@ -334,6 +337,7 @@ dans « Hypothèses de calcul ».
 | `src/report.js` | Document du rapport mensuel |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
+| `METHOD.fr.md`, `METHOD.md` | Méthode et sources |
 | `install.sh` | Installation en une commande |
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change, icône Windows |
 | `tools/make_icons.py` | Dessine les deux icônes Windows |
@@ -380,8 +384,10 @@ Puis, sans ordre arrêté :
 - **Autres sources** : Mistral et d'autres outils de code, selon ce que permettent leurs
   exports, et les exports CSV des consoles d'organisation, dont le format n'est pas
   documenté.
-- **Méthode** : documenter chaque hypothèse avec ses sources, pour que les chiffres
-  puissent être défendus dans un bilan.
+- **Méthode** : elle est maintenant [documentée avec ses sources](METHOD.fr.md). Reste à
+  décider s'il faut ajuster les valeurs par défaut qui s'en écartent : l'eau, le poids des
+  tokens relus du cache, les tokens des exports Claude et l'équivalent « voiture
+  thermique ».
 - **Prix** : les mettre à jour sans intervention ; c'est manuel aujourd'hui.
 - **Windows** : une installation en une commande, comme sous macOS et Linux.
 - **Anglais** : restent en français quelques noms internes du code.
