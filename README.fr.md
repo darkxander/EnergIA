@@ -205,6 +205,9 @@ Puis, sans ordre arrêté :
 - **Export des résultats** : fichier CSV et image de résumé à partager.
 - **Imports qui se cumulent**, au lieu de remplacer le précédent.
 - **Installation en une commande.**
+- **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une
+  organisation, avec un rapport. Si cela vous intéresse, dites-le dans une
+  [issue](https://github.com/darkxander/EnergIA/issues).
 
 À consolider en parallèle : la lecture d'un vrai export Claude, et la mise à jour des prix,
 aujourd'hui manuelle.

@@ -191,7 +191,9 @@ Then, in no set order:
   exceeded, and a comparison with the previous period.
 - **Exporting results**: a CSV file and a summary image to share.
 - **Imports that add up**, instead of replacing the previous one.
-- **One-command installation.**
+- **Team version, under consideration**: AI usage added up for a team or an organisation,
+  with a report. If this interests you, say so in an
+  [issue](https://github.com/darkxander/EnergIA/issues).
 
 To consolidate alongside: reading a real Claude export, and updating prices, which is
 manual today.
