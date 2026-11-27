@@ -655,7 +655,8 @@ async function api(path, options = {}) {
 
 function pushSettings() {
   if (!menubar) return;
-  api("/api/settings", { method: "POST", body: JSON.stringify(state.settings) }).catch(() => {});
+  // La langue affichée accompagne les réglages : le titre de la barre de menus la reprend.
+  api("/api/settings", { method: "POST", body: JSON.stringify({ ...state.settings, lang: LANG }) }).catch(() => {});
 }
 
 // Taux BCE relevé chaque jour par le plugin, sauf si l'utilisateur a saisi le sien.

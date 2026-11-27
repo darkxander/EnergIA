@@ -35,18 +35,20 @@ STATIC = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8"
           ".js": "text/javascript; charset=utf-8", ".json": "application/json"}
 
 
-PICK_PROMPT = "Choisissez votre export ChatGPT ou Claude (.zip ou conversations.json)"
+PICK_PROMPT = {"fr": "Choisissez votre export ChatGPT ou Claude (.zip ou conversations.json)",
+               "en": "Choose your ChatGPT or Claude export (.zip or conversations.json)"}
+PORT_ERROR = {"fr": "port {port} indisponible : {reason}", "en": "port {port} unavailable: {reason}"}
 PICK_TYPES = '{"public.zip-archive", "public.json", "zip", "json"}'
 PICK_EXTENSIONS = (".zip", ".json")
 
 
-def pick_file():
+def pick_file(lang="fr"):
     """Ouvre le sélecteur de fichier de macOS et renvoie le chemin choisi, ou
     None si l'utilisateur annule. La fenêtre de la barre de menus ne sait pas
     ouvrir ce sélecteur elle-même."""
     done = subprocess.run(
         ["/usr/bin/osascript", "-e", "tell me to activate",
-         "-e", f'POSIX path of (choose file with prompt "{PICK_PROMPT}" of type {PICK_TYPES})'],
+         "-e", f'POSIX path of (choose file with prompt "{PICK_PROMPT[lang]}" of type {PICK_TYPES})'],
         capture_output=True, text=True, timeout=900, check=False)
     return done.stdout.strip() or None
 
@@ -118,7 +120,11 @@ class Dashboard:
         settings = estimate.load_settings(self.settings_path)
         today = self.today()
         total = sum(estimate.wh(row, settings) for row in self.store.rows() if row["day"] == today)
-        return f"{LABEL} {estimate.format_energy(total)}"
+        return f"{LABEL} {estimate.format_energy(total, estimate.lang_of(settings))}"
+
+    def pick(self):
+        """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
+        return self.picker(estimate.lang_of(estimate.load_settings(self.settings_path)))
 
     def payload(self):
         with self._lock:
@@ -192,7 +198,7 @@ class Handler(BaseHTTPRequestHandler):
         """Envoie à la page le fichier que l'utilisateur choisit dans le
         sélecteur de macOS : lui seul décide quel fichier est lu."""
         try:
-            chosen = self.server.dash.picker()
+            chosen = self.server.dash.pick()
         except Exception:
             return self.send_error(500)
         if not chosen:  # annulé
@@ -252,7 +258,8 @@ def main():
         print("~~~", flush=True)
         print(f"{LABEL} ⚠️", flush=True)
         print("---", flush=True)
-        print(f"port {PORT} indisponible : {e.strerror}", flush=True)
+        lang = estimate.lang_of(estimate.load_settings())
+        print(PORT_ERROR[lang].format(port=PORT, reason=e.strerror), flush=True)
         while True:
             time.sleep(3600)
     threading.Thread(target=dash.poller, daemon=True).start()

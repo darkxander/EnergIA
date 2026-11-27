@@ -127,11 +127,23 @@ class EstimateTest(unittest.TestCase):
         self.assertEqual(estimate.format_energy(12.34), "12,3 Wh")
         self.assertEqual(estimate.format_energy(250.4), "250 Wh")
         self.assertEqual(estimate.format_energy(1250), "1,25 kWh")
+        self.assertEqual(estimate.format_energy(1250, "en"), "1.25 kWh")
+        self.assertEqual(estimate.format_energy(3.456, "en"), "3.46 Wh")
+        self.assertEqual(estimate.format_energy(250.4, "en"), "250 Wh")
+
+    def test_language(self):
+        # macOS : français si c'est la première langue préférée, anglais sinon.
+        self.assertEqual(estimate.system_lang(lambda: '(\n    "fr-FR",\n    "en-FR"\n)'), "fr")
+        self.assertEqual(estimate.system_lang(lambda: '(\n    "en-GB",\n    "fr-FR"\n)'), "en")
+        self.assertEqual(estimate.system_lang(lambda: ""), "en")
+        # La langue choisie dans la page l'emporte sur celle du système.
+        self.assertEqual(estimate.lang_of({"lang": "en"}), "en")
+        self.assertEqual(estimate.lang_of({"lang": "fr"}), "fr")
 
     def test_settings_are_sanitized(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "s.json")
-            estimate.save_settings({"gCO2PerKWh": 50, "inputRatio": "x", "evil": 1,
+            estimate.save_settings({"gCO2PerKWh": 50, "inputRatio": "x", "evil": 1, "lang": "xx",
                                     "tiers": {"standard": {"whOut": 1, "other": 2}, "new": {"whOut": 1}}}, path)
             s = estimate.load_settings(path)
             self.assertEqual(s["gCO2PerKWh"], 50)
@@ -139,6 +151,9 @@ class EstimateTest(unittest.TestCase):
             self.assertEqual(s["tiers"]["standard"], {"whOut": 1, "eurIn": 2.5, "eurOut": 10})
             self.assertNotIn("evil", s)
             self.assertNotIn("new", s["tiers"])
+            self.assertNotIn("lang", s)  # seules « fr » et « en » sont acceptées
+            estimate.save_settings({"lang": "en"}, path)
+            self.assertEqual(estimate.load_settings(path)["lang"], "en")
 
 
 ECB = """<Cube><Cube time='2026-11-24'><Cube currency='USD' rate='1.0963'/><Cube currency='JPY' rate='170.1'/></Cube></Cube>"""
@@ -203,12 +218,19 @@ class ServerTest(unittest.TestCase):
         self.opened = []
         self.dash = server.Dashboard(store, self.settings, today=lambda: local_day("2026-11-25T12:00:00Z"),
                                      rates=rates, opener=self.opened.append,
-                                     picker=lambda: self.picked)
+                                     picker=self.pick)
         self.picked = None
+        self.pick_langs = []
+        estimate._system_lang = "fr"  # indépendant de la langue de la machine de test
         self.server = server.serve(self.dash, port=0)
         self.port = self.server.server_address[1]
 
+    def pick(self, lang):
+        self.pick_langs.append(lang)
+        return self.picked
+
     def tearDown(self):
+        estimate._system_lang = None
         self.server.shutdown()
         self.server.server_close()
         self.dir.cleanup()
@@ -236,6 +258,11 @@ class ServerTest(unittest.TestCase):
                                 json.dumps({"tiers": {"standard": {"whOut": 6}}}).encode())
         self.assertEqual(status, 200)
         self.assertEqual(self.dash.title(), "⚡ 6,07 Wh")
+        # La page envoie sa langue avec les réglages : le titre passe au point décimal.
+        status, _, _ = self.get("/api/settings", {**api, "Content-Type": "application/json"},
+                                json.dumps({"tiers": {"standard": {"whOut": 6}}, "lang": "en"}).encode())
+        self.assertEqual(status, 200)
+        self.assertEqual(self.dash.title(), "⚡ 6.07 Wh")
 
     def test_open_only_known_links(self):
         api = {"X-EnergIA": "1"}
@@ -258,6 +285,7 @@ class ServerTest(unittest.TestCase):
     def test_pick_sends_the_chosen_file(self):
         api = {"X-EnergIA": "1"}
         self.assertEqual(self.post("/api/pick", api)[0], 204)  # annulé
+        self.assertEqual(self.pick_langs, ["fr"])  # l'invite suit la langue de la page
         export = os.path.join(self.dir.name, "mon export é.json")
         with open(export, "w") as f:
             f.write('[{"chat_messages": []}]')

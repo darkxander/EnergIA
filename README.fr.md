@@ -75,7 +75,9 @@ ln -s "$PWD/EnergIA.py" ~/.config/swiftbar/EnergIA.py
 ```
 
 Remplacez `~/.config/swiftbar` par votre dossier de plugins SwiftBar s'il est différent.
-Le titre affiche par exemple `⚡ 1,02 kWh` ; un clic ouvre le tableau de bord.
+Le titre affiche par exemple `⚡ 1,02 kWh` (`⚡ 1.02 kWh` en anglais) ; un clic ouvre le
+tableau de bord. Le plugin reprend la langue affichée dans la page, et celle de macOS tant
+que la page n'a pas été ouverte.
 
 ![Capture de la partie droite de la barre de menus : l'élément EnergIA, un éclair suivi de 137 Wh, parmi les autres icônes](docs/barre-de-menus.png)
 
@@ -183,10 +185,9 @@ Ce sont des intentions, sans date ni engagement. Dans l'ordre envisagé :
 1. **Autres systèmes.** D'abord un mode « serveur seul », pour ouvrir le tableau de bord
    avec les données Claude Code en direct sur Windows et Linux ; ensuite une icône dans la
    zone de notification.
-2. **L'anglais partout.** La page, le README et la description du dépôt sont traduits.
-   Restent en français : les textes propres au plugin de la barre de menus (virgule
-   décimale du titre, invite du sélecteur de fichier), les commentaires du code et les
-   messages de commit.
+2. **L'anglais partout.** La page, le plugin de la barre de menus, le README et la
+   description du dépôt sont traduits. Restent en français : les commentaires du code et
+   les messages de commit.
 3. **Faire connaître EnergIA.** Le but est de sensibiliser à ce que représente l'usage de
    l'IA ; les dons de celles et ceux qui trouvent l'appli utile financent son
    développement. Cela passe par des présentations de l'appli là où l'on parle d'IA et

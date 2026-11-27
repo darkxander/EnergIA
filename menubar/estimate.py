@@ -8,10 +8,13 @@ import copy
 import json
 import os
 import re
+import subprocess
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 DEFAULTS = os.path.join(HERE, "..", "src", "defaults.json")
 SETTINGS = os.path.expanduser("~/Library/Application Support/EnergIA/settings.json")
+
+LANGS = ("fr", "en")
 
 _LEGER = re.compile(r"mini|nano|haiku|flash|instant|lite|luna")
 _GRAND = re.compile(r"opus|fable|mythos|astra")
@@ -54,7 +57,35 @@ def merge(defaults, saved):
                             inner[field] = new[name][field]
         elif _number(new):
             out[key] = new
+    if saved.get("lang") in LANGS:  # langue affichée par la page, reprise par le titre
+        out["lang"] = saved["lang"]
     return out
+
+
+def system_lang(read=None):
+    """Langue de macOS : français si c'est la première langue préférée, anglais sinon
+    (même règle que la page avec la langue du navigateur)."""
+    try:
+        text = read() if read else subprocess.run(
+            ["/usr/bin/defaults", "read", "-g", "AppleLanguages"],
+            capture_output=True, text=True, timeout=5, check=False).stdout
+    except (OSError, subprocess.SubprocessError):
+        return "en"
+    first = re.search(r"[A-Za-z]{2,3}", text or "")
+    return "fr" if first and first.group(0).lower() == "fr" else "en"
+
+
+_system_lang = None
+
+
+def lang_of(settings):
+    """La langue choisie dans la page, sinon celle de macOS (lue une seule fois)."""
+    global _system_lang
+    if settings.get("lang") in LANGS:
+        return settings["lang"]
+    if _system_lang is None:
+        _system_lang = system_lang()
+    return _system_lang
 
 
 def load_settings(path=SETTINGS):
@@ -82,12 +113,13 @@ def wh(row, settings):
     return (row["outTok"] + read * settings["inputRatio"]) / 1000 * tier["whOut"]
 
 
-def format_energy(value):
-    """12 Wh, 3,4 Wh, 1,25 kWh : trois chiffres significatifs au plus."""
+def format_energy(value, lang="fr"):
+    """12 Wh, 3,4 Wh, 1,25 kWh : trois chiffres significatifs au plus.
+    Virgule décimale en français, point en anglais."""
     unit = "Wh"
     if value >= 1000:
         value, unit = value / 1000, "kWh"
     text = f"{value:.0f}" if value >= 100 else f"{value:.1f}" if value >= 10 else f"{value:.2f}"
     if "." in text:
         text = text.rstrip("0").rstrip(".")
-    return f"{text.replace('.', ',')} {unit}"
+    return f"{text.replace('.', ',') if lang == 'fr' else text} {unit}"
