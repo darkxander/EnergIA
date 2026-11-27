@@ -422,6 +422,14 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.get("/api/export", {"Content-Type": "text/csv"}, text)[0], 403)  # sans en-tête
         self.assertEqual(self.get("/api/export", api, b"\xff\xfe\x00")[0], 400)                 # pas du texte
         self.assertEqual(sorted(os.listdir(folder)), ["EnergIA-2026-11-25-2.csv", "EnergIA-2026-11-25.csv"])
+        # L'image de résumé : un PNG, reconnu à sa signature.
+        png = {"X-EnergIA": "1", "Content-Type": "image/png"}
+        image = os.path.join(folder, "EnergIA-2026-11-25.png")
+        self.assertEqual(json.loads(self.get("/api/export", png, b"\x89PNG\r\n\x1a\nabc")[2])["path"], image)
+        with open(image, "rb") as f:
+            self.assertEqual(f.read(), b"\x89PNG\r\n\x1a\nabc")
+        self.assertEqual(self.get("/api/export", png, b"pas une image")[0], 400)
+        self.assertEqual(len(os.listdir(folder)), 3)
         self.dash.window = False  # mode serveur seul : le navigateur télécharge lui-même
         self.assertEqual(self.get("/api/export", api, text)[0], 404)
 

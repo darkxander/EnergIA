@@ -44,6 +44,8 @@ consumption of their models. See [Limitations](#limitations).
   model, with tokens, energy, CO₂, water and cost. In English the file uses commas and a
   decimal point; in French, semicolons and a decimal comma, as a spreadsheet set to French
   expects.
+- A summary image to share (PNG, 1200 × 630): the four figures for the period and service
+  shown, with their equivalents.
 - Calculation assumptions that can all be changed.
 
 ## Using the web page
@@ -118,8 +120,8 @@ To import an export from the menu bar window, use the "Choose a file" button: th
 plugin opens the macOS file picker and passes the chosen file to the page. Drag and drop is
 not possible there, because SwiftBar closes its window as soon as you start dragging a
 file. The footer links (donation, source code) open in your default browser. The "Export
-as CSV" button saves the file in your Downloads folder and shows it in the Finder, because
-this window cannot download.
+as CSV" and "Image to share" buttons save the file in your Downloads folder and show it in
+the Finder, because this window cannot download.
 
 To uninstall, delete the `~/.config/swiftbar/EnergIA.py` link, then quit and relaunch
 SwiftBar.
@@ -206,6 +208,7 @@ The default values are in [src/defaults.json](src/defaults.json) and can be chan
 | `src/parsers.js`, `src/zip.js` | Reading ChatGPT and Claude exports |
 | `src/i18n.js` | Interface texts in French and English |
 | `src/csv.js` | Writing the CSV export |
+| `src/card.js` | Drawing the summary image |
 | `src/model.js` | Computing energy, CO₂, water and cost |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Default assumptions, model prices, carbon intensity per country |
 | `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate |
@@ -242,7 +245,6 @@ Then, in no set order:
 
 - **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
   their exports allow.
-- **A summary image to share**, in addition to the CSV export.
 - **Imports that add up**, instead of replacing the previous one.
 - **Team version, under consideration**: AI usage added up for a team or an organisation,
   with a report. If this interests you, say so in an

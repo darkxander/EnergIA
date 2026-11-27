@@ -36,6 +36,7 @@ OVER_COLOR = "#ff453a"  # titre compact au-dessus du seuil : texte rouge, faute 
 OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
 MAX_BODY = 20_000
 MAX_EXPORT = 50_000_000  # un export CSV de plusieurs années reste très en dessous
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 # Seuls liens que la page peut faire ouvrir dans le navigateur par défaut.
@@ -158,12 +159,12 @@ class Dashboard:
         """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
         return self.picker(estimate.lang_of(estimate.load_settings(self.settings_path)))
 
-    def export(self, data):
-        """Écrit l'export CSV de la page dans le dossier Téléchargements, sans jamais
-        remplacer un fichier existant, et le montre. Le nom est choisi ici, pas par la page."""
+    def export(self, data, extension="csv"):
+        """Écrit un export de la page (CSV ou image) dans le dossier Téléchargements, sans
+        jamais remplacer un fichier existant, et le montre. Le nom est choisi ici, pas par la page."""
         os.makedirs(self.downloads, exist_ok=True)
         for n in range(1, 1000):
-            name = f"EnergIA-{self.today()}{'' if n == 1 else f'-{n}'}.csv"
+            name = f"EnergIA-{self.today()}{'' if n == 1 else f'-{n}'}.{extension}"
             path = os.path.join(self.downloads, name)
             try:
                 with open(path, "xb") as f:
@@ -269,8 +270,8 @@ class Handler(BaseHTTPRequestHandler):
         return None
 
     def _export(self):
-        """Enregistre le CSV envoyé par la page. Seulement dans la fenêtre de SwiftBar,
-        qui ne sait pas télécharger ; un vrai navigateur télécharge lui-même."""
+        """Enregistre le CSV ou l'image PNG envoyés par la page. Seulement dans la fenêtre
+        de SwiftBar, qui ne sait pas télécharger ; un vrai navigateur télécharge lui-même."""
         dash = self.server.dash
         if not dash.window:
             return self.send_error(404)
@@ -279,11 +280,17 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= MAX_EXPORT:
                 raise ValueError
             data = self.rfile.read(length)
-            data.decode("utf-8")  # du texte, rien d'autre
+            if self.headers.get("Content-Type", "").split(";")[0].strip() == "image/png":
+                extension = "png"
+                if not data.startswith(PNG_SIGNATURE):
+                    raise ValueError
+            else:
+                extension = "csv"
+                data.decode("utf-8")  # du texte, rien d'autre
         except ValueError:
             return self.send_error(400)
         try:
-            path = dash.export(data)
+            path = dash.export(data, extension)
         except OSError:
             return self.send_error(500)
         return self._json({"ok": True, "path": path})

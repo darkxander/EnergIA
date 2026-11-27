@@ -262,3 +262,12 @@ test("CSV : séparateur et décimales selon la langue, cellules protégées", as
   // Un texte qui commence comme une formule ne doit pas être exécuté par le tableur.
   assert.equal(csvText([["=SOMME(A1)", "-1", "@x", "a,b"]], "en"), "\uFEFF'=SOMME(A1),'-1,'@x,\"a,b\"\r\n");
 });
+
+test("image de résumé : coupe des textes en lignes", async () => {
+  const { wrapLines } = await import("../src/card.js");
+  const measure = (text) => text.length; // un caractère = une unité de largeur
+  assert.deepEqual(wrapLines(measure, "un deux trois", 20), ["un deux trois"]);
+  assert.deepEqual(wrapLines(measure, "un deux trois quatre", 10), ["un deux", "trois qua…"]);
+  assert.deepEqual(wrapLines(measure, "un deux trois quatre", 10, 3), ["un deux", "trois", "quatre"]);
+  assert.deepEqual(wrapLines(measure, "", 10), []);
+});

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EnergIA – ce que représente votre usage de l'IA</title>
-  <link rel="stylesheet" href="styles.css?v=ef7ae0d0">
+  <link rel="stylesheet" href="styles.css?v=f6c71fa6">
 </head>
 <body class="viz-root">
   <header class="top">
@@ -70,6 +70,7 @@
           <select id="carbon"></select>
         </label>
         <button id="export-csv" type="button" data-i18n="export.button">Exporter en CSV</button>
+        <button id="share-image" type="button" data-i18n="share.button">Image à partager</button>
         <p id="volume" class="muted"></p>
       </div>
 
@@ -144,14 +145,15 @@
   <script type="importmap">
   {
     "imports": {
-      "./src/csv.js": "./src/csv.js?v=ef7ae0d0",
-      "./src/i18n.js": "./src/i18n.js?v=ef7ae0d0",
-      "./src/model.js": "./src/model.js?v=ef7ae0d0",
-      "./src/parsers.js": "./src/parsers.js?v=ef7ae0d0",
-      "./src/zip.js": "./src/zip.js?v=ef7ae0d0"
+      "./src/card.js": "./src/card.js?v=f6c71fa6",
+      "./src/csv.js": "./src/csv.js?v=f6c71fa6",
+      "./src/i18n.js": "./src/i18n.js?v=f6c71fa6",
+      "./src/model.js": "./src/model.js?v=f6c71fa6",
+      "./src/parsers.js": "./src/parsers.js?v=f6c71fa6",
+      "./src/zip.js": "./src/zip.js?v=f6c71fa6"
     }
   }
   </script>
-  <script type="module" src="src/app.js?v=ef7ae0d0"></script>
+  <script type="module" src="src/app.js?v=f6c71fa6"></script>
 </body>
 </html>

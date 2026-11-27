@@ -40,6 +40,8 @@ publient pas la consommation réelle de leurs modèles. Voir [Limites](#limites)
   et par modèle, avec les tokens, l'énergie, le CO₂, l'eau et le coût. En français, le
   fichier utilise le point-virgule et la virgule décimale, comme l'attend un tableur réglé
   en français ; en anglais, la virgule et le point.
+- Une image de résumé à partager (PNG, 1200 × 630) : les quatre chiffres de la période et
+  du service affichés, avec leurs équivalents.
 - Des hypothèses de calcul toutes modifiables.
 
 L'appli existe en français et en anglais. Elle suit la langue du navigateur (français pour
@@ -121,9 +123,9 @@ Pour importer un export depuis la fenêtre de la barre de menus, utilisez le bou
 « Choisir un fichier » : le plugin ouvre le sélecteur de fichier de macOS et transmet à la
 page le fichier choisi. Le glisser-déposer n'y est pas possible, car SwiftBar referme sa
 fenêtre dès qu'on commence à faire glisser un fichier. Les liens du pied de page (don,
-code source) s'ouvrent dans votre navigateur par défaut. Le bouton « Exporter en CSV »
-enregistre le fichier dans votre dossier Téléchargements et le montre dans le Finder, car
-cette fenêtre ne sait pas télécharger.
+code source) s'ouvrent dans votre navigateur par défaut. Les boutons « Exporter en CSV »
+et « Image à partager » enregistrent le fichier dans votre dossier Téléchargements et le
+montrent dans le Finder, car cette fenêtre ne sait pas télécharger.
 
 Pour désinstaller, supprimez le lien `~/.config/swiftbar/EnergIA.py`, puis quittez et
 relancez SwiftBar.
@@ -216,6 +218,7 @@ dans « Hypothèses de calcul ».
 | `src/parsers.js`, `src/zip.js` | Lecture des exports ChatGPT et Claude |
 | `src/i18n.js` | Textes de l'interface en français et en anglais |
 | `src/csv.js` | Écriture de l'export CSV |
+| `src/card.js` | Dessin de l'image de résumé |
 | `src/model.js` | Calcul de l'énergie, du CO₂, de l'eau et du coût |
 | `src/defaults.json`, `src/prices.json`, `src/carbon.json` | Hypothèses par défaut, prix des modèles, intensité carbone par pays |
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change |
@@ -255,7 +258,6 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
   permettent leurs exports.
-- **Image de résumé à partager**, en plus de l'export CSV.
 - **Imports qui se cumulent**, au lieu de remplacer le précédent.
 - **Installation en une commande.**
 - **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une

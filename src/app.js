@@ -3,6 +3,7 @@ import { parseExport } from "./parsers.js";
 import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 import { csvText } from "./csv.js";
+import { drawCard } from "./card.js";
 
 const SOURCES = { chatgpt: "ChatGPT", claude: "Claude", claudecode: "Claude Code", cowork: "Claude Cowork" };
 const LIVE_SOURCES = ["claudecode", "cowork"]; // mesurées sur cet ordinateur par le plugin, sans import
@@ -368,7 +369,8 @@ function renderBudget() {
 const percent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0 });
 const signedPercent = new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 0, signDisplay: "always" });
 
-function renderTiles(rows) {
+// Les quatre tuiles (énergie, CO₂, eau, coût) et le total des lignes données.
+function tilesFor(rows) {
   const s = state.settings;
   const total = summarize(rows, s);
   // Écart avec les N jours précédents, quand une période est choisie et qu'ils ont des données.
@@ -408,6 +410,11 @@ function renderTiles(rows) {
       equiv: subs > 0 ? t("tile.subs", { amount: fmt("cost", subs) }) : "",
     },
   ];
+  return { tiles, total };
+}
+
+function renderTiles(rows) {
+  const { tiles, total } = tilesFor(rows);
   $("tiles").replaceChildren(...tiles.map((t) =>
     el("div", { class: "tile" },
       el("div", { class: "name" }, t.name),
@@ -718,31 +725,77 @@ function exportLines() {
   });
 }
 
-async function exportCSV() {
-  const lines = exportLines();
-  if (!lines.length) return setStatus(t("export.empty"), true);
-  const text = csvText([t("export.columns").split("|"), ...lines], LANG);
-  const name = `EnergIA-${localDay(0)}.csv`;
+// Remet un fichier produit par la page : téléchargement dans un navigateur ; dans la
+// fenêtre de la barre de menus, qui ne sait pas télécharger, le plugin l'écrit dans le
+// dossier Téléchargements et le montre dans le Finder.
+async function deliver(blob, extension) {
   if (pluginWindow) {
-    // La fenêtre de la barre de menus ne sait pas télécharger : le plugin écrit le
-    // fichier dans le dossier Téléchargements et le montre dans le Finder.
     try {
-      const saved = await api("/api/export", { method: "POST", body: text, headers: { "Content-Type": "text/csv" } });
+      const saved = await api("/api/export", { method: "POST", body: blob, headers: { "Content-Type": blob.type } });
       setStatus(t("export.saved", { path: saved.path }));
     } catch {
       setStatus(t("export.failed"), true);
     }
     return;
   }
-  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
-  const link = el("a", { href: url, download: name });
+  const url = URL.createObjectURL(blob);
+  const link = el("a", { href: url, download: `EnergIA-${localDay(0)}.${extension}` });
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function exportCSV() {
+  const lines = exportLines();
+  if (!lines.length) return setStatus(t("export.empty"), true);
+  return deliver(new Blob([csvText([t("export.columns").split("|"), ...lines], LANG)], { type: "text/csv" }), "csv");
+}
 $("export-csv").addEventListener("click", exportCSV);
 $("export-csv").title = t("export.title");
+
+// Image de résumé : les quatre chiffres de la période et du service affichés.
+function cardContent(rows) {
+  let first = rows[0].day;
+  let last = rows[0].day;
+  for (const row of rows) {
+    if (row.day < first) first = row.day;
+    if (row.day > last) last = row.day;
+  }
+  const day = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const date = (iso) => day.format(new Date(`${iso}T00:00:00Z`));
+  const sources = Object.keys(state.data).filter((source) => state.source === "all" || state.source === source);
+  const parts = [
+    t("card.range", { from: date(first), to: date(last) }),
+    state.source === "all" ? t("card.allServices") : SOURCES[state.source],
+  ];
+  if (sources.some((source) => state.data[source].sample)) parts.push(t("card.sample"));
+  return {
+    title: t("card.title"),
+    subtitle: parts.join(" · "),
+    // La tuile du coût n'a pas d'équivalent : sa note rappelle que ce n'est pas une facture.
+    tiles: tilesFor(rows).tiles.map(({ name, value, equiv }, index) =>
+      ({ name, value, equiv: index === 3 ? t("tile.costNote") : equiv })),
+    note: t("card.note"),
+    credit: "EnergIA · darkxander.github.io/EnergIA",
+  };
+}
+
+async function shareImage() {
+  const rows = filteredRows();
+  if (!rows.length) return setStatus(t("export.empty"), true);
+  try {
+    const canvas = document.createElement("canvas");
+    drawCard(canvas, cardContent(rows));
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("canvas");
+    await deliver(blob, "png");
+  } catch {
+    setStatus(t("share.failed"), true);
+  }
+}
+$("share-image").addEventListener("click", shareImage);
+$("share-image").title = t("share.title");
 
 $("file").addEventListener("change", (event) => {
   importFiles([...event.target.files]);
