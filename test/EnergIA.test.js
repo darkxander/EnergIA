@@ -271,3 +271,47 @@ test("image de résumé : coupe des textes en lignes", async () => {
   assert.deepEqual(wrapLines(measure, "un deux trois quatre", 10, 3), ["un deux", "trois", "quatre"]);
   assert.deepEqual(wrapLines(measure, "", 10), []);
 });
+
+test("imports qui se cumulent : une conversation n'est comptée qu'une fois", async () => {
+  const { combine, parseExport, rowsOf } = await import("../src/parsers.js");
+  const conv = (id, updated, answers) => ({
+    id, create_time: 1750000000, update_time: updated,
+    mapping: Object.fromEntries([["root", { message: null, parent: null }], ...answers.flatMap((length, n) => [
+      [`u${n}`, { parent: n ? `a${n - 1}` : "root", message: msg("user", "q".repeat(40), 1750000000 + n * 10) }],
+      [`a${n}`, { parent: `u${n}`, message: msg("assistant", "r".repeat(length), 1750000001 + n * 10, { model_slug: "gpt-4o" }) }],
+    ])]),
+  });
+  const requests = (items) => rowsOf("chatgpt", items).reduce((sum, row) => sum + row.requests, 0);
+  const first = parseExport([conv("a", 100, [400]), conv("b", 100, [400])]);
+  assert.equal(first.conversations, 2);
+  assert.equal(Object.keys(first.items).length, 2);
+  assert.ok(Object.keys(first.items).every((key) => /^[0-9a-f]{16}$/.test(key)), "clés anonymes");
+  assert.ok(!JSON.stringify(first.items).includes('"a"'), "l'identifiant n'est pas gardé");
+  assert.deepEqual(first.rows, rowsOf("chatgpt", first.items));
+
+  // Le même export une seconde fois : rien ne change.
+  const again = combine(first.items, first.items);
+  assert.deepEqual([again.added, again.updated, again.same, requests(again.items)], [0, 0, 2, 2]);
+
+  // Un export plus récent : « a » inchangée, « b » a grandi, « c » est nouvelle.
+  const second = parseExport([conv("a", 100, [400]), conv("b", 200, [400, 800]), conv("c", 200, [400])]);
+  const merged = combine(first.items, second.items);
+  assert.deepEqual([merged.added, merged.updated, merged.same], [1, 1, 1]);
+  assert.equal(Object.keys(merged.items).length, 3);
+  assert.equal(requests(merged.items), 4); // 1 + 2 + 1, et non 2 + 4
+
+  // Un export plus ancien importé après coup n'écrase pas la version récente,
+  // et une conversation supprimée depuis reste comptée.
+  const back = combine(merged.items, parseExport([conv("b", 100, [400])]).items);
+  assert.deepEqual([back.kept, requests(back.items)], [1, 4]);
+  assert.deepEqual(first.items, parseExport([conv("a", 100, [400]), conv("b", 100, [400])]).items, "combine ne modifie pas l'existant");
+
+  // Deux fichiers d'un autre compte : tout s'ajoute.
+  const other = combine(merged.items, parseExport([conv("z", 50, [400])]).items);
+  assert.deepEqual([other.added, requests(other.items)], [1, 5]);
+
+  // Claude : la clé vient de l'uuid, et ne se confond pas avec celle de ChatGPT.
+  const claude = parseExport(claudeExport);
+  assert.equal(Object.keys(claude.items).length, 1);
+  assert.deepEqual(combine(claude.items, parseExport(claudeExport).items).same, 1);
+});

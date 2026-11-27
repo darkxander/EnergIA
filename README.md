@@ -73,7 +73,12 @@ To get an export:
 
 Files are analysed in the browser. Nothing is sent over the Internet, and the text of your
 conversations is not kept: only counters per day and per model are stored in the browser's
-local storage.
+local storage, grouped by conversation under an anonymous key.
+
+A new import adds to the previous one for the same service. A conversation already imported
+is not counted twice: it is updated if it has grown. So you can import a more recent export
+of the same account, or the exports of several accounts. "Remove" starts again from
+scratch.
 
 ## Installing in the menu bar (macOS)
 
@@ -245,7 +250,6 @@ Then, in no set order:
 
 - **Other services**: Gemini, Mistral, Copilot and other coding tools, depending on what
   their exports allow.
-- **Imports that add up**, instead of replacing the previous one.
 - **Team version, under consideration**: AI usage added up for a team or an organisation,
   with a report. If this interests you, say so in an
   [issue](https://github.com/darkxander/EnergIA/issues).

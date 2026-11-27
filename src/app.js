@@ -1,5 +1,5 @@
 import { listZipEntries, readZipEntryText } from "./zip.js";
-import { parseExport } from "./parsers.js";
+import { combine, parseExport, rowsOf } from "./parsers.js";
 import { CARBON, DEFAULT_SETTINGS, EQUIVALENTS, PRICE_SOURCE, classifyModel, priceFor, rowMetrics, summarize, subscriptionCost } from "./model.js";
 import { LANG, LANG_KEY, LOCALE, PAGE_EN, t } from "./i18n.js";
 import { csvText } from "./csv.js";
@@ -90,11 +90,18 @@ const state = {
   rateDate: DEFAULT_RATE_DATE, // date du taux BCE utilisé, ou null s'il est saisi à la main
 };
 if (localStorage.getItem(MANUAL_RATE_KEY)) state.rateDate = null;
+// Les imports sont gardés par conversation (`items`) ; les lignes affichées en découlent.
+// Un import fait avant cette écriture n'a que des lignes : il est gardé tel quel.
+for (const [source, entry] of Object.entries(state.data)) {
+  if (entry && entry.items) entry.rows = rowsOf(source, entry.items);
+}
 
 function saveData() {
   const persistable = {};
   for (const [source, entry] of Object.entries(state.data)) {
-    if (!entry.sample && !entry.live) persistable[source] = entry;
+    if (entry.sample || entry.live) continue;
+    const { rows, ...rest } = entry;
+    persistable[source] = entry.items ? rest : entry; // avec `items`, les lignes se recalculent
   }
   try {
     localStorage.setItem(DATA_KEY, JSON.stringify(persistable));
@@ -182,9 +189,7 @@ async function importFiles(files) {
         }
         const parsed = parseExport(json);
         if (!parsed) throw new Error(t("status.unknownFormat", { file: file.name }));
-        const target = (imported[parsed.source] ??= { rows: [], conversations: 0 });
-        target.rows.push(...parsed.rows);
-        target.conversations += parsed.conversations;
+        imported[parsed.source] = combine(imported[parsed.source] || {}, parsed.items).items;
       }
     }
   } catch (error) {
@@ -195,10 +200,17 @@ async function importFiles(files) {
   // Les données d'exemple disparaissent dès qu'un vrai fichier est importé.
   for (const source of Object.keys(state.data)) if (state.data[source].sample) delete state.data[source];
   const summary = [];
-  for (const [source, entry] of Object.entries(imported)) {
-    state.data[source] = { ...entry, importedAt: new Date().toISOString() };
-    const requests = entry.rows.reduce((sum, row) => sum + row.requests, 0);
-    summary.push(t("status.importedSource", { source: SOURCES[source], conversations: nf(entry.conversations), requests: nf(requests) }));
+  for (const [source, incoming] of Object.entries(imported)) {
+    // Un nouvel import s'ajoute au précédent : une conversation déjà connue est mise à
+    // jour, pas comptée deux fois. Un import d'avant cette écriture (sans `items`) est remplacé.
+    const previous = state.data[source];
+    const merged = combine(previous?.items || {}, incoming);
+    const total = Object.keys(merged.items).length;
+    state.data[source] = { items: merged.items, rows: rowsOf(source, merged.items), conversations: total, importedAt: new Date().toISOString() };
+    summary.push(t(previous?.items ? "status.mergedSource" : "status.importedSource", {
+      source: SOURCES[source], conversations: nf(total), added: nf(merged.added), updated: nf(merged.updated),
+      requests: nf(state.data[source].rows.reduce((sum, row) => sum + row.requests, 0)),
+    }) + (previous && !previous.items ? ` ${t("status.replacedOld")}` : ""));
   }
   saveData();
   setStatus(t("status.imported", { summary: summary.join(" · ") }));

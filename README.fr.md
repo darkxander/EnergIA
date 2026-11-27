@@ -76,7 +76,13 @@ Pour obtenir un export :
 
 Les fichiers sont analysés dans le navigateur. Rien n'est envoyé sur Internet, et le
 texte des conversations n'est pas conservé : seuls des compteurs par jour et par modèle
-sont gardés dans le stockage local du navigateur.
+sont gardés dans le stockage local du navigateur, rangés par conversation sous une clé
+anonyme.
+
+Un nouvel import s'ajoute au précédent pour le même service. Une conversation déjà importée
+n'est pas comptée deux fois : elle est mise à jour si elle a grandi. Vous pouvez donc
+importer un export plus récent du même compte, ou les exports de plusieurs comptes.
+« Supprimer » repart de zéro.
 
 ## Installer dans la barre de menus (macOS)
 
@@ -258,7 +264,6 @@ Puis, sans ordre arrêté :
 
 - **Autres services** : Gemini, Mistral, Copilot et d'autres outils de code, selon ce que
   permettent leurs exports.
-- **Imports qui se cumulent**, au lieu de remplacer le précédent.
 - **Installation en une commande.**
 - **Version équipe, à l'étude** : l'usage de l'IA additionné pour une équipe ou une
   organisation, avec un rapport. Si cela vous intéresse, dites-le dans une

@@ -1,17 +1,98 @@
 // Lecture des exports de données ChatGPT et Claude.
-// Aucun texte de conversation n'est conservé : seuls des compteurs agrégés
-// par jour, source et modèle sortent d'ici.
+// Aucun texte de conversation n'est conservé : seuls des compteurs par jour et par
+// modèle sortent d'ici, rangés par conversation sous une clé anonyme. Cette clé sert
+// à ne pas compter deux fois une conversation présente dans deux imports.
 
 // Estimation grossière : environ 4 caractères par token.
 export const estimateTokens = (text) => (text ? Math.ceil(text.length / 4) : 0);
 
 const dayOf = (date) => (Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10));
 
+// Deux empreintes de 32 bits construites différemment (multiplicateur, mélange), pour
+// que deux identifiants distincts ne donnent pratiquement jamais la même clé.
+function hash32(text, seed, prime) {
+  let h = seed >>> 0;
+  for (let i = 0; i < text.length; i++) {
+    h = Math.imul(h ^ (text.charCodeAt(i) + i), prime);
+    h ^= h >>> 15;
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
+// Clé courte d'une conversation : une empreinte de son identifiant, pas l'identifiant.
+export const shortKey = (text) => hash32(text, 0x811c9dc5, 0x01000193) + hash32(text, 0x9747b28c, 0x5bd1e995);
+
+// Range une conversation ({ u: date de mise à jour en secondes ou 0, rows }) dans `items`.
+// Déjà présente : la version la plus récente l'emporte, la nouvelle en cas de doute.
+// Renvoie "added", "updated", "same" (identique) ou "kept" (l'ancienne était plus récente).
+export function putConversation(items, key, item) {
+  const existing = items[key];
+  if (!existing) {
+    items[key] = item;
+    return "added";
+  }
+  if (existing.u && item.u && existing.u > item.u) return "kept";
+  if (JSON.stringify(existing.rows) === JSON.stringify(item.rows)) {
+    items[key] = item;
+    return "same";
+  }
+  items[key] = item;
+  return "updated";
+}
+
+// Ajoute les conversations `incoming` à `previous` (non modifié) et compte ce qui change.
+export function combine(previous, incoming) {
+  const items = { ...previous };
+  const counts = { added: 0, updated: 0, same: 0, kept: 0 };
+  for (const [key, item] of Object.entries(incoming)) counts[putConversation(items, key, item)] += 1;
+  return { items, ...counts };
+}
+
+// Les lignes par jour et par modèle d'un ensemble de conversations.
+export function rowsOf(source, items) {
+  const rows = new Map();
+  for (const item of Object.values(items)) {
+    for (const part of item.rows) {
+      const key = `${part.day}|${part.model}`;
+      let row = rows.get(key);
+      if (!row) {
+        row = { day: part.day, source, model: part.model, requests: 0, responses: 0, inTok: 0, outTok: 0 };
+        rows.set(key, row);
+      }
+      row.requests += part.requests;
+      row.responses += part.responses;
+      row.inTok += part.inTok;
+      row.outTok += part.outTok;
+    }
+  }
+  return [...rows.values()];
+}
+
+// Les conversations d'un export, chacune avec ses compteurs.
+class Collector {
+  constructor(source) {
+    this.source = source;
+    this.items = {};
+  }
+
+  // `id` : identifiant de la conversation dans l'export ; `created` et `updated` : dates.
+  add(one, index, id, created, updated) {
+    const rows = [...one.rows.values()].map(({ source, ...row }) => row);
+    const name = id ? `id:${id}` : created ? `t:${created}` : `x:${index}:${JSON.stringify(rows)}`;
+    const u = Number.isFinite(updated) && updated > 0 ? Math.round(updated) : 0;
+    putConversation(this.items, shortKey(`${this.source}:${name}`), { u, rows });
+  }
+
+  result() {
+    return { source: this.source, conversations: Object.keys(this.items).length,
+      rows: rowsOf(this.source, this.items), items: this.items };
+  }
+}
+
 class Aggregator {
   constructor(source) {
     this.source = source;
     this.rows = new Map();
-    this.conversations = 0;
   }
 
   add(day, model, requests, inTok, outTok) {
@@ -26,10 +107,6 @@ class Aggregator {
     row.responses += 1;
     row.inTok += inTok;
     row.outTok += outTok;
-  }
-
-  result() {
-    return { source: this.source, conversations: this.conversations, rows: [...this.rows.values()] };
   }
 }
 
@@ -56,11 +133,11 @@ function chatgptText(content) {
 }
 
 function parseChatGPT(conversations) {
-  const agg = new Aggregator("chatgpt");
-  for (const conv of conversations) {
+  const all = new Collector("chatgpt");
+  for (const [index, conv] of conversations.entries()) {
     const mapping = conv && conv.mapping;
     if (!mapping) continue;
-    agg.conversations += 1;
+    const agg = new Aggregator("chatgpt");
 
     const tokens = new Map();
     for (const [id, node] of Object.entries(mapping)) {
@@ -126,8 +203,9 @@ function parseChatGPT(conversations) {
       const model = turn.model || conv.default_model_slug || "inconnu";
       agg.add(dayOf(new Date(turn.time * 1000)), model, turn.requests, turn.inTok, turn.outTok);
     }
+    all.add(agg, index, conv.conversation_id || conv.id, conv.create_time, Number(conv.update_time));
   }
-  return agg.result();
+  return all.result();
 }
 
 // ---------- Claude ----------
@@ -155,10 +233,10 @@ function claudeText(message) {
 }
 
 function parseClaude(conversations) {
-  const agg = new Aggregator("claude");
-  for (const conv of conversations) {
+  const all = new Collector("claude");
+  for (const [index, conv] of conversations.entries()) {
     if (!conv || !Array.isArray(conv.chat_messages)) continue;
-    agg.conversations += 1;
+    const agg = new Aggregator("claude");
     let context = 0;
     let pendingRequests = 0;
     for (const message of conv.chat_messages) {
@@ -173,8 +251,9 @@ function parseClaude(conversations) {
       }
       context += count;
     }
+    all.add(agg, index, conv.uuid, conv.created_at, Date.parse(conv.updated_at) / 1000);
   }
-  return agg.result();
+  return all.result();
 }
 
 // ---------- Détection ----------
