@@ -308,20 +308,23 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
         self.assertEqual(post({"dailyBudgetWh": 0}), 200)   # 0 : pas de seuil
         self.assertEqual(self.dash.title(), "⚡ 0,61 Wh")
-        # Titre compact : le même sans les espaces ; la page le relit ensuite auprès du plugin.
+        # Titre compact : ni pictogramme ni espaces ; la page le relit ensuite auprès du plugin.
         self.assertEqual(post({"compactTitle": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
-        self.assertEqual(self.dash.title(), "⚡607Wh")
+        self.assertEqual(self.dash.title(), "607Wh")
         self.assertEqual(json.loads(self.get("/api/beat", api)[2])["compactTitle"], 1)
         self.assertEqual(post({"compactTitle": 1, "dailyBudgetWh": 1, "tiers": {"standard": {"whOut": 600}}}), 200)
-        self.assertEqual(self.dash.title(), "🔴607Wh")
-        # Le titre compact est envoyé à SwiftBar avec un texte un peu plus petit.
+        # Au-dessus du seuil, le titre compact passe en rouge : la couleur suit le titre
+        # après une tabulation, et devient un paramètre de la ligne envoyée à SwiftBar.
+        self.assertEqual(self.dash.title(), "607Wh\tcolor=#ff453a")
         import io
         out = io.StringIO()
-        server.emit("⚡607Wh", compact=self.dash.compact(), out=out)
-        self.assertIn(" size=11", out.getvalue())
+        server.emit(self.dash.title(), out=out)
+        self.assertEqual(out.getvalue().splitlines()[1],
+                         "607Wh | href=http://127.0.0.1:18791/ webview=true webvieww=860 webviewh=680 color=#ff453a")
         out = io.StringIO()
         server.emit("⚡ 607 Wh", out=out)
-        self.assertNotIn("size=", out.getvalue())
+        self.assertEqual(out.getvalue().splitlines()[1],
+                         "⚡ 607 Wh | href=http://127.0.0.1:18791/ webview=true webvieww=860 webviewh=680")
 
     def test_server_only_mode(self):
         api = {"X-EnergIA": "1"}

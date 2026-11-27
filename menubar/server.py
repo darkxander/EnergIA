@@ -32,7 +32,7 @@ POLL = 60                 # secondes entre deux lectures des journaux
 WIDTH, HEIGHT = 860, 680  # taille de la fenêtre, en pixels
 BEAT_TIMEOUT = 4.0        # sans battement pendant ce délai : fenêtre refermée
 LABEL = "⚡"
-COMPACT_SIZE = 11  # taille du texte du titre compact, en points (13 d'ordinaire)
+OVER_COLOR = "#ff453a"  # titre compact au-dessus du seuil : texte rouge, faute de place pour un pictogramme
 OVER_LABEL = "🔴"  # remplace l'éclair quand l'énergie du jour dépasse le seuil choisi dans la page
 MAX_BODY = 20_000
 SITE = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
@@ -138,12 +138,12 @@ class Dashboard:
         budget = settings.get("dailyBudgetWh", 0)
         label = OVER_LABEL if budget > 0 and total > budget else LABEL
         lang = estimate.lang_of(settings)
-        if settings.get("compactTitle"):  # choisi dans la page : sans espaces, moins de chiffres
-            return f"{label}{estimate.format_energy(total, lang, compact=True)}"
+        if settings.get("compactTitle"):
+            # Choisi dans la page : ni pictogramme ni espaces, moins de chiffres. Au-dessus
+            # du seuil, le texte passe en rouge (paramètre SwiftBar placé après la tabulation).
+            text = estimate.format_energy(total, lang, compact=True)
+            return f"{text}\tcolor={OVER_COLOR}" if label == OVER_LABEL else text
         return f"{label} {estimate.format_energy(total, lang)}"
-
-    def compact(self):
-        return bool(estimate.load_settings(self.settings_path).get("compactTitle"))
 
     def pick(self):
         """Le fichier choisi dans le sélecteur de macOS, affiché dans la langue de la page."""
@@ -270,11 +270,13 @@ def serve(dash, port=PORT):
     return server
 
 
-def emit(title, port=PORT, compact=False, out=None):
-    size = f" size={COMPACT_SIZE}" if compact else ""  # titre compact : texte un peu plus petit
+def emit(title, port=PORT, out=None):
+    """Envoie le titre à SwiftBar. Un titre peut porter, après une tabulation, des
+    paramètres SwiftBar supplémentaires (la couleur du texte)."""
+    text, _, extra = title.partition("\t")
     print("~~~", file=out, flush=True)
-    print(f"{title} | href=http://127.0.0.1:{port}/ webview=true "
-          f"webvieww={WIDTH} webviewh={HEIGHT}{size}", file=out, flush=True)
+    print(f"{text} | href=http://127.0.0.1:{port}/ webview=true "
+          f"webvieww={WIDTH} webviewh={HEIGHT}{' ' + extra if extra else ''}", file=out, flush=True)
 
 
 def serve_only(port=PORT, browser=True, out=None, wait=None):
@@ -333,7 +335,7 @@ def main(argv=None):
     while True:
         title = dash.gate.take()
         if title:
-            emit(title, compact=dash.compact())
+            emit(title)
         time.sleep(0.5)
 
 
