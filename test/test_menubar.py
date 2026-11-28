@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..
 import estimate  # noqa: E402
 import paths  # noqa: E402
 import server  # noqa: E402
+import pricefeed  # noqa: E402
 import rate  # noqa: E402
 import tray  # noqa: E402
 from claudecode import UsageStore, local_day  # noqa: E402
@@ -245,6 +246,100 @@ class RateTest(unittest.TestCase):
             self.assertEqual(store.current(), {"date": "2026-11-26", "eurPerUsd": 0.8})
 
 
+def offline_dashboard(test):
+    """What serve_only needs to build a dashboard that reads no real log, fetches nothing
+    from the network and writes nothing outside a temporary folder."""
+    folder = tempfile.TemporaryDirectory()
+    test.addCleanup(folder.cleanup)
+    test.addCleanup(estimate.use_prices, None)
+    path = lambda name: os.path.join(folder.name, name)  # noqa: E731
+    os.makedirs(path("projects"))
+
+    def offline():
+        raise OSError("hors ligne")
+
+    return lambda **options: server.Dashboard(
+        UsageStore(path("projects"), path("c.json")), path("settings.json"),
+        rates=rate.RateStore(path("rate.json"), fetch=offline),
+        prices=pricefeed.PriceStore(path("prices.json"), fetch=offline), **options)
+
+
+def price_file(checked="2026-12-01", sonnet_out=11):
+    models = {f"model-{i}": {"in": 1, "out": 2} for i in range(10)}
+    models["claude-sonnet-5-5"] = {"in": 2, "write5m": 2.5, "write1h": 4, "read": 0.1, "out": sonnet_out}
+    return {"source": "https://example.org/prices", "checked": checked, "webSearchUsdPer1000": 10,
+            "models": models, "aliases": {"sonnet": "claude-sonnet-5-5"}, "extra": {"ignored": True}}
+
+
+class PriceFeedTest(unittest.TestCase):
+    def tearDown(self):
+        estimate.use_prices(None)
+
+    def test_clean_keeps_known_fields_and_rejects_odd_files(self):
+        cleaned = pricefeed.clean(price_file())
+        self.assertEqual((cleaned["checked"], len(cleaned["models"]), cleaned["aliases"]),
+                         ("2026-12-01", 11, {"sonnet": "claude-sonnet-5-5"}))
+        self.assertNotIn("extra", cleaned)
+
+        def broken(change):
+            data = price_file()
+            change(data)
+            with self.assertRaises(ValueError):
+                pricefeed.clean(data)
+
+        broken(lambda d: d["models"]["model-0"].update({"in": -1}))
+        broken(lambda d: d["models"]["model-0"].update({"in": True}))
+        broken(lambda d: d["models"]["model-0"].update({"out": 1e9}))
+        broken(lambda d: d["models"]["model-0"].update({"script": 1}))
+        broken(lambda d: d["models"]["model-0"].pop("out"))
+        broken(lambda d: d.update(models={"only": {"in": 1, "out": 2}}))
+        broken(lambda d: d.update(checked="yesterday"))
+        broken(lambda d: d.update(webSearchUsdPer1000="10"))
+        broken(lambda d: d.update(aliases={"a": 1}))
+        with self.assertRaises(ValueError):
+            pricefeed.clean([])
+
+    def test_store_fetches_once_a_day_survives_failures_and_ignores_older_prices(self):
+        with tempfile.TemporaryDirectory() as d:
+            cache, now, calls = os.path.join(d, "sub", "prices.json"), [1000.0], []
+
+            def fetch():
+                calls.append(now[0])
+                if len(calls) == 2:
+                    raise OSError("hors ligne")
+                if len(calls) == 3:
+                    return "<html>not json</html>"
+                return json.dumps(price_file(sonnet_out=11 if len(calls) == 1 else 12))
+
+            store = pricefeed.PriceStore(cache, fetch, clock=lambda: now[0], bundled_checked="2026-11-28")
+            self.assertIsNone(store.current())
+            store.refresh()
+            store.refresh()  # recent fetch: no new call
+            self.assertEqual((len(calls), store.current()["models"]["claude-sonnet-5-5"]["out"]), (1, 11))
+            for _ in range(2):  # offline, then an unreadable answer: the old prices stay
+                now[0] += pricefeed.MAX_AGE + 1
+                store.refresh()
+                store.refresh()  # no new attempt before RETRY
+            self.assertEqual((len(calls), store.current()["models"]["claude-sonnet-5-5"]["out"]), (3, 11))
+            again = pricefeed.PriceStore(cache, fetch, bundled_checked="2026-11-28")
+            self.assertEqual(again.current()["models"]["claude-sonnet-5-5"]["out"], 11)  # read back from the cache
+            now[0] += pricefeed.RETRY + 1
+            store.refresh()
+            self.assertEqual(store.current()["models"]["claude-sonnet-5-5"]["out"], 12)
+            # A plugin installed after the fetched file was written keeps its own prices.
+            self.assertIsNone(pricefeed.PriceStore(cache, fetch, bundled_checked="2026-12-02").current())
+
+    def test_fetched_prices_replace_the_installed_ones_in_the_estimate(self):
+        settings = estimate.load_settings(os.path.join(tempfile.gettempdir(), "energia-no-such-settings.json"))
+        row = {"model": "claude-sonnet-5-5", "inTok": 0, "outTok": 1_000_000}
+        self.assertAlmostEqual(estimate.eur(row, settings), 10 * settings["eurPerUsd"])
+        estimate.use_prices(pricefeed.clean(price_file()))
+        self.assertAlmostEqual(estimate.eur(row, settings), 11 * settings["eurPerUsd"])
+        self.assertIsNone(estimate.price_for("claude-opus-5-5"))  # only the fetched file counts
+        estimate.use_prices(None)
+        self.assertAlmostEqual(estimate.eur(row, settings), 10 * settings["eurPerUsd"])
+
+
 class GateTest(unittest.TestCase):
     def test_title_waits_for_closed_popover(self):
         now = [0.0]
@@ -270,8 +365,12 @@ class ServerTest(unittest.TestCase):
         self.settings = os.path.join(self.dir.name, "settings.json")
         rates = rate.RateStore(os.path.join(self.dir.name, "rate.json"), fetch=lambda: ECB)
         self.opened = []
+        self.price_calls = []
+        self.fetched_prices = None  # a test sets it to serve a price file; None: offline
+        prices = pricefeed.PriceStore(os.path.join(self.dir.name, "prices.json"), fetch=self.fetch_prices,
+                                      bundled_checked=estimate.bundled_prices()["checked"])
         self.dash = server.Dashboard(store, self.settings, today=lambda: local_day("2026-11-25T12:00:00Z"),
-                                     rates=rates, opener=self.opened.append,
+                                     rates=rates, prices=prices, opener=self.opened.append,
                                      picker=self.pick, downloads=os.path.join(self.dir.name, "Downloads"),
                                      revealer=lambda path: self.revealed.append(path))
         self.revealed = []
@@ -285,8 +384,15 @@ class ServerTest(unittest.TestCase):
         self.pick_langs.append(lang)
         return self.picked
 
+    def fetch_prices(self):
+        self.price_calls.append(1)
+        if self.fetched_prices is None:
+            raise OSError("hors ligne")
+        return json.dumps(self.fetched_prices)
+
     def tearDown(self):
         estimate._system_lang = None
+        estimate.use_prices(None)
         self.server.shutdown()
         self.server.server_close()
         self.dir.cleanup()
@@ -369,7 +475,7 @@ class ServerTest(unittest.TestCase):
         # Port already taken: clear message and exit code 1, without raising an exception.
         import io
         out = io.StringIO()
-        self.assertEqual(server.serve_only(self.port, browser=False, out=out), 1)
+        self.assertEqual(server.serve_only(self.port, browser=False, out=out, dashboard=offline_dashboard(self)), 1)
         self.assertIn(str(self.port), out.getvalue())
 
     def test_open_only_known_links(self):
@@ -407,6 +513,19 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.post("/api/pick", api)[0], 400)   # file not found
         self.picked = export
         self.assertEqual(self.post("/api/pick")[0], 403)        # without the header
+
+    def test_page_gets_the_installed_prices_then_the_fetched_ones(self):
+        self.dash.poll()  # offline
+        status, ctype, body = self.get("/src/prices.json")
+        self.assertEqual((status, ctype, json.loads(body)), (200, "application/json", estimate.bundled_prices()))
+        self.fetched_prices = price_file(checked="2099-01-01")
+        self.dash.prices._tried_at = None  # as if RETRY had passed
+        self.dash.poll()
+        served = json.loads(self.get("/src/prices.json")[2])
+        self.assertEqual((served["checked"], served["models"]["claude-sonnet-5-5"]["out"]), ("2099-01-01", 11))
+        self.assertEqual(len(self.price_calls), 2)
+        self.dash.poll()  # fetched less than a day ago: no new call
+        self.assertEqual(len(self.price_calls), 2)
 
     def test_export_saves_the_csv(self):
         api = {"X-EnergIA": "1", "Content-Type": "text/csv"}
@@ -608,7 +727,8 @@ class TrayTest(unittest.TestCase):
             def start(self): return False
 
         out, waited = io.StringIO(), []
-        self.assertEqual(server.serve_only(0, browser=False, out=out, wait=lambda: waited.append(1), tray=Broken), 0)
+        self.assertEqual(server.serve_only(0, browser=False, out=out, wait=lambda: waited.append(1), tray=Broken,
+                                           dashboard=offline_dashboard(self)), 0)
         self.assertEqual(waited, [1])
         self.assertIn("raison", out.getvalue())
 
@@ -628,7 +748,8 @@ class TrayTest(unittest.TestCase):
 
         old, server.TRAY_REFRESH = server.TRAY_REFRESH, 0.01
         try:
-            self.assertEqual(server.serve_only(0, browser=False, out=io.StringIO(), tray=Icon), 0)
+            self.assertEqual(server.serve_only(0, browser=False, out=io.StringIO(), tray=Icon,
+                                               dashboard=offline_dashboard(self)), 0)
         finally:
             server.TRAY_REFRESH = old
         self.assertEqual(len(seen), 1)

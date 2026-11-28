@@ -210,8 +210,10 @@ Le plugin :
 - n'en garde que des compteurs par jour et par modèle, dans `~/Library/Caches/EnergIA` ;
   ces compteurs survivent au nettoyage des anciens journaux par Claude Code ;
 - sert la page sur `127.0.0.1:18791`, accessible uniquement depuis votre Mac ;
-- relève une fois par jour le taux de change euro/dollar de référence de la BCE. C'est sa
-  seule connexion à Internet ; elle n'envoie aucune donnée.
+- relève une fois par jour le taux de change euro/dollar de référence de la BCE, et les
+  prix des modèles publiés par ce projet (`darkxander.github.io/EnergIA/src/prices.json`).
+  Ce sont ses deux seules connexions à Internet ; elles téléchargent un fichier public et
+  n'envoient aucune donnée.
 
 Pour importer un export depuis la fenêtre de la barre de menus, utilisez le bouton
 « Choisir un fichier » : le plugin ouvre le sélecteur de fichier de macOS et transmet à la
@@ -293,17 +295,22 @@ Le détail, hypothèse par hypothèse, avec les sources et ce qui reste fragile,
   moyenne mondiale est un choix par défaut, pas une mesure.
 - **Le coût n'est pas votre facture.** Avec un abonnement, vous payez le forfait, pas les
   tokens. Les prix actuels sont appliqués à tout l'historique.
-- **Prix à maintenir.** Les prix de [src/prices.json](src/prices.json) ont été relevés le
-  25 novembre 2026 et ne se mettent pas à jour seuls. Pour les anciens modèles retirés de
-  l'API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, recherche
-  approfondie), c'est le dernier prix publié par OpenAI, relevé le 26 novembre 2026. Les
-  modèles absents de la liste gardent un tarif indicatif par catégorie, signalé par un
-  astérisque.
+- **Les prix suivent une liste publique, pas les pages officielles.** Les prix de
+  [src/prices.json](src/prices.json) ont d'abord été relevés à la main sur les pages de
+  tarifs d'Anthropic et d'OpenAI. Chaque semaine, une tâche GitHub les compare à la
+  [liste tenue par le projet LiteLLM](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json), corrige ce qui a changé et ajoute les
+  nouveaux modèles ; le plugin installé reprend ce fichier une fois par jour. Cette liste
+  est tenue par une communauté : elle peut avoir du retard ou une erreur. Un prix qui
+  varierait de plus de 4 fois d'un coup est refusé et la mise à jour s'arrête. Ne sont pas
+  suivis : le prix de la recherche web, et les anciens modèles retirés de l'API (GPT-3.5
+  Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, recherche approfondie), qui gardent
+  le dernier prix publié par OpenAI, relevé le 26 novembre 2026. Les modèles absents de la
+  liste gardent un tarif indicatif par catégorie, signalé par un astérisque.
 - **Les noms de modèles de ChatGPT ne sont pas ceux de l'API.** L'export ChatGPT désigne
   les modèles par des noms internes. Quand la correspondance est connue (par exemple
   `text-davinci-002-render-sha` pour GPT-3.5, ou `o3-mini-high` pour o3-mini), le prix réel
   est appliqué. OpenAI ne publie pas de correspondance pour les noms récents (`gpt-6`,
-  `gpt-5-6`, `gpt-5-3`, leurs variantes mini, `research`, `auto`) : ils gardent le tarif
+  `gpt-5-3`, leurs variantes mini, `research`, `auto`) : ils gardent le tarif
   indicatif.
 - **Les conversations de claude.ai et de ChatGPT ne sont pas lues automatiquement.** Elles
   ne sont pas enregistrées sur le Mac sous une forme exploitable : il faut importer un
@@ -344,6 +351,7 @@ Le détail, hypothèse par hypothèse, avec les sources et ce qui reste fragile,
 | `EnergIA.py`, `menubar/` | Plugin SwiftBar et mode « serveur seul » : journaux Claude Code, serveur local, taux de change, icône Windows |
 | `tools/make_icons.py` | Dessine les deux icônes Windows |
 | `tools/stamp.mjs` | Numérote les fichiers de la page à chaque version |
+| `tools/prices.mjs`, `.github/workflows/prices.yml` | Met à jour les prix des modèles, chaque semaine sur GitHub |
 | `test/` | Tests |
 
 Aucune dépendance : JavaScript sans étape de construction, Python avec la bibliothèque
@@ -352,7 +360,7 @@ standard seule.
 ## Tests
 
 ```sh
-node --test test/
+node --test
 python3 test/test_menubar.py
 ```
 
@@ -389,14 +397,14 @@ Puis, sans ordre arrêté :
 - **Méthode** : elle est maintenant [documentée avec ses sources](METHOD.fr.md). Une valeur
   par défaut reste sans source : le poids des tokens relus du cache, qui compte surtout
   pour Claude Code.
-- **Prix** : les mettre à jour sans intervention ; c'est manuel aujourd'hui.
 - **Windows** : une installation en une commande, comme sous macOS et Linux.
 - **Anglais** : restent en français quelques noms internes du code.
 
 Déjà fait, pour mémoire : le mode « serveur seul », l'anglais (page, plugin, README,
 commentaires, messages de commit), le choix du pays, les seuils d'alerte, les exports CSV et
 image, les imports qui se cumulent, Gemini et Copilot, l'installation en une commande, la
-version équipe, le rapport mensuel et la lecture des relevés d'usage des API.
+version équipe, le rapport mensuel, la lecture des relevés d'usage des API et la mise à
+jour automatique des prix.
 
 ## Soutenir le projet
 

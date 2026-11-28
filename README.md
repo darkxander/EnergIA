@@ -203,8 +203,9 @@ The plugin:
 - keeps only counters per day and per model, in `~/Library/Caches/EnergIA`; these counters
   outlive Claude Code's clean-up of old logs;
 - serves the page on `127.0.0.1:18791`, reachable only from your Mac;
-- fetches the ECB's euro/dollar reference rate once a day. This is its only Internet
-  connection; it sends no data.
+- fetches once a day the ECB's euro/dollar reference rate, and the model prices published
+  by this project (`darkxander.github.io/EnergIA/src/prices.json`). These are its only two
+  Internet connections; they download a public file and send no data.
 
 To import an export from the menu bar window, use the "Choose a file" button: the
 plugin opens the macOS file picker and passes the chosen file to the page. Drag and drop is
@@ -281,16 +282,21 @@ The detail, assumption by assumption, with the sources and what remains fragile,
   choice, not a measurement.
 - **The cost is not your bill.** With a subscription, you pay the plan, not the tokens.
   Current prices are applied to the whole history.
-- **Prices need maintaining.** The prices in [src/prices.json](src/prices.json) were
-  collected on 25 November 2026 and do not update themselves. For older models withdrawn
-  from the API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini, deep
-  research), it is the last price published by OpenAI, collected on 26 November 2026.
-  Models missing from the list keep an indicative price per category, marked with an
-  asterisk.
+- **Prices follow a public list, not the official pages.** The prices in
+  [src/prices.json](src/prices.json) were first collected by hand from Anthropic's and
+  OpenAI's pricing pages. Every week, a GitHub task compares them with the
+  [list kept by the LiteLLM project](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json), corrects what has changed and adds new
+  models; an installed plugin picks that file up once a day. The list is kept by a
+  community: it can lag or be wrong. A price that would move more than 4-fold at once is
+  refused and the update stops. Not followed: the price of web search, and older models
+  withdrawn from the API (GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4.5, o3-mini, o4-mini,
+  deep research), which keep the last price published by OpenAI, collected on
+  26 November 2026. Models missing from the list keep an indicative price per category,
+  marked with an asterisk.
 - **ChatGPT's model names are not the API's.** The ChatGPT export refers to models by
   internal names. When the correspondence is known (for example
   `text-davinci-002-render-sha` for GPT-3.5, or `o3-mini-high` for o3-mini), the real price
-  is applied. OpenAI publishes no correspondence for recent names (`gpt-6`, `gpt-5-6`,
+  is applied. OpenAI publishes no correspondence for recent names (`gpt-6`,
   `gpt-5-3`, their mini variants, `research`, `auto`): they keep the indicative price.
 - **claude.ai and ChatGPT conversations are not read automatically.** They are not stored
   on the Mac in a usable form: you have to import an export, and import a new one to
@@ -328,6 +334,7 @@ The detail, assumption by assumption, with the sources and what remains fragile,
 | `EnergIA.py`, `menubar/` | SwiftBar plugin and server-only mode: Claude Code logs, local server, exchange rate, Windows icon |
 | `tools/make_icons.py` | Draws the two Windows icons |
 | `tools/stamp.mjs` | Stamps the page's files with a version number |
+| `tools/prices.mjs`, `.github/workflows/prices.yml` | Updates the model prices, every week on GitHub |
 | `test/` | Tests |
 
 No dependencies: JavaScript with no build step, Python with the standard library only.
@@ -335,7 +342,7 @@ No dependencies: JavaScript with no build step, Python with the standard library
 ## Tests
 
 ```sh
-node --test test/
+node --test
 python3 test/test_menubar.py
 ```
 
@@ -370,14 +377,14 @@ Then, in no set order:
 - **Method**: it is now [documented with its sources](METHOD.md). One default value still
   has no source: the weight of tokens re-read from the cache, which matters most for Claude
   Code.
-- **Prices**: updating them without intervention; it is manual today.
 - **Windows**: a one-command install, as on macOS and Linux.
 - **English**: a few internal names in the code are still in French.
 
 Already done, for the record: the server-only mode, English (page, plugin, README,
 comments, commit messages), the choice of country, alert thresholds, the CSV and image
 exports, imports that add up, Gemini and Copilot, the one-command install, the team
-version, the monthly report and reading the APIs' usage reports.
+version, the monthly report, reading the APIs' usage reports and automatic price
+updates.
 
 ## Supporting the project
 

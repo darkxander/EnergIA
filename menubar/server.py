@@ -25,6 +25,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 
 import estimate
 from claudecode import UsageStore
+from pricefeed import PriceStore
 from rate import RateStore
 
 PORT = 18791
@@ -107,12 +108,14 @@ class TitleGate:
 class Dashboard:
     def __init__(self, store=None, settings_path=estimate.SETTINGS, today=lambda: date.today().isoformat(),
                  rates=None, opener=open_in_browser, picker=pick_file, window=True,
-                 downloads=DOWNLOADS, revealer=reveal):
+                 downloads=DOWNLOADS, revealer=reveal, prices=None):
         self.store = store or UsageStore()
         # True: page displayed in the SwiftBar window, which can neither open a
         # file picker nor follow an external link. False: real browser.
         self.window = window
         self.rates = rates or RateStore()
+        self.prices = prices or PriceStore(bundled_checked=estimate.bundled_prices()["checked"])
+        estimate.use_prices(self.prices.current())
         self.opener = opener
         self.picker = picker
         self.downloads, self.revealer = downloads, revealer
@@ -132,6 +135,8 @@ class Dashboard:
                 self._error = str(e) or type(e).__name__
         self.gate.offer(self.title())
         self.rates.refresh()  # never raises; only fetches the rate if it is out of date
+        self.prices.refresh()  # same for the model prices
+        estimate.use_prices(self.prices.current())
 
     def poller(self):
         while True:
@@ -232,6 +237,8 @@ class Handler(BaseHTTPRequestHandler):
         relative = "index.html" if path == "/" else path.lstrip("/")
         if relative not in ("index.html", "styles.css") and not relative.startswith("src/"):
             return self.send_error(404)
+        if relative == "src/prices.json":  # the page counts with the same prices as the title
+            return self._json(estimate.active_prices())
         full = os.path.realpath(os.path.join(SITE, relative))
         ctype = STATIC.get(os.path.splitext(full)[1])
         if not full.startswith(SITE + os.sep) or not ctype or not os.path.isfile(full):
@@ -364,7 +371,7 @@ def windows_tray(lang, on_open):
     return tray.Tray(lang, on_open)
 
 
-def serve_only(port=PORT, browser=True, out=None, wait=None, tray=windows_tray):
+def serve_only(port=PORT, browser=True, out=None, wait=None, tray=windows_tray, dashboard=None):
     """The "server only" mode: no menu bar, the dashboard opens in the default
     browser. On Windows, an icon in the notification area shows the day's energy.
     Returns the program's exit code."""
@@ -372,7 +379,7 @@ def serve_only(port=PORT, browser=True, out=None, wait=None, tray=windows_tray):
     if hasattr(out, "reconfigure"):
         out.reconfigure(errors="replace")  # Windows consoles without UTF-8
     lang = estimate.lang_of(estimate.load_settings())
-    dash = Dashboard(window=False)
+    dash = (dashboard or Dashboard)(window=False)  # dashboard: for the tests
     try:
         server = serve(dash, port)
     except OSError as e:

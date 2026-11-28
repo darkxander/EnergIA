@@ -1,6 +1,6 @@
 """Euro/dollar exchange rate: the ECB reference rate, fetched once a day.
-It is the plugin's only connection to the Internet; it downloads a public
-file and sends no data.
+With the model prices (pricefeed.py), it is one of the plugin's two connections
+to the Internet; both download a public file and send no data.
 
 On macOS, the download goes through /usr/bin/curl, which uses the system's
 certificates (the Python launched by SwiftBar does not always have its
@@ -44,7 +44,8 @@ def download(url=URL):
     if not os.path.exists(CURL):
         with urllib.request.urlopen(url, timeout=20) as response:
             return response.read(1_000_000).decode("utf-8")
-    done = subprocess.run([CURL, "-sS", "--fail", "--max-time", "20", "--proto", "=https", url],
+    done = subprocess.run([CURL, "-sS", "--fail", "--max-time", "20", "--max-filesize", "1000000",
+                           "--proto", "=https", url],
                           capture_output=True, text=True, timeout=30, check=True)
     return done.stdout
 

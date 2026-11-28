@@ -1,0 +1,48 @@
+# Brings src/prices.json up to date every week from a public price list, and publishes
+# the result without anyone having to step in. See tools/prices.mjs for the guards: an
+# implausible price makes this task fail (GitHub then sends an e-mail) and nothing changes.
+name: Update prices
+
+on:
+  schedule:
+    - cron: "17 5 * * 1" # every Monday, 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # to commit the new prices; nothing else
+
+concurrency: prices
+
+defaults:
+  run:
+    shell: bash # with pipefail: a failed step stops the task
+
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the prices
+        run: node tools/prices.mjs | tee "$RUNNER_TEMP/prices.txt"
+      - name: Renumber the page
+        run: node tools/stamp.mjs
+      - name: Tests
+        run: |
+          node --test
+          python3 test/test_menubar.py
+      - name: Commit and publish
+        run: |
+          if git diff --quiet; then
+            echo "Nothing to publish."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/prices.json index.html
+          { echo "Update model prices"; echo; grep -v "^src/prices.json " "$RUNNER_TEMP/prices.txt"; } > "$RUNNER_TEMP/message.txt"
+          git commit --quiet -F "$RUNNER_TEMP/message.txt"
+          git push

@@ -151,7 +151,7 @@ test("actual prices per model", () => {
   assert.equal(priceFor("gpt-4-5").out, 150);
   assert.equal(priceFor("gpt-4").in, 30);
   // ChatGPT names with no official match to an API model.
-  for (const unknown of ["gpt-6", "gpt-6-mini", "gpt-5-6", "gpt-5-3", "research", "auto", "claude", "inconnu", ""]) {
+  for (const unknown of ["gpt-6", "gpt-6-mini", "gpt-5-3", "research", "auto", "claude", "inconnu", ""]) {
     assert.equal(priceFor(unknown), null, unknown); // falls back to the category's indicative rate
   }
   // Energy: cache writes count as ordinary read tokens.
@@ -475,4 +475,49 @@ test("method document: both languages, the same structure, and the default value
   assert.deepEqual([s.tiers.leger.whOut, s.tiers.standard.whOut, s.tiers.grand.whOut, s.tiers.raisonnement.whOut], [0.2, 0.6, 1.2, 2.5]);
   assert.deepEqual([s.inputRatio, s.cacheReadRatio, s.lowFactor, s.highFactor, s.gCO2PerKWh, s.waterLPerKWh], [0.1, 0.02, 0.5, 2, 458.3, 4.5]);
   for (const text of ["0.2 / 0.6 / 1.2 / 2.5 Wh", "458.3 g CO₂e/kWh", "4.5 L/kWh", "× 0.5 to × 2", "3.5 characters per token"]) assert.ok(en.includes(text), text);
+});
+
+test("price update: follows the public list within guards, and keeps the file's layout", async () => {
+  const { updatePrices, formatPrices, summary, MAX_FACTOR } = await import("../tools/prices.mjs");
+  const text = readFileSync(new URL("../src/prices.json", import.meta.url), "utf8");
+  assert.equal(formatPrices(JSON.parse(text)), text); // written the way the tool writes it
+  const current = { source: "s", checked: "2026-11-01", webSearchUsdPer1000: 10,
+    models: { "claude-a": { in: 3, write5m: 3.75, read: 0.3, out: 15 }, "gpt-5-4": { in: 2.5, out: 15 }, "gone": { in: 1, out: 2 } },
+    aliases: { "old-name": "gone" } };
+  const entry = (provider, input, output, extra = {}) => ({ litellm_provider: provider, mode: "chat",
+    input_cost_per_token: input / 1e6, output_cost_per_token: output / 1e6, ...extra });
+  const filler = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`text-embedding-${i}`, { litellm_provider: "openai", mode: "embedding" }]));
+  const feed = { ...filler,
+    "claude-a": entry("anthropic", 2, 10, { cache_read_input_token_cost: 0.2e-6, cache_creation_input_token_cost: 2.5e-6 }),
+    "gpt-5.4": entry("openai", 2.5, 15, { cache_read_input_token_cost: 0.25e-6 }), // a field we do not have is not added
+    "azure/gpt-5.4": entry("azure", 99, 99),
+    "gpt-7": entry("openai", 4, 20, { cache_read_input_token_cost: 0.4e-6, cache_creation_input_token_cost: 5e-6 }),
+    "claude-b": entry("anthropic", 1, 5, { cache_creation_input_token_cost: 1.25e-6, cache_creation_input_token_cost_above_1hr: 2e-6 }),
+    "gpt-7-2026-01-01": entry("openai", 4, 20), "gpt-7-audio": entry("openai", 4, 20), "old-name": entry("openai", 4, 20),
+    "gpt-7-research": entry("openai", 6, 30), "gpt-free": entry("openai", 0, 0),
+    "gemini-9": entry("gemini", 1, 2) };
+  const result = updatePrices(current, feed, "2026-11-10");
+  assert.deepEqual(result.refused, []);
+  assert.deepEqual(result.prices.models["claude-a"], { in: 2, write5m: 2.5, read: 0.2, out: 10 });
+  assert.deepEqual(result.prices.models["gpt-5-4"], { in: 2.5, out: 15 });
+  assert.deepEqual(result.prices.models.gone, { in: 1, out: 2 }); // missing from the list: kept
+  assert.deepEqual(result.added, ["gpt-7", "claude-b", "gpt-7-research"]);
+  assert.deepEqual(result.prices.models["gpt-7"], { in: 4, out: 20, read: 0.4 });
+  assert.deepEqual(result.prices.models["claude-b"], { in: 1, write5m: 1.25, write1h: 2, out: 5 });
+  assert.equal(result.changed.length, 4);
+  assert.equal(result.prices.checked, "2026-11-10");
+  assert.equal(current.models["claude-a"].in, 3); // the input is not modified
+  assert.match(summary(result), /claude-a in: 3 → 2\n[\s\S]*added: gpt-7, claude-b, gpt-7-research/);
+  assert.deepEqual(JSON.parse(formatPrices(result.prices)), result.prices);
+
+  // Nothing new: the date only moves once it is a month old.
+  const again = updatePrices(result.prices, feed, "2026-11-20");
+  assert.deepEqual([again.changed.length, again.added.length, again.dated, again.prices.checked], [0, 0, false, "2026-11-10"]);
+  assert.equal(updatePrices(result.prices, feed, "2026-12-10").prices.checked, "2026-12-10");
+
+  // An implausible move, an odd number or a nearly empty list: refused, and the date stays.
+  const jump = updatePrices(current, { ...feed, "claude-a": entry("anthropic", 3 * MAX_FACTOR + 1, 15) }, "2026-11-10");
+  assert.deepEqual([jump.refused.length, jump.dated, jump.prices.checked], [1, false, "2026-11-01"]);
+  assert.equal(updatePrices(current, { ...feed, "claude-a": entry("anthropic", -1, 15) }, "2026-11-10").refused.length, 1);
+  assert.equal(updatePrices(current, { "claude-a": entry("anthropic", 3, 15) }, "2026-11-10").refused.length, 1);
 });

@@ -203,8 +203,9 @@ Two limits:
 Cost = tokens × public prices of the Anthropic and OpenAI APIs, per model, converted to
 euros.
 
-- **Prices**: collected from the providers' pricing pages, with the collection date
-  recorded in [src/prices.json](src/prices.json). Current prices are applied to the whole
+- **Prices**: collected from the providers' pricing pages, then compared every week with
+  the [list kept by the LiteLLM project](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json), which is not an official source. The date
+  of the last check is recorded in [src/prices.json](src/prices.json). Current prices are applied to the whole
   history. A model missing from the list, or an export that does not say which model
   answered, gets an indicative price per category, marked with an asterisk.
 - **Exchange rate**: the euro/dollar reference rate of the

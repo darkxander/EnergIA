@@ -208,8 +208,9 @@ Deux limites :
 Coût = tokens × prix publics des API d'Anthropic et d'OpenAI, par modèle, convertis en
 euros.
 
-- **Prix** : relevés sur les pages de tarifs des fournisseurs, avec la date de relevé
-  inscrite dans [src/prices.json](src/prices.json). Les prix actuels sont appliqués à tout
+- **Prix** : relevés sur les pages de tarifs des fournisseurs, puis comparés chaque semaine
+  à la [liste tenue par le projet LiteLLM](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json), qui n'est pas une source officielle. La
+  date du dernier relevé est inscrite dans [src/prices.json](src/prices.json). Les prix actuels sont appliqués à tout
   l'historique. Un modèle absent de la liste, ou un export qui ne dit pas quel modèle a
   répondu, reçoit un prix indicatif par catégorie, signalé par un astérisque.
 - **Taux de change** : taux de référence euro/dollar de la

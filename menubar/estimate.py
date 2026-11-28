@@ -127,21 +127,37 @@ def wh(row, settings):
     return (row["outTok"] + read * settings["inputRatio"]) / 1000 * tier["whOut"]
 
 
-_prices = None
+_bundled = None   # src/prices.json, as installed
+_fetched = None   # more recent prices fetched by the plugin (pricefeed.py), if any
 _MODE = re.compile(r"-(thinking|instant|high|medium|low|auto)(?=-|$)")
+
+
+def bundled_prices():
+    global _bundled
+    if _bundled is None:
+        with open(PRICES, encoding="utf-8") as f:
+            _bundled = json.load(f)
+    return _bundled
+
+
+def use_prices(prices):
+    """Prices to use instead of the installed ones (None: back to the installed ones)."""
+    global _fetched
+    _fetched = prices
+
+
+def active_prices():
+    return _fetched or bundled_prices()
 
 
 def price_for(model):
     """Public prices of the model (dollars per million tokens), or None if it is unknown.
     Same rule as priceFor in src/model.js."""
-    global _prices
-    if _prices is None:
-        with open(PRICES, encoding="utf-8") as f:
-            _prices = json.load(f)
+    prices = active_prices()
     name = re.sub(r"-\d{8}$", "", str(model or "").lower().replace(".", "-"))
     plain = _MODE.sub("", re.sub(r"-t-mini$", "-mini", name))
     for candidate in (name, plain):
-        price = _prices["models"].get(_prices["aliases"].get(candidate, candidate))
+        price = prices["models"].get(prices["aliases"].get(candidate, candidate))
         if price:
             return price
     return None
@@ -158,7 +174,7 @@ def eur(row, settings):
     usd = (row["inTok"] * price["in"] + write5m * price.get("write5m", price["in"])
            + write1h * price.get("write1h", price["in"]) + cached * price.get("read", price["in"])
            + row["outTok"] * price["out"]) / 1e6
-    usd += row.get("searches", 0) * _prices["webSearchUsdPer1000"] / 1000
+    usd += row.get("searches", 0) * active_prices()["webSearchUsdPer1000"] / 1000
     return usd * settings["eurPerUsd"]
 
 
